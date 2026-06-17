@@ -1,6 +1,8 @@
 import torch
 from typing import Dict, List, Any
 import numpy as np
+# pyrefly: ignore [missing-import]
+import quantus
 
 from xai_bench.registry import METRICS
 
@@ -17,19 +19,32 @@ def _create_bbox_mask(bboxes, shape):
     return mask
 
 @METRICS.register("pointing_game")
-def pointing_game(attr: torch.Tensor, metadata: Dict[str, Any], **kwargs) -> float:
-    """Checks if the maximum attribution pixel falls inside any bounding box."""
-    # attr is [H, W]
+def pointing_game(attr: torch.Tensor, metadata: Dict[str, Any], model: torch.nn.Module = None, image: torch.Tensor = None, target: int = None, **kwargs) -> float:
+    """Checks if the maximum attribution pixel falls inside any bounding box using Quantus."""
     if not metadata.get('bboxes'):
         return float('nan')
+    if model is None or image is None or target is None:
+        raise ValueError("Quantus PointingGame requires model, image, and target.")
+        
     mask = _create_bbox_mask(metadata['bboxes'], attr.shape)
     if not mask.any():
         return float('nan')
         
-    flat_idx = torch.argmax(attr)
-    idx_y, idx_x = flat_idx // attr.shape[1], flat_idx % attr.shape[1]
+    x_batch = image.unsqueeze(0).cpu().numpy()
+    y_batch = np.array([target])
+    a_batch = attr.unsqueeze(0).unsqueeze(0).cpu().numpy()
+    s_batch = mask.unsqueeze(0).unsqueeze(0).cpu().numpy().astype(float)
     
-    return 1.0 if mask[idx_y, idx_x] else 0.0
+    device = image.device
+    model.eval()
+    
+    metric = quantus.PointingGame(disable_warnings=True)
+    try:
+        score = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, s_batch=s_batch, device=device)
+        return score[0]
+    except Exception as e:
+        print(f"Warning: PointingGame failed: {e}")
+        return float('nan')
 
 @METRICS.register("ebpg")
 def energy_based_pointing_game(attr: torch.Tensor, metadata: Dict[str, Any], **kwargs) -> float:
