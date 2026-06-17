@@ -1,0 +1,21 @@
+# Core
+torch>=2.1
+torchvision>=0.16
+timm>=1.0.0
+numpy
+pandas
+scipy
+scikit-learn
+scikit-image
+Pillow
+PyYAML
+matplotlib
+
+# Attribution methods
+captum>=0.7.0
+
+# Optional — enable richer methods / metrics if installed
+# grad-cam            # pytorch-grad-cam: alternative Grad-CAM backend (native one is built in)
+# quantus             # standardized faithfulness/localization metrics (seams provided)
+python-louvain        # graph clustering (notebook prototype)
+networkx

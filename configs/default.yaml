@@ -1,0 +1,36 @@
+# default.yaml
+# Run configuration for xai_bench
+
+models:
+  - "resnet50"
+  - "vit_base_patch16_224"
+
+methods:
+  - "saliency"
+  - "integrated_gradients"
+  - "grad_cam"
+  - "attention_rollout"
+
+metrics:
+  - "pointing_game"
+  - "ebpg"
+  - "iou"
+  - "deletion_auc"
+  - "insertion_auc"
+  - "gini"
+  - "entropy"
+
+dataset: "demo"
+dataset_kwargs:
+  root: "data/demo/images"
+  bbox_dir: "data/demo/bboxes"
+  labels_file: "data/demo/labels.txt"
+
+num_images: 2  # Evaluate on first 2 images
+seeds: [0]     # Just one seed for smoke testing
+
+device: "auto"
+input_size: 224
+output_dir: "results"
+save_saliency: true
+limit_methods_to_supported: true

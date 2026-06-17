@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xai-bench"
+version = "0.1.0"
+description = "A controlled benchmark of attribution methods across ViT foundation models."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "torch>=2.1",
+    "torchvision>=0.16",
+    "timm>=1.0.0",
+    "numpy",
+    "pandas",
+    "scipy",
+    "scikit-learn",
+    "scikit-image",
+    "Pillow",
+    "PyYAML",
+    "matplotlib",
+    "captum>=0.7.0",
+]
+
+[project.optional-dependencies]
+extra = ["grad-cam", "quantus", "python-louvain", "networkx"]
+
+[project.scripts]
+xai-bench = "xai_bench.runner:main"
+
+[tool.setuptools.packages.find]
+include = ["xai_bench*"]
