@@ -5,13 +5,9 @@ import quantus
 
 from xai_bench.registry import METRICS
 
-@METRICS.register("gini")
-def gini_coefficient(attr: torch.Tensor, model: torch.nn.Module = None, image: torch.Tensor = None, target: int = None, **kwargs) -> float:
-    """Computes the Gini coefficient of the attribution map using Quantus.
-    Higher Gini = more sparse/concentrated.
-    """
+def _run_quantus_sparse_metric(metric_class, attr, model, image, target, kwargs, metric_kwargs=None):
     if model is None or image is None or target is None:
-        raise ValueError("Quantus Gini requires model, image, and target.")
+        raise ValueError(f"Quantus metric requires model, image, and target.")
         
     x_batch = image.unsqueeze(0).cpu().numpy()
     y_batch = np.array([target])
@@ -20,33 +16,34 @@ def gini_coefficient(attr: torch.Tensor, model: torch.nn.Module = None, image: t
     device = image.device
     model.eval()
     
-    metric = quantus.Gini(disable_warnings=True)
+    explain_func = kwargs.get('explain_func', None)
+    
+    if metric_kwargs is None:
+        metric_kwargs = {}
+    
+    metric = metric_class(disable_warnings=True, **metric_kwargs)
     try:
-        score = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, device=device)
+        if explain_func is not None:
+            score = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, device=device, explain_func=explain_func)
+        else:
+            score = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, device=device)
         return score[0]
     except Exception as e:
-        print(f"Warning: Gini failed: {e}")
+        print(f"Warning: {metric_class.__name__} failed: {e}")
         return float('nan')
+
+@METRICS.register("gini")
+def gini_coefficient(attr: torch.Tensor, model: torch.nn.Module = None, image: torch.Tensor = None, target: int = None, **kwargs) -> float:
+    return _run_quantus_sparse_metric(quantus.Gini, attr, model, image, target, kwargs)
 
 @METRICS.register("entropy")
 def shannon_entropy(attr: torch.Tensor, model: torch.nn.Module = None, image: torch.Tensor = None, target: int = None, **kwargs) -> float:
-    """Computes Complexity (Entropy) of the normalized attribution map using Quantus.
-    Lower entropy = more sparse.
-    """
-    if model is None or image is None or target is None:
-        raise ValueError("Quantus Complexity requires model, image, and target.")
-        
-    x_batch = image.unsqueeze(0).cpu().numpy()
-    y_batch = np.array([target])
-    a_batch = attr.unsqueeze(0).unsqueeze(0).cpu().numpy()
-    
-    device = image.device
-    model.eval()
-    
-    metric = quantus.Complexity(disable_warnings=True)
-    try:
-        score = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, device=device)
-        return score[0]
-    except Exception as e:
-        print(f"Warning: Complexity failed: {e}")
-        return float('nan')
+    return _run_quantus_sparse_metric(quantus.Complexity, attr, model, image, target, kwargs)
+
+@METRICS.register("sparseness")
+def sparseness(attr: torch.Tensor, model: torch.nn.Module = None, image: torch.Tensor = None, target: int = None, **kwargs) -> float:
+    return _run_quantus_sparse_metric(quantus.Sparseness, attr, model, image, target, kwargs)
+
+@METRICS.register("effective_complexity")
+def effective_complexity(attr: torch.Tensor, model: torch.nn.Module = None, image: torch.Tensor = None, target: int = None, **kwargs) -> float:
+    return _run_quantus_sparse_metric(quantus.EffectiveComplexity, attr, model, image, target, kwargs)

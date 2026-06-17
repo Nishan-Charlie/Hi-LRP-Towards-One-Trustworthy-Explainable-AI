@@ -83,6 +83,13 @@ class BenchmarkRunner:
                             "time_ms": attr_time * 1000,
                         }
                         
+                        def explain_func(model, inputs, targets, **kwargs):
+                            import torch
+                            device = next(model.parameters()).device
+                            inputs_t = torch.tensor(inputs, device=device, dtype=torch.float32)
+                            target_t = targets[0].item() if hasattr(targets, '__len__') else targets
+                            return method(inputs_t, target=target_t).cpu().numpy()
+
                         for metric_name in self.config.metrics:
                             metric_fn = METRICS.get(metric_name)
                             # Pass extra kwargs for faithfulness
@@ -91,7 +98,8 @@ class BenchmarkRunner:
                                 metadata=metadata,
                                 model=model_wrapper.model,
                                 image=img,
-                                target=target
+                                target=target,
+                                explain_func=explain_func
                             )
                             row[metric_name] = val
                             

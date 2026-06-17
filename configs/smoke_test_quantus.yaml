@@ -1,0 +1,21 @@
+output_dir: "results"
+num_images: 2
+save_saliency: false
+
+dataset: "demo"
+dataset_kwargs:
+  data_dir: "data/ImageNet_demo"
+
+models:
+  - "vit_base_patch16_224"
+
+methods:
+  - "grad_cam"
+
+metrics:
+  - "faithfulness_correlation"
+  - "pointing_game"
+  - "gini"
+  - "local_lipschitz_estimate"
+  - "model_parameter_randomisation"
+  - "completeness"

@@ -1,7 +1,6 @@
 import torch
 from typing import Dict, List, Any
 import numpy as np
-# pyrefly: ignore [missing-import]
 import quantus
 
 from xai_bench.registry import METRICS
@@ -18,13 +17,11 @@ def _create_bbox_mask(bboxes, shape):
         mask[ymin_px:ymax_px, xmin_px:xmax_px] = True
     return mask
 
-@METRICS.register("pointing_game")
-def pointing_game(attr: torch.Tensor, metadata: Dict[str, Any], model: torch.nn.Module = None, image: torch.Tensor = None, target: int = None, **kwargs) -> float:
-    """Checks if the maximum attribution pixel falls inside any bounding box using Quantus."""
+def _run_quantus_loc_metric(metric_class, attr, metadata, model, image, target, kwargs, metric_kwargs=None):
     if not metadata.get('bboxes'):
         return float('nan')
     if model is None or image is None or target is None:
-        raise ValueError("Quantus PointingGame requires model, image, and target.")
+        raise ValueError(f"Quantus metric requires model, image, and target.")
         
     mask = _create_bbox_mask(metadata['bboxes'], attr.shape)
     if not mask.any():
@@ -38,47 +35,46 @@ def pointing_game(attr: torch.Tensor, metadata: Dict[str, Any], model: torch.nn.
     device = image.device
     model.eval()
     
-    metric = quantus.PointingGame(disable_warnings=True)
+    explain_func = kwargs.get('explain_func', None)
+    
+    if metric_kwargs is None:
+        metric_kwargs = {}
+    
+    metric = metric_class(disable_warnings=True, **metric_kwargs)
     try:
-        score = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, s_batch=s_batch, device=device)
+        if explain_func is not None:
+            score = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, s_batch=s_batch, device=device, explain_func=explain_func)
+        else:
+            score = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, s_batch=s_batch, device=device)
         return score[0]
     except Exception as e:
-        print(f"Warning: PointingGame failed: {e}")
+        print(f"Warning: {metric_class.__name__} failed: {e}")
         return float('nan')
 
-@METRICS.register("ebpg")
-def energy_based_pointing_game(attr: torch.Tensor, metadata: Dict[str, Any], **kwargs) -> float:
-    """Fraction of positive attribution inside the bounding box."""
-    if not metadata.get('bboxes'):
-        return float('nan')
-    mask = _create_bbox_mask(metadata['bboxes'], attr.shape).to(attr.device)
-    if not mask.any():
-        return float('nan')
-        
-    pos_attr = torch.clamp(attr, min=0)
-    total_energy = pos_attr.sum()
-    if total_energy == 0:
-        return 0.0
-    inside_energy = (pos_attr * mask).sum()
-    return (inside_energy / total_energy).item()
+@METRICS.register("pointing_game")
+def pointing_game(attr: torch.Tensor, metadata: Dict[str, Any], model: torch.nn.Module = None, image: torch.Tensor = None, target: int = None, **kwargs) -> float:
+    return _run_quantus_loc_metric(quantus.PointingGame, attr, metadata, model, image, target, kwargs)
 
-@METRICS.register("iou")
-def iou_metric(attr: torch.Tensor, metadata: Dict[str, Any], **kwargs) -> float:
-    """IoU of top k% attribution pixels with the bounding box mask."""
-    # We binarize attribution using Otsu or a simple top-k%. 
-    # Let's use top 20% of image area.
-    if not metadata.get('bboxes'):
-        return float('nan')
-    mask = _create_bbox_mask(metadata['bboxes'], attr.shape).to(attr.device)
-    if not mask.any():
-        return float('nan')
-        
-    k = int(attr.numel() * 0.2)
-    threshold = torch.kthvalue(attr.flatten(), attr.numel() - k).values
-    attr_mask = attr >= threshold
-    
-    intersection = (attr_mask & mask).float().sum()
-    union = (attr_mask | mask).float().sum()
-    if union == 0:
-        return 0.0
-    return (intersection / union).item()
+@METRICS.register("top_k_intersection")
+def top_k_intersection(attr: torch.Tensor, metadata: Dict[str, Any], model: torch.nn.Module = None, image: torch.Tensor = None, target: int = None, **kwargs) -> float:
+    return _run_quantus_loc_metric(quantus.TopKIntersection, attr, metadata, model, image, target, kwargs)
+
+@METRICS.register("relevance_mass_accuracy")
+def relevance_mass_accuracy(attr: torch.Tensor, metadata: Dict[str, Any], model: torch.nn.Module = None, image: torch.Tensor = None, target: int = None, **kwargs) -> float:
+    return _run_quantus_loc_metric(quantus.RelevanceMassAccuracy, attr, metadata, model, image, target, kwargs)
+
+@METRICS.register("relevance_rank_accuracy")
+def relevance_rank_accuracy(attr: torch.Tensor, metadata: Dict[str, Any], model: torch.nn.Module = None, image: torch.Tensor = None, target: int = None, **kwargs) -> float:
+    return _run_quantus_loc_metric(quantus.RelevanceRankAccuracy, attr, metadata, model, image, target, kwargs)
+
+@METRICS.register("attribution_localisation")
+def attribution_localisation(attr: torch.Tensor, metadata: Dict[str, Any], model: torch.nn.Module = None, image: torch.Tensor = None, target: int = None, **kwargs) -> float:
+    return _run_quantus_loc_metric(quantus.AttributionLocalisation, attr, metadata, model, image, target, kwargs)
+
+@METRICS.register("auc")
+def auc_loc(attr: torch.Tensor, metadata: Dict[str, Any], model: torch.nn.Module = None, image: torch.Tensor = None, target: int = None, **kwargs) -> float:
+    return _run_quantus_loc_metric(quantus.AUC, attr, metadata, model, image, target, kwargs)
+
+@METRICS.register("focus")
+def focus(attr: torch.Tensor, metadata: Dict[str, Any], model: torch.nn.Module = None, image: torch.Tensor = None, target: int = None, **kwargs) -> float:
+    return _run_quantus_loc_metric(quantus.Focus, attr, metadata, model, image, target, kwargs)
