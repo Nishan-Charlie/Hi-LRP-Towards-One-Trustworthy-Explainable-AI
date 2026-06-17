@@ -45,19 +45,21 @@ class AttentionRolloutWrapper:
         
         # We need a forward hook to grab the attention maps.
         attentions = []
+        # Disable fused_attn so we can hook the attention weights
+        for m in self.model_wrapper.model.modules():
+            if hasattr(m, 'fused_attn'):
+                m.fused_attn = False
+
         hooks = []
         
         def hook_fn(module, input, output):
-            # output of attention is usually (x, attn) or we have to hook the softmax
-            # Since standard timm ViT's don't output attention weights natively without flags,
-            # this requires hooking the Softmax inside the Attention block.
-            attentions.append(output)
+            # For timm ViT, attn_drop takes the post-softmax attention weights as input.
+            # input is a tuple (tensor,)
+            attentions.append(input[0])
             
-        # Register hooks to all Softmax layers in Attention blocks
+        # Register hooks to all attn_drop layers
         for name, module in self.model_wrapper.model.named_modules():
-            if 'attn.attn_drop' in name: # Varies by timm version, hooking dropout after softmax
-                pass
-            if isinstance(module, torch.nn.Softmax) and 'attn' in name:
+            if 'attn_drop' in name:
                 hooks.append(module.register_forward_hook(hook_fn))
                 
         # Forward pass
@@ -89,5 +91,78 @@ class AttentionRolloutWrapper:
 def get_attention_rollout(model_wrapper, **kwargs):
     def method(inputs, target):
         wrapper = AttentionRolloutWrapper(model_wrapper)
+        return wrapper(inputs, target)
+    return method
+
+
+class AttentionGradientWrapper:
+    """Attention weights multiplied by their gradients (proxy for Chefer LRP)."""
+    def __init__(self, model_wrapper):
+        self.model_wrapper = model_wrapper
+
+    def __call__(self, inputs: torch.Tensor, target: int, **kwargs) -> torch.Tensor:
+        if not self.model_wrapper.is_vit:
+            raise ValueError("Attention Gradient is only applicable to ViT models.")
+            
+        for m in self.model_wrapper.model.modules():
+            if hasattr(m, 'fused_attn'):
+                m.fused_attn = False
+                
+        attentions = []
+        gradients = []
+        hooks = []
+        
+        def fw_hook(module, input, output):
+            attentions.append(input[0])
+            
+        def bw_hook(module, grad_in, grad_out):
+            gradients.append(grad_in[0])
+            
+        for name, module in self.model_wrapper.model.named_modules():
+            if 'attn_drop' in name:
+                hooks.append(module.register_forward_hook(fw_hook))
+                hooks.append(module.register_full_backward_hook(bw_hook))
+                
+        self.model_wrapper.model.zero_grad()
+        out = self.model_wrapper(inputs)
+        loss = out[0, target]
+        loss.backward()
+        
+        for hook in hooks:
+            hook.remove()
+            
+        # reverse gradients to match forward pass order
+        gradients = gradients[::-1]
+        
+        # Calculate attention * gradient
+        # attentions: [B, num_heads, N, N]
+        B, num_heads, N, _ = attentions[0].shape
+        result = torch.eye(N, device=inputs.device).unsqueeze(0).expand(B, N, N).clone()
+        
+        for attn, grad in zip(attentions, gradients):
+            # grad is w.r.t input to attn_drop, which is the attention map
+            # Weight attention by positive gradients (similar to LRP rules)
+            weighted_attn = attn * F.relu(grad)
+            weighted_attn = weighted_attn.mean(dim=1) # mean over heads
+            
+            # Rollout
+            weighted_attn += torch.eye(N, device=inputs.device).unsqueeze(0)
+            weighted_attn = weighted_attn / (weighted_attn.sum(dim=-1, keepdim=True) + 1e-7)
+            result = torch.matmul(weighted_attn, result)
+            
+        cls_attention = result[:, 0, 1:]
+        B, num_patches = cls_attention.shape
+        H = W = int(num_patches ** 0.5)
+        
+        mask = cls_attention.reshape(B, 1, H, W)
+        input_size = inputs.shape[-2:]
+        mask = F.interpolate(mask, size=input_size, mode='bilinear', align_corners=False)
+        return mask.squeeze(1)
+
+
+@METHODS.register("attention_gradient")
+def get_attention_gradient(model_wrapper, **kwargs):
+    def method(inputs, target):
+        wrapper = AttentionGradientWrapper(model_wrapper)
         return wrapper(inputs, target)
     return method

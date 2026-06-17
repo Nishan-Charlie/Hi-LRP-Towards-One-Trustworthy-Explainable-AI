@@ -8,8 +8,14 @@ models:
 methods:
   - "saliency"
   - "integrated_gradients"
+  - "input_x_gradient"
+  - "vargrad"
   - "grad_cam"
+  - "grad_cam_plus_plus"
   - "attention_rollout"
+  - "attention_gradient"
+  - "occlusion"
+  - "rise"
 
 metrics:
   - "pointing_game"

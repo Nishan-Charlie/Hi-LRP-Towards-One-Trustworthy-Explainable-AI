@@ -1,5 +1,6 @@
 import torch
-from captum.attr import IntegratedGradients, Saliency, NoiseTunnel
+# pyrefly: ignore [missing-import]
+from captum.attr import IntegratedGradients, Saliency, NoiseTunnel, InputXGradient
 
 from xai_bench.registry import METHODS
 
@@ -42,5 +43,23 @@ def get_smoothgrad(model: torch.nn.Module, **kwargs):
         saliency = Saliency(model)
         nt = NoiseTunnel(saliency)
         attr = nt.attribute(inputs, nt_type='smoothgrad', nt_samples=20, target=target, abs=True)
+        return attr.sum(dim=1).abs()
+    return method
+
+
+@METHODS.register("input_x_gradient")
+def get_input_x_gradient(model: torch.nn.Module, **kwargs):
+    def method(inputs, target):
+        wrapper = CaptumMethodWrapper(model, InputXGradient)
+        return wrapper(inputs, target)
+    return method
+
+
+@METHODS.register("vargrad")
+def get_vargrad(model: torch.nn.Module, **kwargs):
+    def method(inputs, target):
+        saliency = Saliency(model)
+        nt = NoiseTunnel(saliency)
+        attr = nt.attribute(inputs, nt_type='vargrad', nt_samples=20, target=target, abs=False)
         return attr.sum(dim=1).abs()
     return method

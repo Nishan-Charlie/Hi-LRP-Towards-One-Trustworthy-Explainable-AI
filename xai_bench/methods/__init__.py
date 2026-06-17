@@ -7,3 +7,5 @@ This module provides standardized wrappers around various attribution methods
 from . import captum_methods
 from . import cam_methods
 from . import attention_rollout
+from . import perturbation_methods
+# from . import composite_methods # Wait, I haven't written composite_methods.py yet!

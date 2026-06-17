@@ -17,7 +17,7 @@ def _create_bbox_mask(bboxes, shape):
     return mask
 
 @METRICS.register("pointing_game")
-def pointing_game(attr: torch.Tensor, metadata: Dict[str, Any]) -> float:
+def pointing_game(attr: torch.Tensor, metadata: Dict[str, Any], **kwargs) -> float:
     """Checks if the maximum attribution pixel falls inside any bounding box."""
     # attr is [H, W]
     if not metadata.get('bboxes'):
@@ -32,7 +32,7 @@ def pointing_game(attr: torch.Tensor, metadata: Dict[str, Any]) -> float:
     return 1.0 if mask[idx_y, idx_x] else 0.0
 
 @METRICS.register("ebpg")
-def energy_based_pointing_game(attr: torch.Tensor, metadata: Dict[str, Any]) -> float:
+def energy_based_pointing_game(attr: torch.Tensor, metadata: Dict[str, Any], **kwargs) -> float:
     """Fraction of positive attribution inside the bounding box."""
     if not metadata.get('bboxes'):
         return float('nan')
@@ -48,7 +48,7 @@ def energy_based_pointing_game(attr: torch.Tensor, metadata: Dict[str, Any]) -> 
     return (inside_energy / total_energy).item()
 
 @METRICS.register("iou")
-def iou_metric(attr: torch.Tensor, metadata: Dict[str, Any]) -> float:
+def iou_metric(attr: torch.Tensor, metadata: Dict[str, Any], **kwargs) -> float:
     """IoU of top k% attribution pixels with the bounding box mask."""
     # We binarize attribution using Otsu or a simple top-k%. 
     # Let's use top 20% of image area.
