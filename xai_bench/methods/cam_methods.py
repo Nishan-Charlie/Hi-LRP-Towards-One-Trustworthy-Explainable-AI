@@ -22,6 +22,7 @@ class ViTCustomGradCam:
         self.target_layer.register_full_backward_hook(bw_hook)
         
     def __call__(self, inputs, target, **kwargs):
+        inputs = inputs.clone().detach().requires_grad_(True)
         self.model.zero_grad()
         out = self.model(inputs)
         loss = out[0, target]
@@ -61,6 +62,7 @@ class ViTCustomGradCamPlusPlus:
         self.target_layer.register_full_backward_hook(bw_hook)
         
     def __call__(self, inputs, target, **kwargs):
+        inputs = inputs.clone().detach().requires_grad_(True)
         self.model.zero_grad()
         out = self.model(inputs)
         loss = out[0, target]
@@ -107,6 +109,7 @@ class CNNCustomGradCamPlusPlus:
         self.target_layer.register_full_backward_hook(bw_hook)
         
     def __call__(self, inputs, target, **kwargs):
+        inputs = inputs.clone().detach().requires_grad_(True)
         self.model.zero_grad()
         out = self.model(inputs)
         loss = out[0, target]

@@ -1,0 +1,192 @@
+\documentclass[lettersize,journal]{IEEEtran}
+
+% ── Core math ────────────────────────────────────────────────────────────────
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{bm}
+\usepackage{mathtools}
+\usepackage{subcaption}
+% ── Algorithms ───────────────────────────────────────────────────────────────
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% ── Tables ───────────────────────────────────────────────────────────────────
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+
+% ── Figures ──────────────────────────────────────────────────────────────────
+\usepackage[caption=false,font=normalsize,labelfont=sf,textfont=sf]{subfig}
+\usepackage{graphicx}
+\usepackage{stfloats}
+
+% ── Typography and encoding ──────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage{textcomp}
+\usepackage{url}
+\usepackage{verbatim}
+
+% ── Symbols ──────────────────────────────────────────────────────────────────
+\usepackage{pifont}
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
+\usepackage{bbm}
+
+% ── Lists and layout ─────────────────────────────────────────────────────────
+\usepackage{enumitem}
+\usepackage{balance}
+\usepackage{comment}
+
+% ── Colour ───────────────────────────────────────────────────────────────────
+\usepackage[dvipsnames]{xcolor}
+
+% ── Line numbers (review) ────────────────────────────────────────────────────
+\usepackage[switch]{lineno}
+
+% ── Citations ────────────────────────────────────────────────────────────────
+\usepackage{cite}
+
+% ── Math operators ───────────────────────────────────────────────────────────
+\DeclareMathOperator*{\argmin}{argmin}
+\DeclarePairedDelimiter{\nint}\lfloor\rceil
+\DeclarePairedDelimiter{\abs}\lvert\rvert
+
+\hyphenation{op-tical net-works semi-conduc-tor IEEE-Xplore}
+
+% =============================================================================
+\begin{document}
+% =============================================================================
+
+\title{Good Name comming soon....}
+
+\author{Sathiyamohan Nishankar,~\IEEEmembership{Student Member,~IEEE}
+  \IEEEcompsocitemizethanks{%
+    \IEEEcompsocthanksitem
+    Nishankar Sathiyamohan is with the Department of Computer Engineering, University of Peradeniya, Sri Lanka.
+    E-mail:e17230@eng.pdn.ac.lk}%
+  \thanks{Manuscript received \today.}}
+
+\markboth{IEEE Transactions on Pattern Recognition}%
+         {}
+
+\maketitle
+
+% =============================================================================
+\begin{abstract}
+to be written..........
+\end{abstract}
+% =============================================================================
+
+\begin{IEEEkeywords}
+
+\end{IEEEkeywords}
+
+% =============================================================================
+\section{Introduction}
+\label{sec:introduction}
+% =============================================================================
+
+Explainable AI (XAI) attribution methods are critical for understanding neural network decisions. However, almost every ``which attribution method is best'' conclusion was established on small CNNs and never re-validated on the Vision Transformer (ViT) foundation models that now dominate practice. This work delivers a controlled, statistically rigorous benchmark that measures attribution \textbf{fidelity} across three orthogonal axes: \textit{architecture} (CNN vs ViT), \textit{pretraining objective} (supervised, self-supervised, masked, contrastive), and \textit{model scale} (small to giant) \cite{brandt2023precise}.
+
+The main contributions of this paper are:
+\begin{itemize}
+    \item A comprehensive, controlled benchmark of XAI attribution methods across ViT foundation models.
+    \item Three empirical findings regarding method transferability, pretraining effects, and metric disagreements.
+    \item An open-source, Quantus-based evaluation harness for the community.
+\end{itemize}
+
+% =============================================================================
+\section{Related Work}
+\label{sec:related_work}
+% =============================================================================
+
+\subsection{Attribution Methods}
+Existing methods can be categorized into Gradient-based, CAM-based, Attention-native, and Perturbation-based techniques.
+
+\subsection{Evaluation of XAI}
+Prior works either focus on exact-ground-truth benchmarks (often limited to toy models) or proxy-faithfulness benchmarks (which scale to real models but lack absolute ground truth) \cite{hedstrom2023quantus, hesse2023funnybirds}.
+
+% =============================================================================
+\section{Methodology and Benchmark Design}
+\label{sec:methodology}
+% =============================================================================
+
+\subsection{Research Questions}
+This benchmark is designed to answer the following:
+\begin{enumerate}
+    \item \textbf{RQ1 -- Transfer:} Do attribution-method fidelity rankings established on CNNs hold on ViT foundation models?
+    \item \textbf{RQ2 -- Pretraining:} Does the pretraining objective change attribution faithfulness?
+    \item \textbf{RQ3 -- Scaling:} How does fidelity scale with model size?
+    \item \textbf{RQ4 -- Attention vs The Rest:} Do attention-native methods beat gradient/perturbation methods on ViTs?
+    \item \textbf{RQ5 -- Metric Agreement:} How much do faithfulness metrics agree with each other?
+\end{enumerate}
+
+\subsection{Models and Pretraining Objectives}
+Table \ref{tab:models} summarizes the evaluated foundation models.
+
+\begin{table}[ht]
+\centering
+\caption{Evaluated Vision Foundation Models and Pretraining Objectives}
+\label{tab:models}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Group} & \textbf{Pretraining} & \textbf{Variants (Scale)} \\ \midrule
+DINOv2 & Self-supervised & small, base, large, giant ($\pm$ reg) \\
+MAE & Masked image modeling & base, large, huge \\
+BEiT3 & Masked + multimodal & base, large \\
+CLIP-ViT & Contrastive & base, large, enormous \\
+Supervised ViT & Supervised & base, large \\
+CNN Baselines & Supervised & ResNet-50, ConvNeXt \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Attribution Methods Under Test}
+We evaluate Gradient methods (e.g., Integrated Gradients), CAM methods (e.g., Grad-CAM++), Attention-native methods (e.g., Attention Rollout), and Perturbation methods (e.g., LIME, Occlusion).
+
+\subsection{Evaluation Metrics}
+Following the Quantus framework, we measure faithfulness (e.g., Faithfulness Correlation), localization (e.g., Pointing Game, AUC), and robustness.
+
+% =============================================================================
+\section{Experimental Setup}
+\label{sec:experiments}
+% =============================================================================
+
+\subsection{Datasets}
+We primarily utilize ImageNet-S for real-data localization and FunnyBirds for exact causal ground truth.
+
+\begin{figure}[ht]
+    \centering
+    % \includegraphics[width=\linewidth]{figures/sample_metric_plot.png}
+    \caption{Placeholder for Benchmark Metrics Plot: A comparison of Faithfulness Correlation, Localization AUC, and Pointing Game across evaluated methods.}
+    \label{fig:metrics_plot}
+\end{figure}
+
+% =============================================================================
+\section{Results and Analysis}
+\label{sec:results}
+% =============================================================================
+
+\subsection{Ranking Stability (RQ1)}
+We analyze the Spearman/Kendall correlation of method rankings.
+
+\subsection{Effect of Pretraining and Scale (RQ2, RQ3)}
+Analysis of how self-supervised vs supervised pretraining affects XAI fidelity.
+
+\subsection{Metric Meta-Evaluation (RQ5)}
+A critical difference (CD) diagram and inter-metric correlation matrix showing disagreements between proxy metrics.
+
+% =============================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+% =============================================================================
+
+In this paper, we presented the first controlled, ground-truth-grounded attribution benchmark on ViT foundation models. Our findings highlight the necessity of re-evaluating CNN-era XAI methods on modern architectures.
+
+
+
+\bibliographystyle{IEEEtran}
+\bibliography{IEEEabrv,refs}
+
+\vfill
+
+\end{document}

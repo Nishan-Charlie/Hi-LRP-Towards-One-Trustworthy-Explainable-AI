@@ -101,6 +101,7 @@ class AttentionGradientWrapper:
         self.model_wrapper = model_wrapper
 
     def __call__(self, inputs: torch.Tensor, target: int, **kwargs) -> torch.Tensor:
+        inputs = inputs.clone().detach().requires_grad_(True)
         if not self.model_wrapper.is_vit:
             raise ValueError("Attention Gradient is only applicable to ViT models.")
             

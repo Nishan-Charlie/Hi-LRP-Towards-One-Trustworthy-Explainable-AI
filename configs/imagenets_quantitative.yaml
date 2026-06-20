@@ -1,0 +1,32 @@
+models:
+  - "vit_base_patch16_224"
+  - "deit_base_patch16_224"
+  - "resnet50"
+
+methods:
+  - "grad_cam"
+  - "integrated_gradients"
+  - "attention_rollout"
+  - "saliency"
+
+metrics:
+  - "faithfulness_correlation"
+  - "deletion_auc"
+  - "insertion_auc"
+  - "pointing_game"
+  - "gini"
+
+dataset: "imagenets"
+dataset_kwargs:
+  num_samples: 50
+  split: "validation"
+
+num_images: 50
+seeds: [0]
+
+device: "auto"
+input_size: 224
+output_dir: "results"
+run_name: "imagenets_quantitative"
+save_saliency: false
+limit_methods_to_supported: true

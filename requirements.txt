@@ -10,6 +10,7 @@ scikit-image
 Pillow
 PyYAML
 matplotlib
+datasets
 
 # Attribution methods
 captum>=0.7.0

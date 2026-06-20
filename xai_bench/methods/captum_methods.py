@@ -63,3 +63,34 @@ def get_vargrad(model: torch.nn.Module, **kwargs):
         attr = nt.attribute(inputs, nt_type='vargrad', nt_samples=20, target=target, abs=False)
         return attr.sum(dim=1).abs()
     return method
+
+
+@METHODS.register("lrp")
+def get_lrp(model: torch.nn.Module, **kwargs):
+    from captum.attr import LRP
+    def method(inputs, target):
+        wrapper = CaptumMethodWrapper(model, LRP)
+        return wrapper(inputs, target)
+    return method
+
+
+@METHODS.register("lime")
+def get_lime(model: torch.nn.Module, **kwargs):
+    from captum.attr import Lime
+    def method(inputs, target):
+        wrapper = CaptumMethodWrapper(model, Lime)
+        return wrapper(inputs, target, n_samples=50) # Keep samples low for speed
+    return method
+
+
+@METHODS.register("gradient_shap")
+def get_gradient_shap(model: torch.nn.Module, **kwargs):
+    from captum.attr import GradientShap
+    def method(inputs, target):
+        wrapper = CaptumMethodWrapper(model, GradientShap)
+        baselines = torch.zeros_like(inputs)
+        return wrapper(inputs, target, baselines=baselines, n_samples=20)
+    return method
+
+
+

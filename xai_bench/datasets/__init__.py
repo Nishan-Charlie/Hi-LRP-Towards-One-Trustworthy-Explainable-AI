@@ -5,3 +5,4 @@ where metadata contains ground-truth localization information (like bounding box
 """
 
 from . import imagenet_val
+from . import imagenet_s

@@ -35,6 +35,18 @@ class BenchmarkRunner:
         num_images = min(num_images, len(dataset))
         
         results = []
+        completed_evals = set()
+        results_file = os.path.join(self.run_dir, "results.json")
+        if os.path.exists(results_file):
+            print(f"Resuming from existing results.json in {self.run_dir}")
+            try:
+                with open(results_file, "r") as f:
+                    results = json.load(f)
+                for r in results:
+                    completed_evals.add((r["model"], r["method"], r["image_idx"]))
+                print(f"Loaded {len(results)} existing results.")
+            except Exception as e:
+                print(f"Failed to load existing results.json: {e}")
 
         for model_name in self.config.models:
             print(f"Loading model: {model_name}")
@@ -58,6 +70,8 @@ class BenchmarkRunner:
                     continue
 
                 for i in tqdm(range(num_images), desc=f"    Evaluating {method_name}"):
+                    if (model_name, method_name, i) in completed_evals:
+                        continue
                     img, target, metadata = dataset[i]
                     img = img.to(self.device)
                     
@@ -71,6 +85,10 @@ class BenchmarkRunner:
                         # Generate attribution
                         t0 = time.time()
                         attr = method(batch_img, target=target)
+                        if isinstance(attr, tuple):
+                            attr = tuple(a.detach() if isinstance(a, torch.Tensor) else a for a in attr)
+                        elif isinstance(attr, torch.Tensor):
+                            attr = attr.detach()
                         attr_time = time.time() - t0
                         
                         # Calculate metrics
@@ -101,10 +119,20 @@ class BenchmarkRunner:
                                 target=target,
                                 explain_func=explain_func
                             )
+                            import math
+                            try:
+                                val = float(val)
+                                if math.isnan(val):
+                                    val = None
+                            except:
+                                pass
                             row[metric_name] = val
                             
                         results.append(row)
                         
+                        # Save results iteratively to avoid data loss on crash
+                        with open(os.path.join(self.run_dir, "results.json"), "w") as f:
+                            json.dump(results, f, indent=2)                        
                         # Optionally save saliency map
                         if self.config.save_saliency:
                             save_path = os.path.join(self.run_dir, f"{model_name}_{method_name}_{i}.pt")
@@ -122,3 +150,16 @@ class BenchmarkRunner:
             json.dump(results, f, indent=2)
             
         print(f"Run complete. Results saved to {self.run_dir}")
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Run XAI benchmark")
+    parser.add_argument("--config", type=str, required=True, help="Path to config YAML")
+    args = parser.parse_args()
+    
+    config = RunConfig.from_yaml(args.config)
+    runner = BenchmarkRunner(config)
+    runner.run()
+
+if __name__ == "__main__":
+    main()

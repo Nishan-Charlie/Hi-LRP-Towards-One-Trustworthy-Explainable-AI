@@ -1,0 +1,17 @@
+models: ["vit_base_patch16_224"]
+methods: [
+  "grad_cam", "grad_cam_plus_plus", "integrated_gradients", "saliency",
+  "attention_rollout", "attention_gradient",
+  "lrp", "lime", "gradient_shap", "occlusion"
+]
+metrics: ["faithfulness_correlation", "auc", "pointing_game"]
+dataset: "imagenets"
+dataset_kwargs: {num_samples: 5, split: "validation"}
+num_images: 5
+seeds: [0]
+device: "auto"
+input_size: 224
+output_dir: "results"
+run_name: "test_phase1"
+save_saliency: false
+limit_methods_to_supported: true

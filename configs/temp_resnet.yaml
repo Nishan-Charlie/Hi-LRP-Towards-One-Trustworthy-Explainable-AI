@@ -1,0 +1,13 @@
+models: ["resnet50"]
+methods: ["grad_cam", "integrated_gradients", "saliency"]
+metrics: ["faithfulness_correlation", "auc", "pointing_game"]
+dataset: "imagenets"
+dataset_kwargs: {num_samples: 1000, split: "validation"}
+num_images: 1000
+seeds: [0]
+device: "auto"
+input_size: 224
+output_dir: "results"
+run_name: "quant_resnet"
+save_saliency: false
+limit_methods_to_supported: true
