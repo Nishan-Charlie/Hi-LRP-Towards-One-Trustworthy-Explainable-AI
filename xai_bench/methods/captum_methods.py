@@ -74,12 +74,26 @@ def get_lrp(model: torch.nn.Module, **kwargs):
     return method
 
 
+def _grid_feature_mask(inputs: torch.Tensor, cell: int = 16) -> torch.Tensor:
+    """Group pixels into a coarse grid of superpixels so perturbation methods
+    (LIME) optimise over ~(H/cell)x(W/cell) features instead of every pixel.
+    Returns an int mask shaped like the input (channels share group ids)."""
+    B, C, H, W = inputs.shape
+    gh, gw = H // cell, W // cell
+    ids = torch.arange(gh * gw, device=inputs.device).reshape(1, 1, gh, gw).float()
+    ids = torch.nn.functional.interpolate(ids, size=(H, W), mode="nearest").long()
+    return ids.expand(B, C, H, W).contiguous()
+
+
 @METHODS.register("lime")
 def get_lime(model: torch.nn.Module, **kwargs):
     from captum.attr import Lime
     def method(inputs, target):
         wrapper = CaptumMethodWrapper(model, Lime)
-        return wrapper(inputs, target, n_samples=50) # Keep samples low for speed
+        # Without a feature mask LIME treats all 50k pixels as features (minutes
+        # per image). A 16px grid -> 196 superpixels makes it tractable.
+        feature_mask = _grid_feature_mask(inputs, cell=16)
+        return wrapper(inputs, target, n_samples=100, feature_mask=feature_mask)
     return method
 
 

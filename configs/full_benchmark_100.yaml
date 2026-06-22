@@ -1,0 +1,49 @@
+# Full benchmark: all models x all attribution methods x 100 images x 5 metrics.
+# Attention-native methods auto-skip CNN models (limit_methods_to_supported).
+# Quantus metric sampling is reduced via metric_kwargs to keep the 100-image
+# sweep feasible on a single GPU while remaining statistically meaningful.
+
+models:
+  - "vit_base_patch16_224"   # ViT (supervised)
+  - "deit_base_patch16_224"  # ViT (distilled)
+  - "resnet50"               # CNN baseline
+  - "convnext_base"          # modern CNN
+
+methods:
+  - "saliency"
+  - "integrated_gradients"
+  - "smoothgrad"
+  - "input_x_gradient"
+  - "vargrad"
+  - "lrp"
+  - "grad_cam"
+  - "grad_cam_plus_plus"
+  - "attention_rollout"      # ViT only
+  - "attention_gradient"     # ViT only
+  - "lime"
+  - "gradient_shap"
+  - "occlusion"
+  - "rise"
+
+metrics:
+  - "faithfulness_correlation"   # Faithfulness  (Bhatt et al. 2020)
+  - "faithfulness_estimate"      # Faithfulness  (Alvarez-Melis & Jaakkola 2018)
+  - "pointing_game"              # Localization  (Zhang et al. 2018)
+  - "max_sensitivity"            # Robustness    (Yeh et al. 2019)
+  - "sparseness"                 # Complexity    (Chalasani et al. 2020)
+
+metric_kwargs:
+  faithfulness_correlation: {nr_runs: 20, subset_size: 224, return_aggregate: false}
+  faithfulness_estimate: {features_in_step: 448, return_aggregate: false}
+  max_sensitivity: {nr_samples: 3, lower_bound: 0.2}
+
+dataset: "imagenets_cached"
+dataset_kwargs: {cache_path: "data/ImageNetS/cache_validation_100.pt", num_samples: 100}
+num_images: 100
+seeds: [0]
+device: "auto"
+input_size: 224
+output_dir: "results"
+run_name: "full_benchmark_100"
+save_saliency: false
+limit_methods_to_supported: true

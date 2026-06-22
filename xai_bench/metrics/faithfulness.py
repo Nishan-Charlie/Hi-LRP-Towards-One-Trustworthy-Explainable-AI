@@ -16,10 +16,10 @@ def _run_quantus_metric(metric_class, attr, model, image, target, kwargs, metric
     a_batch = attr.unsqueeze(0).unsqueeze(0).cpu().numpy() # [B, 1, H, W]
     
     explain_func = kwargs.get('explain_func', None)
-    
+
     if metric_kwargs is None:
-        metric_kwargs = {}
-    
+        metric_kwargs = kwargs.get('metric_kwargs', {}) or {}
+
     metric = metric_class(disable_warnings=True, display_progressbar=False, **metric_kwargs)
     
     try:

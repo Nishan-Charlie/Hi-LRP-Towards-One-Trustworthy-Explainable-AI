@@ -17,10 +17,10 @@ def _run_quantus_sparse_metric(metric_class, attr, model, image, target, kwargs,
     model.eval()
     
     explain_func = kwargs.get('explain_func', None)
-    
+
     if metric_kwargs is None:
-        metric_kwargs = {}
-    
+        metric_kwargs = kwargs.get('metric_kwargs', {}) or {}
+
     metric = metric_class(disable_warnings=True, **metric_kwargs)
     try:
         if explain_func is not None:

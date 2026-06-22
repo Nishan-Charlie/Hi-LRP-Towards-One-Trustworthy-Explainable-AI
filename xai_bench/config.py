@@ -20,6 +20,9 @@ class RunConfig:
     models: List[str] = field(default_factory=list)
     methods: List[str] = field(default_factory=list)
     metrics: List[str] = field(default_factory=list)
+    # Per-metric keyword overrides, e.g. {"max_sensitivity": {"nr_samples": 5}}.
+    # Keeps Quantus metric cost feasible without editing the wrappers.
+    metric_kwargs: Dict[str, Dict[str, Any]] = field(default_factory=dict)
 
     # Dataset
     dataset: str = "demo"

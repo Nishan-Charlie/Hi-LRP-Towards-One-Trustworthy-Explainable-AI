@@ -1,0 +1,34 @@
+# Smoke RE-TEST: focuses on the methods that failed or were slow in round 1
+# (grad_cam max-sensitivity, lime speed) + validates faithfulness_estimate.
+models: ["vit_base_patch16_224"]
+
+methods:
+  - "saliency"
+  - "grad_cam"          # max_sensitivity was None here (grad detach fix)
+  - "integrated_gradients"
+  - "lime"              # was 310s/image (superpixel mask fix)
+  - "occlusion"
+  - "rise"
+
+metrics:
+  - "faithfulness_correlation"   # Faithfulness
+  - "faithfulness_estimate"      # Faithfulness (replaces broken irof)
+  - "pointing_game"              # Localization
+  - "max_sensitivity"            # Robustness
+  - "sparseness"                 # Complexity
+
+metric_kwargs:
+  faithfulness_correlation: {nr_runs: 10, subset_size: 224, return_aggregate: false}
+  faithfulness_estimate: {features_in_step: 448, return_aggregate: false}
+  max_sensitivity: {nr_samples: 3, lower_bound: 0.2}
+
+dataset: "imagenets_cached"
+dataset_kwargs: {cache_path: "data/ImageNetS/cache_validation_100.pt", num_samples: 2}
+num_images: 2
+seeds: [0]
+device: "auto"
+input_size: 224
+output_dir: "results"
+run_name: "smoke_5metrics_v2"
+save_saliency: false
+limit_methods_to_supported: true

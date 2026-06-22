@@ -61,6 +61,35 @@ class ImageNetSDataset(Dataset):
             
         return img, label, metadata
 
+class ImageNetSCached(Dataset):
+    """Reads pre-materialised ImageNet-S samples from a local .pt cache so a long
+    benchmark run never depends on (flaky) HuggingFace streaming and is fully
+    restart-safe. Build the cache with `cache_imagenets.py`."""
+    def __init__(self, cache_path: str, num_samples: Optional[int] = None):
+        if not os.path.exists(cache_path):
+            raise FileNotFoundError(
+                f"Cache not found: {cache_path}. Build it first with cache_imagenets.py"
+            )
+        self.records = torch.load(cache_path, weights_only=False)
+        if num_samples is not None:
+            self.records = self.records[:num_samples]
+        print(f"Loaded {len(self.records)} cached ImageNet-S samples from {cache_path}")
+
+    def __len__(self) -> int:
+        return len(self.records)
+
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int, Dict[str, Any]]:
+        rec = self.records[idx]
+        return rec["image"], rec["label"], rec["metadata"]
+
+
+@DATASETS.register("imagenets_cached")
+def get_imagenets_cached_dataset(**kwargs):
+    cache_path = kwargs.get("cache_path", "data/ImageNetS/cache_validation_100.pt")
+    num_samples = kwargs.get("num_samples", None)
+    return ImageNetSCached(cache_path=cache_path, num_samples=num_samples)
+
+
 @DATASETS.register("imagenets")
 def get_imagenets_dataset(**kwargs):
     num_samples = kwargs.get('num_samples', 50)

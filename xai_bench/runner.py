@@ -27,6 +27,30 @@ class BenchmarkRunner:
         with open(os.path.join(self.run_dir, "config.json"), "w") as f:
             json.dump(self.config.to_dict(), f, indent=2)
 
+    def _write_csv(self, results):
+        """Write cumulative results to CSV files. Called after every model so a
+        long run produces usable output incrementally and survives a crash."""
+        if not results:
+            return
+        try:
+            import pandas as pd
+        except ImportError:
+            print("pandas not available; skipping CSV export.")
+            return
+
+        df = pd.DataFrame(results)
+        # Full per-image results
+        df.to_csv(os.path.join(self.run_dir, "results.csv"), index=False)
+
+        # Aggregated summary: mean +/- std per (model, method) across images
+        metric_cols = [m for m in self.config.metrics if m in df.columns]
+        if metric_cols:
+            agg = df.groupby(["model", "method"])[metric_cols].agg(["mean", "std", "count"])
+            agg.columns = [f"{metric}_{stat}" for metric, stat in agg.columns]
+            agg = agg.reset_index()
+            agg.to_csv(os.path.join(self.run_dir, "summary.csv"), index=False)
+        print(f"  CSV updated: {len(df)} rows -> {os.path.join(self.run_dir, 'results.csv')}")
+
     def run(self):
         dataset_fn = DATASETS.get(self.config.dataset)
         dataset = dataset_fn(**self.config.dataset_kwargs)
@@ -57,7 +81,7 @@ class BenchmarkRunner:
 
             for method_name in self.config.methods:
                 print(f"  Setting up method: {method_name}")
-                if not model_wrapper.is_vit and method_name == "attention_rollout":
+                if not model_wrapper.is_vit and method_name in ("attention_rollout", "attention_gradient"):
                     if self.config.limit_methods_to_supported:
                         print(f"    Skipping {method_name} for CNN model {model_name}")
                         continue
@@ -106,18 +130,20 @@ class BenchmarkRunner:
                             device = next(model.parameters()).device
                             inputs_t = torch.tensor(inputs, device=device, dtype=torch.float32)
                             target_t = targets[0].item() if hasattr(targets, '__len__') else targets
-                            return method(inputs_t, target=target_t).cpu().numpy()
+                            # detach: CAM/attention methods return grad-requiring tensors
+                            return method(inputs_t, target=target_t).detach().cpu().numpy()
 
                         for metric_name in self.config.metrics:
                             metric_fn = METRICS.get(metric_name)
-                            # Pass extra kwargs for faithfulness
+                            # Pass extra kwargs for faithfulness + per-metric overrides
                             val = metric_fn(
-                                attr=attr[0], 
+                                attr=attr[0],
                                 metadata=metadata,
                                 model=model_wrapper.model,
                                 image=img,
                                 target=target,
-                                explain_func=explain_func
+                                explain_func=explain_func,
+                                metric_kwargs=self.config.metric_kwargs.get(metric_name, {}),
                             )
                             import math
                             try:
@@ -141,14 +167,20 @@ class BenchmarkRunner:
                     except Exception as e:
                         print(f"    Error on image {i} with {method_name}: {e}")
                         
+            # Update CSV after every model finishes (explicit requirement)
+            print(f"Finished model: {model_name}. Writing CSV...")
+            self._write_csv(results)
+
             # Free model to save VRAM
             del model_wrapper
-            torch.cuda.empty_cache()
-            
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
         # Save results
         with open(os.path.join(self.run_dir, "results.json"), "w") as f:
             json.dump(results, f, indent=2)
-            
+        self._write_csv(results)
+
         print(f"Run complete. Results saved to {self.run_dir}")
 
 def main():
