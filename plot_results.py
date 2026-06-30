@@ -10,29 +10,30 @@ plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.size'] = 12
 
 # Load data
-with open("results/quant_vit_all/results.json", "r") as f:
+with open("results/full_benchmark_100/results.json", "r") as f:
     data = json.load(f)
 df = pd.DataFrame(data)
 
 # Calculate mean and std for each method and metric
-metrics = ["faithfulness_correlation", "auc", "pointing_game"]
-metric_names = {"faithfulness_correlation": "Faithfulness (Corr)", "auc": "Localization AUC", "pointing_game": "Pointing Game"}
+metrics = ["faithfulness_correlation", "pointing_game", "max_sensitivity", "sparseness"]
+metric_names = {"faithfulness_correlation": "Faithfulness (Corr)", "pointing_game": "Pointing Game", "max_sensitivity": "Max Sensitivity", "sparseness": "Sparseness"}
 
 summary_mean = df.groupby("method")[metrics].mean()
 summary_std = df.groupby("method")[metrics].std()
 
-fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-
 # Use a colormap
 cmap = plt.get_cmap("Set2")
 
+output_dir = "results/full_benchmark_100/plots"
+os.makedirs(output_dir, exist_ok=True)
+
 for i, metric in enumerate(metrics):
-    ax = axes[i]
+    fig, ax = plt.subplots(figsize=(6, 5))
     means = summary_mean[metric]
     stds = summary_std[metric]
     
     x = np.arange(len(means))
-    colors = [cmap(i % cmap.N) for i in range(len(means))]
+    colors = [cmap(j % cmap.N) for j in range(len(means))]
     
     bars = ax.bar(x, means, yerr=stds, capsize=5, color=colors, edgecolor="black", alpha=0.8)
     
@@ -42,8 +43,7 @@ for i, metric in enumerate(metrics):
     labels = [m.replace('_', ' ').title() for m in means.index]
     ax.set_xticklabels(labels, rotation=45, ha='right')
     
-    if i == 0:
-        ax.set_ylabel("Score", fontweight="bold")
+    ax.set_ylabel("Score", fontweight="bold")
     
     # Add values on top of bars
     for bar in bars:
@@ -55,10 +55,10 @@ for i, metric in enumerate(metrics):
                 ha='center', va='bottom' if yval > 0 else 'top', 
                 fontsize=11)
 
-plt.tight_layout()
-
-# Save the plot
-output_path = "results/quant_vit_all/metrics_plot.png"
-os.makedirs(os.path.dirname(output_path), exist_ok=True)
-plt.savefig(output_path, dpi=300, bbox_inches='tight')
-print(f"Plot saved to {output_path}")
+    plt.tight_layout()
+    
+    # Save the plot
+    output_path = os.path.join(output_dir, f"{metric}.png")
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    print(f"Plot saved to {output_path}")
+    plt.close(fig)

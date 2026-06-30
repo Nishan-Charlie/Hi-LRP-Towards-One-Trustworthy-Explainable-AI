@@ -81,9 +81,10 @@ class BenchmarkRunner:
 
             for method_name in self.config.methods:
                 print(f"  Setting up method: {method_name}")
-                if not model_wrapper.is_vit and method_name in ("attention_rollout", "attention_gradient"):
+                supports_attention = getattr(model_wrapper, "supports_attention", model_wrapper.is_vit)
+                if not supports_attention and method_name in ("attention_rollout", "attention_gradient"):
                     if self.config.limit_methods_to_supported:
-                        print(f"    Skipping {method_name} for CNN model {model_name}")
+                        print(f"    Skipping {method_name}: {model_name} has no global CLS-token attention")
                         continue
                         
                 method_fn = METHODS.get(method_name)

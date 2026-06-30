@@ -33,7 +33,7 @@ def get_saliency(model: torch.nn.Module, **kwargs):
 def get_ig(model: torch.nn.Module, **kwargs):
     def method(inputs, target):
         wrapper = CaptumMethodWrapper(model, IntegratedGradients)
-        return wrapper(inputs, target, n_steps=50)
+        return wrapper(inputs, target, n_steps=50, internal_batch_size=4)
     return method
 
 
@@ -103,7 +103,7 @@ def get_gradient_shap(model: torch.nn.Module, **kwargs):
     def method(inputs, target):
         wrapper = CaptumMethodWrapper(model, GradientShap)
         baselines = torch.zeros_like(inputs)
-        return wrapper(inputs, target, baselines=baselines, n_samples=20)
+        return wrapper(inputs, target, baselines=baselines, n_samples=20, internal_batch_size=4)
     return method
 
 

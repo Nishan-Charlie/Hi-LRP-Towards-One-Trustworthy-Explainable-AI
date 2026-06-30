@@ -1,0 +1,67 @@
+# Efficient / hierarchical / hybrid Vision Transformer suite (10 backbones)
+# x attribution methods x 100 images x 5 metrics.
+#
+# These backbones use windowed (Swin), multi-axis (MaxViT), convolution-hybrid
+# (MobileViT) or linear (EfficientViT) attention -- there is NO global CLS-token
+# self-attention, so attention-native methods (rollout / attention-gradient) do
+# not apply and are intentionally omitted. Grad-CAM works through the generic
+# forward_features path (per-architecture NCHW/NHWC handling). Gradient and
+# perturbation methods are architecture-agnostic. Same metric grid and budgets
+# as full_benchmark_100 for direct comparability.
+
+models:
+  # Swin -- shifted-window attention
+  # - "swin_tiny_patch4_window7_224"    # Swin-T  (~28M)
+  # - "swin_small_patch4_window7_224"   # Swin-S  (~50M)
+  - "swin_base_patch4_window7_224" # Swin-B  (~88M)
+  # MaxViT -- multi-axis (block + grid) attention
+  # - "maxvit_tiny_tf_224"              # MaxViT-T (~31M)
+  - "maxvit_small_tf_224" # MaxViT-S (~69M)
+  # MobileViT -- convolution-transformer hybrid
+  # - "mobilevit_s"                     # MobileViT-S   (~5.6M)
+  # - "mobilevit_xs"                    # MobileViT-XS  (~2.3M)
+  - "mobilevitv2_100" # MobileViTv2-1.0 (~4.9M)
+  # EfficientViT -- multi-scale linear attention (MIT family)
+  - "efficientvit_b1" # EfficientViT-B1 (~9M)
+  - "efficientvit_b2" # EfficientViT-B2 (~24M)
+
+methods:
+  # Gradient-based (architecture-agnostic)
+  - "saliency"
+  - "integrated_gradients"
+  - "smoothgrad"
+  - "input_x_gradient"
+  - "vargrad"
+  - "gradient_shap"
+  # CAM-based (generic forward_features path, NCHW/NHWC aware)
+  - "grad_cam"
+  - "grad_cam_plus_plus"
+  # Perturbation-based (architecture-agnostic)
+  - "lime"
+  - "occlusion"
+  - "rise"
+
+metrics:
+  - "faithfulness_correlation" # Faithfulness  (Bhatt et al. 2020)
+  - "faithfulness_estimate" # Faithfulness  (Alvarez-Melis & Jaakkola 2018)
+  - "pointing_game" # Localization  (Zhang et al. 2018)
+  - "max_sensitivity" # Robustness    (Yeh et al. 2019)
+  - "sparseness" # Complexity    (Chalasani et al. 2020)
+
+metric_kwargs:
+  faithfulness_correlation:
+    { nr_runs: 20, subset_size: 224, return_aggregate: false }
+  faithfulness_estimate: { features_in_step: 448, return_aggregate: false }
+  max_sensitivity: { nr_samples: 3, lower_bound: 0.2 }
+
+dataset: "imagenets_cached"
+dataset_kwargs:
+  { cache_path: "data/ImageNetS/cache_validation_100.pt", num_samples: 50 }
+num_images: 50
+seeds: [0]
+device: "auto"
+input_size: 224
+output_dir: "results"
+run_name: "vit_suite_10"
+save_saliency: false
+limit_methods_to_supported: true
