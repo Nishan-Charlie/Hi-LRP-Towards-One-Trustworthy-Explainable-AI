@@ -33,6 +33,38 @@ def _run_quantus_metric(metric_class, attr, model, image, target, kwargs, metric
         print(f"Warning: {metric_class.__name__} failed: {e}")
         return float('nan')
 
+def apf_perturb_func(arr: np.ndarray, indices: tuple, **kwargs) -> np.ndarray:
+    """
+    Attention-Preserving Faithfulness (APF) perturbation function.
+    Instead of replacing with a static baseline, it replaces masked pixels with the
+    mean of the unmasked regions to preserve sequence statistics.
+    """
+    arr_perturbed = np.copy(arr)
+    
+    if indices is None:
+        return arr_perturbed
+    if isinstance(indices, (tuple, list)) and (len(indices) == 0 or len(indices[0]) == 0):
+        return arr_perturbed
+    if isinstance(indices, np.ndarray) and indices.size == 0:
+        return arr_perturbed
+
+    mask = np.zeros(arr.shape[1:], dtype=bool)
+    mask[indices] = True
+    
+    for c in range(arr.shape[0]):
+        unmasked = arr[c][~mask]
+        mean_val = float(np.mean(unmasked)) if unmasked.size > 0 else 0.0
+        arr_perturbed[c, mask] = mean_val
+        
+    return arr_perturbed
+
+@METRICS.register("apf")
+def attention_preserving_faithfulness(attr: torch.Tensor, model: torch.nn.Module = None, image: torch.Tensor = None, target: int = None, **kwargs) -> float:
+    # Use FaithfulnessCorrelation but with our APF perturbation function
+    kwargs.setdefault('metric_kwargs', {})
+    kwargs['metric_kwargs']['perturb_func'] = apf_perturb_func
+    return _run_quantus_metric(quantus.FaithfulnessCorrelation, attr, model, image, target, kwargs)
+
 @METRICS.register("faithfulness_correlation")
 def faithfulness_correlation(attr: torch.Tensor, model: torch.nn.Module = None, image: torch.Tensor = None, target: int = None, **kwargs) -> float:
     return _run_quantus_metric(quantus.FaithfulnessCorrelation, attr, model, image, target, kwargs)

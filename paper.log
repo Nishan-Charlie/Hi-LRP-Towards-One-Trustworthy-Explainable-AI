@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.24)  1 JUL 2026 00:00
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.24)  2 JUL 2026 07:47
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -615,39 +615,23 @@ LaTeX Font Info:    Trying to load font information for OT1+pcr on input line 49
 File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
 ) [4] [5]
 LaTeX Font Info:    Font shape `OT1/pcr/m/it' in size <9> not available
-(Font)              Font shape `OT1/pcr/m/sl' tried instead on input line 695.
+(Font)              Font shape `OT1/pcr/m/sl' tried instead on input line 778.
 
-Underfull \hbox (badness 1931) in paragraph at lines 726--736
+Underfull \hbox (badness 1931) in paragraph at lines 827--837
 []\OT1/ptm/m/n/10 Figure [][]4[][] shows rep-re-sen-ta-tive heatmaps for a sin-gle
  []
 
-
-Underfull \vbox (badness 1910) has occurred while \output is active []
-
-
-Underfull \vbox (badness 1910) has occurred while \output is active []
-
- [6]
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
-
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
-
-Underfull \hbox (badness 1521) in paragraph at lines 800--802
+[6]
+Underfull \hbox (badness 1521) in paragraph at lines 901--903
 \OT1/ptm/m/n/10 where $\OML/cmm/m/it/10 q; k; v$ \OT1/ptm/m/n/10 are the query, key, and value rep-re-sen-ta-
  []
 
 
-Underfull \hbox (badness 4229) in paragraph at lines 803--803
+Underfull \hbox (badness 4229) in paragraph at lines 904--904
  \OT1/ptm/m/it/10 C. Method-olog-i-cal Fix: Attention-Preserving Faith-ful-ness
  []
 
-[7]
-
-LaTeX Warning: Reference `tab:vitsuite' on page 8 undefined on input line 825.
-
-(./paper.bbl [8]
+[7] (./paper.bbl [8]
 Underfull \hbox (badness 2245) in paragraph at lines 87--88
 \OT1/ptm/m/n/8 ``Smooth-grad: Re-mov-ing noise by adding noise,'' \OT1/ptm/m/it/8 arXiv preprint
  []
@@ -657,31 +641,30 @@ Underfull \hbox (badness 1558) in paragraph at lines 126--127
 []\OT1/ptm/m/n/8 N. Kokhlikyan, V. Miglani, M. Mar-tin, E. Wang, B. Al-sal-lakh,
  []
 
-) [9] (./paper.aux)
+) [9] [10] [11
+
+
+] (./paper.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
-
-
-LaTeX Warning: There were undefined references.
-
 Package rerunfilecheck Info: File `paper.out' has not changed.
-(rerunfilecheck)             Checksum: 0AD248A4BC1A49529C2834BD7BCF84FC;5078.
+(rerunfilecheck)             Checksum: 60C643A93D5094C1C59DC9C13302DE20;5378.
  ) 
 Here is how much of TeX's memory you used:
- 15395 strings out of 467525
- 246950 string characters out of 5423209
- 698705 words of memory out of 5000000
- 43947 multiletter control sequences out of 15000+600000
+ 15403 strings out of 467525
+ 247086 string characters out of 5423209
+ 716929 words of memory out of 5000000
+ 43951 multiletter control sequences out of 15000+600000
  680501 words of font info for 150 fonts, out of 8000000 for 9000
  1146 hyphenation exceptions out of 8191
- 69i,14n,84p,1156b,603s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 69i,14n,84p,1156b,601s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/courier/ucrro8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/times/utmb8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/times/utmr8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/times/utmri8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/zapfding/uzdr.pfb>
-Output written on paper.pdf (9 pages, 288037 bytes).
+Output written on paper.pdf (11 pages, 292040 bytes).
 PDF statistics:
- 441 PDF objects out of 1000 (max. 8388607)
- 382 compressed objects within 4 object streams
- 95 named destinations out of 1000 (max. 500000)
- 217 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 458 PDF objects out of 1000 (max. 8388607)
+ 397 compressed objects within 4 object streams
+ 99 named destinations out of 1000 (max. 500000)
+ 225 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -104,36 +104,36 @@
 \newlabel{sec:results}{{V}{4}{Results}{section.5}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-A}}Quantitative Results}{4}{subsection.5.1}\protected@file@percent }
 \newlabel{sec:quant}{{\mbox  {V-A}}{4}{Quantitative Results}{subsection.5.1}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {V}{\ignorespaces Main quantitative results on 100 ImageNet-S validation images (mean over images, seed 0). FC/FE/PG: higher is better ($\uparrow $); MS: lower is better ($\downarrow $); SP: descriptive (\,=\,). Per metric, the best value \emph  {within each backbone} is in \textbf  {bold}. \textemdash {}: not applicable (attention-native methods on the CNN).}}{5}{table.caption.5}\protected@file@percent }
-\newlabel{tab:main}{{V}{5}{Main quantitative results on 100 ImageNet-S validation images (mean over images, seed 0). FC/FE/PG: higher is better (\up ); MS: lower is better (\down ); SP: descriptive (\,=\,). Per metric, the best value \emph {within each backbone} is in \best {bold}. \nd {}: not applicable (attention-native methods on the CNN)}{table.caption.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {V}{\ignorespaces Main quantitative results on the ImageNet-S evaluation set (mean over images). FC, FE, and PG use higher is better ($\uparrow $), MS uses lower is better ($\downarrow $), and SP is descriptive (\,=\,). Within each backbone the best value per metric is in \textbf  {bold}. Attention-native methods apply only to the isotropic ViT-B/16 and DeiT-B/16 backbones. The table continues in the following part with the efficient and hierarchical backbones.}}{5}{table.caption.5}\protected@file@percent }
+\newlabel{tab:main}{{V}{5}{Main quantitative results on the ImageNet-S evaluation set (mean over images). FC, FE, and PG use higher is better (\up ), MS uses lower is better (\down ), and SP is descriptive (\,=\,). Within each backbone the best value per metric is in \best {bold}. Attention-native methods apply only to the isotropic ViT-B/16 and DeiT-B/16 backbones. The table continues in the following part with the efficient and hierarchical backbones}{table.caption.5}{}}
 \def\@LN@column{1}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {V-A}1}Localization does not transfer cleanly}{5}{subsubsection.5.1.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {V-A}2}Robustness varies over three orders of magnitude}{5}{subsubsection.5.1.2}\protected@file@percent }
 \def\@LN@column{2}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {V-A}3}Proxy faithfulness correlation is almost uninformative}{5}{subsubsection.5.1.3}\protected@file@percent }
 \def\@LN@column{1}
-\@writefile{lot}{\contentsline {table}{\numberline {VI}{\ignorespaces Mean computational cost per explanation (ms), averaged over backbones and the 100-image set. Perturbation methods dominate the budget.}}{6}{table.caption.6}\protected@file@percent }
-\newlabel{tab:cost}{{VI}{6}{Mean computational cost per explanation (ms), averaged over backbones and the 100-image set. Perturbation methods dominate the budget}{table.caption.6}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Localization (pointing game) by method and backbone. CNN scores are saturated; ViT scores spread out, and several methods rank-flip relative to the CNN.}}{6}{figure.caption.7}\protected@file@percent }
-\newlabel{fig:pointing}{{1}{6}{Localization (pointing game) by method and backbone. CNN scores are saturated; ViT scores spread out, and several methods rank-flip relative to the CNN}{figure.caption.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Localization (pointing game) by method and backbone. CNN scores are saturated; ViT scores spread out, and several methods rank-flip relative to the CNN.}}{6}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:pointing}{{1}{6}{Localization (pointing game) by method and backbone. CNN scores are saturated; ViT scores spread out, and several methods rank-flip relative to the CNN}{figure.caption.8}{}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {V-A}4}Complexity trade-off}{6}{subsubsection.5.1.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {V-A}5}Cost and fidelity trade-off}{6}{subsubsection.5.1.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-B}}Efficient and Hierarchical Transformer Results}{6}{subsection.5.2}\protected@file@percent }
+\newlabel{sec:effvit}{{\mbox  {V-B}}{6}{Efficient and Hierarchical Transformer Results}{subsection.5.2}{}}
 \def\@LN@column{2}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Robustness (max-sensitivity, lower is better, log scale). Robustness spans three orders of magnitude and degrades most for CAM/gradient methods on ViTs.}}{6}{figure.caption.8}\protected@file@percent }
-\newlabel{fig:robust}{{2}{6}{Robustness (max-sensitivity, lower is better, log scale). Robustness spans three orders of magnitude and degrades most for CAM/gradient methods on ViTs}{figure.caption.8}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Cost--fidelity frontier on ViT-B/16. Grad-CAM dominates the cheap, well-localized corner; perturbation methods buy marginal fidelity at large compute cost.}}{6}{figure.caption.9}\protected@file@percent }
-\newlabel{fig:pareto}{{3}{6}{Cost--fidelity frontier on ViT-B/16. Grad-CAM dominates the cheap, well-localized corner; perturbation methods buy marginal fidelity at large compute cost}{figure.caption.9}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-B}}Qualitative Results}{6}{subsection.5.2}\protected@file@percent }
-\newlabel{sec:qual}{{\mbox  {V-B}}{6}{Qualitative Results}{subsection.5.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Robustness (max-sensitivity, lower is better, log scale). Robustness spans three orders of magnitude and degrades most for CAM/gradient methods on ViTs.}}{6}{figure.caption.9}\protected@file@percent }
+\newlabel{fig:robust}{{2}{6}{Robustness (max-sensitivity, lower is better, log scale). Robustness spans three orders of magnitude and degrades most for CAM/gradient methods on ViTs}{figure.caption.9}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Cost and fidelity frontier on ViT-B/16. Grad-CAM occupies the cheap and well-localized corner, whereas perturbation methods buy only marginal fidelity at a large compute cost.}}{6}{figure.caption.10}\protected@file@percent }
+\newlabel{fig:pareto}{{3}{6}{Cost and fidelity frontier on ViT-B/16. Grad-CAM occupies the cheap and well-localized corner, whereas perturbation methods buy only marginal fidelity at a large compute cost}{figure.caption.10}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-C}}Qualitative Results}{6}{subsection.5.3}\protected@file@percent }
+\newlabel{sec:qual}{{\mbox  {V-C}}{6}{Qualitative Results}{subsection.5.3}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {VI}Discussion}{6}{section.6}\protected@file@percent }
 \newlabel{sec:discussion}{{VI}{6}{Discussion}{section.6}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-A}}Key Findings}{6}{subsection.6.1}\protected@file@percent }
 \newlabel{sec:findings}{{\mbox  {VI-A}}{6}{Key Findings}{subsection.6.1}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Qualitative comparison of attribution maps across method families and backbones for a representative ImageNet-S image. Grad-CAM is compact and object-centered; attention rollout is diffuse; perturbation methods are blocky.}}{7}{figure.caption.10}\protected@file@percent }
-\newlabel{fig:qualitative}{{4}{7}{Qualitative comparison of attribution maps across method families and backbones for a representative ImageNet-S image. Grad-CAM is compact and object-centered; attention rollout is diffuse; perturbation methods are blocky}{figure.caption.10}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Qualitative comparison of attribution maps across method families and backbones for a representative ImageNet-S image. Grad-CAM is compact and object-centered; attention rollout is diffuse; perturbation methods are blocky.}}{7}{figure.caption.11}\protected@file@percent }
+\newlabel{fig:qualitative}{{4}{7}{Qualitative comparison of attribution maps across method families and backbones for a representative ImageNet-S image. Grad-CAM is compact and object-centered; attention rollout is diffuse; perturbation methods are blocky}{figure.caption.11}{}}
 \def\@LN@column{1}
-\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Auxiliary structural analysis: Louvain community detection on the thresholded combined heatmap reveals the connected structure of the attributed region.}}{7}{figure.caption.11}\protected@file@percent }
-\newlabel{fig:cluster}{{5}{7}{Auxiliary structural analysis: Louvain community detection on the thresholded combined heatmap reveals the connected structure of the attributed region}{figure.caption.11}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Auxiliary structural analysis: Louvain community detection on the thresholded combined heatmap reveals the connected structure of the attributed region.}}{7}{figure.caption.12}\protected@file@percent }
+\newlabel{fig:cluster}{{5}{7}{Auxiliary structural analysis: Louvain community detection on the thresholded combined heatmap reveals the connected structure of the attributed region}{figure.caption.12}{}}
 \def\@LN@column{2}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-B}}Theoretical Analysis: Why Grad-CAM++ Collapses on ViTs}{7}{subsection.6.2}\protected@file@percent }
 \newlabel{sec:gradcam_collapse}{{\mbox  {VI-B}}{7}{Theoretical Analysis: Why Grad-CAM++ Collapses on ViTs}{subsection.6.2}{}}
@@ -156,11 +156,6 @@
 \bibcite{ribeiro2016lime}{7}
 \bibcite{brandt2023precise}{8}
 \bibcite{raghu2021vit}{9}
-\bibcite{abnar2020rollout}{10}
-\bibcite{chefer2021transformer}{11}
-\bibcite{wu2024faithfulness}{12}
-\bibcite{hesse2023funnybirds}{13}
-\bibcite{arras2022clevrxai}{14}
 \def\@LN@column{1}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-D}}Architectural Bottlenecks: Shifted Windows vs. Global Attention}{8}{subsection.6.4}\protected@file@percent }
 \newlabel{sec:swin_bottlenecks}{{\mbox  {VI-D}}{8}{Architectural Bottlenecks: Shifted Windows vs. Global Attention}{subsection.6.4}{}}
@@ -169,7 +164,12 @@
 \def\@LN@column{2}
 \@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusion}{8}{section.7}\protected@file@percent }
 \newlabel{sec:conclusion}{{VII}{8}{Conclusion}{section.7}{}}
-\@writefile{toc}{\contentsline {section}{References}{8}{section*.12}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{References}{8}{section*.13}\protected@file@percent }
+\bibcite{abnar2020rollout}{10}
+\bibcite{chefer2021transformer}{11}
+\bibcite{wu2024faithfulness}{12}
+\bibcite{hesse2023funnybirds}{13}
+\bibcite{arras2022clevrxai}{14}
 \bibcite{hedstrom2023quantus}{15}
 \bibcite{rong2022road}{16}
 \bibcite{nauta2023anecdotal}{17}
@@ -198,4 +198,8 @@
 \bibcite{radford2021clip}{40}
 \def\@LN@column{1}
 \def\@LN@column{2}
-\gdef \@abspage@last{9}
+\@writefile{lot}{\contentsline {table}{\numberline {V}{\ignorespaces (Continued.) Main quantitative results for the efficient and hierarchical transformer backbones. Attention-native methods are not applicable to these architectures and are omitted. Blank cells correspond to method and backbone combinations that are still being computed.}}{10}{table.caption.6}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {VI}{\ignorespaces Mean computational cost per explanation (ms), averaged over backbones and the 100-image set. Perturbation methods dominate the budget.}}{11}{table.caption.7}\protected@file@percent }
+\newlabel{tab:cost}{{VI}{11}{Mean computational cost per explanation (ms), averaged over backbones and the 100-image set. Perturbation methods dominate the budget}{table.caption.7}{}}
+\def\@LN@column{2}
+\gdef \@abspage@last{11}

@@ -286,7 +286,7 @@ Standard ViT & ViT-B/16, DeiT-B/16 & Patch-token transformer reference \\
 Convolutional network & ResNet-50 & CNN reference for architecture comparison \\
 Hierarchical transformer & Swin variants & Window-based transformer representation \\
 Multi-axis transformer & MaxViT variants & Block and grid attention representation \\
-Hybrid transformer & MobileViT, MobileViT v2 variants & Convolution--transformer representation \\
+Hybrid transformer & MobileViT, MobileViT v2 variants & Convolution and transformer representation \\
 Efficient transformer & EfficientViT variants & Multi-scale efficient attention representation \\
 \bottomrule
 \end{tabular}
@@ -545,11 +545,12 @@ sparseness is left unhighlighted. Several patterns emerge.
 
 \begin{table*}[t]
   \centering
-  \caption{Main quantitative results on 100 ImageNet-S validation images
-  (mean over images, seed 0). FC/FE/PG: higher is better (\up); MS: lower is
-  better (\down); SP: descriptive (\,=\,). Per metric, the best value
-  \emph{within each backbone} is in \best{bold}. \nd{}: not applicable
-  (attention-native methods on the CNN).}
+  \caption{Main quantitative results on the ImageNet-S evaluation set (mean over
+  images). FC, FE, and PG use higher is better (\up), MS uses lower is better
+  (\down), and SP is descriptive (\,=\,). Within each backbone the best value per
+  metric is in \best{bold}. Attention-native methods apply only to the isotropic
+  ViT-B/16 and DeiT-B/16 backbones. The table continues in the following part with
+  the efficient and hierarchical backbones.}
   \label{tab:main}
   \setlength{\tabcolsep}{5pt}
   \renewcommand{\arraystretch}{1.12}
@@ -599,6 +600,88 @@ sparseness is left unhighlighted. Several patterns emerge.
       & Occlusion            & $-0.007$ & 0.160 & 0.95 & 0.938 & 0.509 \\
       & RISE                 & $-0.003$ & 0.170 & 0.82 & 0.327 & 0.034 \\
       & LIME                 & 0.013 & 0.015 & 0.94 & 1.312 & 0.760 \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\begin{table*}[t]
+  \ContinuedFloat
+  \centering
+  \caption{(Continued.) Main quantitative results for the efficient and
+  hierarchical transformer backbones. Attention-native methods are not applicable
+  to these architectures and are omitted. Blank cells correspond to method and
+  backbone combinations that are still being computed.}
+  \setlength{\tabcolsep}{5pt}
+  \renewcommand{\arraystretch}{1.12}
+  \footnotesize
+  \begin{tabular}{@{}ll rrrrr@{}}
+    \toprule
+    Backbone & Method & FC\,\up & FE\,\up & PG\,\up & MS\,\down & SP\,= \\
+    \\midrule
+    \\multirow{11}{*}{\\rotatebox{90}{Swin-B}}
+      & Saliency             & 0.001 & \\best{0.159} & 0.62 & 1.240 & 0.593 \\\\
+      & Integrated Gradients & \\best{0.046} & 0.079 & 0.66 & 1.114 & 0.654 \\\\
+      & Input$\\times$Gradient & 0.045 & 0.053 & 0.67 & 1.390 & 0.711 \\\\
+      & SmoothGrad           & 0.042 & 0.030 & 0.79 & 0.638 & 0.297 \\\\
+      & VarGrad              & 0.020 & $-0.040$ & 0.71 & 73.5 & 0.729 \\\\
+      & GradientSHAP         & $-0.012$ & 0.055 & 0.71 & 1.725 & 0.664 \\\\
+      & Grad-CAM             & 0.033 & 0.052 & \\best{1.00} & \\best{0.204} & 0.461 \\\\
+      & Grad-CAM++           & $-0.018$ & 0.051 & \\best{1.00} & 0.206 & 0.453 \\\\
+      & Occlusion            & $-0.024$ & $-0.045$ & 0.78 & 1.449 & 0.366 \\\\
+      & RISE                 & $-0.041$ & 0.027 & 0.68 & 0.273 & 0.022 \\\\
+      & LIME                 & $-0.001$ & $-0.248$ & 0.86 & 1.896 & 0.864 \\\\
+    \\midrule
+    \\multirow{11}{*}{\\rotatebox{90}{MaxViT-S}}
+      & Saliency             & $-0.008$ & \\best{0.307} & 0.58 & 1.123 & 0.515 \\\\
+      & Integrated Gradients & 0.041 & $-0.056$ & 0.62 & 1.211 & 0.608 \\\\
+      & Input$\\times$Gradient & 0.024 & 0.086 & 0.56 & 1.324 & 0.680 \\\\
+      & SmoothGrad           & $-0.072$ & $-0.328$ & 0.70 & 0.500 & 0.270 \\\\
+      & VarGrad              & 0.021 & $-0.208$ & 0.68 & 3.070 & 0.590 \\\\
+      & GradientSHAP         &  &  &  &  &  \\\\
+      & Grad-CAM             & $-0.054$ & $-0.093$ & \\best{1.00} & \\best{0.289} & 0.633 \\\\
+      & Grad-CAM++           & \\best{0.068} & 0.063 & 0.80 & 1.740 & 0.697 \\\\
+      & Occlusion            & 0.047 & 0.153 & 0.66 & 1.073 & 0.392 \\\\
+      & RISE                 & 0.002 & 0.065 & 0.70 & 0.325 & 0.024 \\\\
+      & LIME                 & 0.014 & $-0.162$ & 0.80 & 3.179 & 0.895 \\\\
+    \\midrule
+    \\multirow{11}{*}{\\rotatebox{90}{MobileViT\\,v2}}
+      & Saliency             & 0.011 & 0.117 & 0.60 & 0.537 & 0.555 \\\\
+      & Integrated Gradients & 0.025 & $-0.033$ & \\best{0.78} & 0.865 & 0.633 \\\\
+      & Input$\\times$Gradient & $-0.002$ & 0.103 & 0.66 & 0.602 & 0.688 \\\\
+      & SmoothGrad           & 0.046 & \\best{0.191} & 0.64 & 0.233 & 0.500 \\\\
+      & VarGrad              & 0.053 & 0.157 & 0.70 & 0.508 & 0.726 \\\\
+      & GradientSHAP         &  &  &  &  &  \\\\
+      & Grad-CAM             & $-0.068$ & $-0.002$ & 0.49 & 0.062 & 0.621 \\\\
+      & Grad-CAM++           & $-0.021$ & 0.010 & 0.52 & \\best{0.059} & 0.631 \\\\
+      & Occlusion            & 0.015 & $-0.019$ & 0.70 & 0.145 & 0.644 \\\\
+      & RISE                 & 0.030 & $-0.124$ & 0.50 & 0.084 & 0.022 \\\\
+      & LIME                 & \\best{0.054} & 0.022 & 0.62 & 1.379 & 0.918 \\\\
+    \\midrule
+    \\multirow{11}{*}{\\rotatebox{90}{EfficientViT-B1}}
+      & Saliency             & $-0.027$ & 0.114 & 0.86 & 0.787 & 0.445 \\\\
+      & Integrated Gradients & $-0.047$ & 0.076 & 0.90 & 0.913 & 0.612 \\\\
+      & Input$\\times$Gradient & $-0.018$ & 0.002 & 0.74 & 0.955 & 0.619 \\\\
+      & SmoothGrad           & $-0.030$ & 0.132 & 0.92 & 0.270 & 0.311 \\\\
+      & VarGrad              & $-0.041$ & 0.099 & 0.90 & 0.848 & 0.579 \\\\
+      & GradientSHAP         &  &  &  &  &  \\\\
+      & Grad-CAM             & 0.042 & 0.149 & 0.70 & 1.194 & 0.745 \\\\
+      & Grad-CAM++           & \\best{0.085} & 0.062 & 0.44 & 1.174 & 0.784 \\\\
+      & Occlusion            & 0.050 & 0.234 & \\best{0.96} & 0.709 & 0.481 \\\\
+      & RISE                 & $-0.013$ & \\best{0.243} & 0.92 & \\best{0.266} & 0.033 \\\\
+      & LIME                 & $-0.011$ & 0.097 & 0.80 & 1.266 & 0.775 \\\\
+    \\midrule
+    \\multirow{11}{*}{\\rotatebox{90}{EfficientViT-B2}}
+      & Saliency             & 0.018 & \\best{0.156} & 0.66 & 0.930 & 0.435 \\\\
+      & Integrated Gradients & 0.009 & 0.028 & 0.90 & 1.745 & 0.606 \\\\
+      & Input$\\times$Gradient & \\best{0.058} & 0.073 & 0.64 & 1.061 & 0.624 \\\\
+      & SmoothGrad           & 0.007 & 0.085 & \\best{0.92} & 0.299 & 0.335 \\\\
+      & VarGrad              & $-0.046$ & 0.031 & \\best{0.92} & 0.743 & 0.614 \\\\
+      & GradientSHAP         &  &  &  &  &  \\\\
+      & Grad-CAM             & 0.041 & 0.114 & 0.55 & 1.700 & 0.752 \\\\
+      & Grad-CAM++           & $-0.007$ & 0.047 & 0.56 & 1.677 & 0.788 \\\\
+      & Occlusion            & 0.006 & 0.057 & 0.88 & 0.953 & 0.479 \\\\
+      & RISE                 & $-0.015$ & 0.151 & 0.78 & \\best{0.220} & 0.030 \\\\
+      & LIME                 & $-0.038$ & 0.038 & 0.90 & 1.629 & 0.811 \\\\
     \bottomrule
   \end{tabular}
 \end{table*}
@@ -715,11 +798,29 @@ frontier (Figure~\ref{fig:pareto}) rather than a single dominant method.
   \figph{4.4cm}{Scatter plot: x-axis mean cost per explanation (log ms),
   y-axis a fidelity score (e.g.\ pointing game or FE) for ViT-B/16, one point
   per method, Pareto frontier outlined. Replace with generated figure.}
-  \caption{Cost--fidelity frontier on ViT-B/16. Grad-CAM dominates the cheap,
-  well-localized corner; perturbation methods buy marginal fidelity at large
-  compute cost.}
+  \caption{Cost and fidelity frontier on ViT-B/16. Grad-CAM occupies the cheap
+  and well-localized corner, whereas perturbation methods buy only marginal
+  fidelity at a large compute cost.}
   \label{fig:pareto}
 \end{figure}
+
+\subsection{Efficient and Hierarchical Transformer Results}
+\label{sec:effvit}
+The continued part of Table~\ref{tab:main} reports attribution quality for the
+efficient and hierarchical transformer suite, covering Swin-B, MaxViT-S,
+MobileViT v2, and the EfficientViT-B1 and B2 backbones. Because these architectures do not expose a
+global class token, the attention-native methods are not applicable and only the
+gradient, CAM, and perturbation families are evaluated. Empty cells correspond to
+combinations that are still being computed in the ongoing sweep. Several trends
+from the controlled study reappear. CAM methods remain the strongest localizers
+on the backbones with clear spatial feature maps, since Grad-CAM and Grad-CAM++
+reach a pointing-game score of $1.00$ on Swin-B and Grad-CAM reaches $1.00$ on
+MaxViT-S, yet the same methods weaken sharply on MobileViT v2 (a pointing-game
+score of $0.49$ for Grad-CAM) and on the EfficientViT backbones. Faithfulness
+Correlation again clusters close to zero on every backbone, and the strong
+instability of VarGrad recurs, with a Max-Sensitivity of $73.5$ on Swin-B.
+
+% Efficient-suite results are merged into Table~\ref{tab:main} (continued part).
 
 \subsection{Qualitative Results}
 \label{sec:qual}
@@ -796,9 +897,9 @@ Grad-CAM++ assumes that the pre-softmax class score $Y^c$ is a linear combinatio
 
 In a standard Vision Transformer, however, $Y^c$ is extracted from a dedicated classification token ($z_{\text{cls}}$), which attends to spatial tokens ($z_{\text{spatial}}$) via a non-linear softmax self-attention mechanism:
 \begin{equation}
-z_{\text{cls}} = \sum_i \text{softmax}\left(\frac{q_{\text{cls}} k_i^T}{\sqrt{d}}\right) v_i
+z_{\text{cls}} = \sum_i \operatorname{softmax}\left(\frac{q_{\text{cls}} k_i^\top}{\sqrt{d}}\right) v_i
 \end{equation}
-where $q, k, v$ are the query, key, and value representations. When Grad-CAM++ computes higher-order derivatives $\frac{\partial^2 Y^c}{(\partial A^k_{i,j})^2}$, these gradients must propagate backward through the softmax function. The second derivative of the softmax function $\sigma(x)$ involves terms of the form $\sigma(x)(1-\sigma(x))(1-2\sigma(x))$, which oscillate between positive and negative values and scale quadratically with the dimension. Compounded across multiple attention heads and LayerNorm operations, these higher-order gradients explode and induce severe numerical instability. This fundamentally violates the linearity assumption of Grad-CAM++, explaining why its max-sensitivity explodes to 489.9 on DeiT-B/16 and why its localization collapses to 0.49, despite scoring 0.97 on a CNN where the GAP assumption holds.
+where $q, k, v$ are the query, key, and value representations. When Grad-CAM++ computes higher-order derivatives $\frac{\partial^2 Y^c}{(\partial A^k_{i,j})^2}$, these gradients must propagate backward through the softmax function. The second derivative of the softmax function $\sigma(x)$ involves terms of the form $\sigma(x)(1-\sigma(x))(1-2\sigma(x))$, which oscillate between positive and negative values and scale quadratically with the dimension. Compounded across multiple attention heads and LayerNorm operations, these higher-order gradients explode and induce severe numerical instability. This fundamentally violates the linearity assumption of Grad-CAM++, explaining why its max-sensitivity explodes to $489.9$ on DeiT-B/16 and why its localization collapses to $0.49$ (as seen in Table~\ref{tab:main}), despite scoring $0.97$ on a CNN where the GAP assumption holds.
 
 \subsection{Methodological Fix: Attention-Preserving Faithfulness (APF)}
 \label{sec:apf}
@@ -812,51 +913,52 @@ where $\mathcal{M}$ is the set of masked token indices and $\mathcal{S}$ is the 
 
 \subsection{Architectural Bottlenecks: Shifted Windows vs. Global Attention}
 \label{sec:swin_bottlenecks}
-The collapse of gradient-based localization is further exacerbated by hierarchical architectures like Swin~\cite{liu2021swin}. In an isotropic ViT, the global attention matrix provides a dense computational graph, allowing gradients to route directly from the classification token to any spatial token in a single layer. 
+The collapse of gradient-based localization is further exacerbated by hierarchical architectures like the Swin Transformer~\cite{liu2021swin}. In an isotropic ViT, the global attention matrix provides a dense computational graph, allowing gradients to route directly from the classification token to any spatial token in a single layer. 
 
-In contrast, Swin replaces global attention with Local Window Attention (e.g., $7 \times 7$ token windows) and only mixes information globally during the shifted-window blocks. Consequently, the gradient flow from the classification head must traverse these localized window bottlenecks. Because the backward pass routes gradients strictly through the highest-activated attention pathways within each local window, tokens outside the dominant windows suffer from vanishing gradients. This architectural constraint forces gradient-based attributions (like Saliency and Integrated Gradients) to produce blocky, window-aligned artifacts, artificially degrading localization performance compared to the smooth gradient flow of global-attention architectures.
+In contrast, the Swin architecture replaces global attention with Local Window Attention (e.g., $7 \times 7$ token windows) and only mixes information globally during the shifted-window blocks. Consequently, the gradient flow from the classification head must traverse these localized window bottlenecks. Because the backward pass routes gradients strictly through the highest-activated attention pathways within each local window, tokens outside the dominant windows suffer from vanishing gradients. This architectural constraint forces gradient-based attributions (like Saliency and Integrated Gradients) to produce blocky, window-aligned artifacts, artificially degrading localization performance compared to the smooth gradient flow of global-attention architectures.
 
 \subsection{Limitations}
 \label{sec:limitations}
-This study is a first, deliberately controlled installment and has clear
-boundaries. \emph{Scope:} the controlled quantitative results cover the
-matched-base subset of three backbones, one dataset (100 ImageNet-S images), and
-a single seed; the architecture-diverse ten-ViT suite
-(Table~\ref{tab:vitsuite}) spanning windowed, multi-axis, hybrid, and
-linear-attention designs is wired into the released \texttt{vit\_suite\_10}
-configuration but its cells have not yet been populated.
-The ConvNeXt-B run did not complete and LRP failed on all images (raising a
-\texttt{relevance\_input} error under the \texttt{timm} backbones), so both are
-excluded and reported here for transparency. \emph{Statistics:} we report means and standard deviations but not
-yet multi-seed confidence intervals or Friedman/Nemenyi
-critical-difference tests~\cite{demsar2006statistical}, which the per-image
-outputs are designed to support. \emph{Budget:} faithfulness metrics use reduced
-\textsc{Quantus} sampling for tractability, and the near-zero faithfulness
-correlation may partly reflect this budget rather than the methods alone.
-\emph{Ground truth:} localization uses segmentation masks as a proxy; the planned
-exact/causal arm (FunnyBirds~\cite{hesse2023funnybirds}) and the
-pretraining-objective axis (DINOv2~\cite{oquab2024dinov2},
-MAE~\cite{he2022mae}, CLIP~\cite{radford2021clip}) and scaling axis from our
-broader design remain future work. These extensions are exactly the cells the released
-harness is built to fill.
+This study is a first and deliberately controlled installment, and it has clear
+boundaries along four dimensions. In terms of scope, the controlled quantitative
+results cover the matched-base subset of three backbones, a single dataset of
+100 ImageNet-S images, and one random seed, while the architecture-diverse
+transformer suite of Table~\ref{evaluated_models}, which spans windowed,
+multi-axis, hybrid, and linear-attention designs, is wired into the released
+\texttt{vit\_suite\_10} configuration but has not yet been fully populated. The
+ConvNeXt-B run did not complete, and Layer-wise Relevance Propagation failed on
+all images with a \texttt{relevance\_input} error under the \texttt{timm}
+backbones, so both are excluded and reported here for transparency. In terms of
+statistics, we report means and standard deviations but not yet multi-seed
+confidence intervals or the Friedman and Nemenyi critical-difference tests
+\cite{demsar2006statistical}, which the per-image outputs are designed to support.
+In terms of budget, the faithfulness metrics use reduced \textsc{Quantus}
+sampling for tractability, so the near-zero faithfulness correlation may partly
+reflect this budget rather than the methods alone. Finally, in terms of ground
+truth, localization uses segmentation masks as a proxy, and the planned causal
+arm based on FunnyBirds~\cite{hesse2023funnybirds}, together with the
+pretraining-objective axis covering DINOv2~\cite{oquab2024dinov2},
+MAE~\cite{he2022mae}, and CLIP~\cite{radford2021clip}, and the scaling axis from
+our broader design, remain future work. These extensions are precisely the cells
+that the released harness is built to fill.
 
 % =============================================================================
 \section{Conclusion}
 \label{sec:conclusion}
 We presented a controlled benchmark that re-examines whether attribution-method
-rankings established on CNNs hold on Vision Transformers. Holding data,
-resolution, and evaluation budget fixed across a supervised ViT-B/16, a distilled
-DeiT-B/16, and a ResNet-50, and scoring thirteen methods on five
-\textsc{Quantus} metrics, we find that rankings do \emph{not} transfer cleanly:
-localization orderings rearrange, robustness degrades sharply for CAM and
-gradient methods on transformers, proxy faithfulness correlation is
-near-uninformative, and no method dominates across axes. Practically, Grad-CAM
-remains the best default for ViT localization at low cost, attention rollout
-should be used only when stability outweighs precision, and single-metric
-evaluations should be avoided. We release the harness, configurations, and raw
-outputs so that additional backbones, pretraining objectives, scales, and
-ground-truth arms can be added, turning this controlled snapshot into a living
-cross-architecture leaderboard.
+rankings established on CNNs also hold on Vision Transformers. Holding the data,
+the resolution, and the evaluation budget fixed across a supervised ViT-B/16, a
+distilled DeiT-B/16, and a ResNet-50, and scoring thirteen methods on five
+\textsc{Quantus} metrics, we find that the rankings do not transfer cleanly. The
+localization ordering rearranges, robustness degrades sharply for the CAM and
+gradient methods on the transformers, proxy faithfulness correlation is almost
+uninformative, and no method dominates across all axes. In practical terms,
+Grad-CAM remains the best default for ViT localization at low cost, attention
+rollout should be used only when stability matters more than spatial precision,
+and single-metric evaluations should be avoided. We release the harness, the
+configurations, and the raw outputs so that additional backbones, pretraining
+objectives, scales, and ground-truth arms can be added, turning this controlled
+snapshot into a living cross-architecture leaderboard.
 
 % =============================================================================
 \bibliographystyle{IEEEtran}

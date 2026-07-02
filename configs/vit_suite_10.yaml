@@ -43,6 +43,7 @@ methods:
 
 metrics:
   - "faithfulness_correlation" # Faithfulness  (Bhatt et al. 2020)
+  - "apf" # Attention-Preserving Faithfulness
   - "faithfulness_estimate" # Faithfulness  (Alvarez-Melis & Jaakkola 2018)
   - "pointing_game" # Localization  (Zhang et al. 2018)
   - "max_sensitivity" # Robustness    (Yeh et al. 2019)
@@ -50,6 +51,8 @@ metrics:
 
 metric_kwargs:
   faithfulness_correlation:
+    { nr_runs: 20, subset_size: 224, return_aggregate: false }
+  apf:
     { nr_runs: 20, subset_size: 224, return_aggregate: false }
   faithfulness_estimate: { features_in_step: 448, return_aggregate: false }
   max_sensitivity: { nr_samples: 3, lower_bound: 0.2 }
