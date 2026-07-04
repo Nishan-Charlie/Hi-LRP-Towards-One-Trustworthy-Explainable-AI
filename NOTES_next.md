@@ -37,11 +37,16 @@ HiLRP ahead on 9/10, SNR 2.5-4.8. Next: SAM segments (needs checkpoint infra),
 more baselines (grad_cam, IG, Chefer), m=64-128, 50 imgs, then the 200-500 run.
 Caveat noted in code: the saliency baseline runs through the patched forwards.
 
-## 3. mobilevitv2 baseline re-run: finishing (~420/550 at last check)
+## 3. mobilevitv2 baseline re-run: DONE (results/rerun_mobilevitv2/summary.csv)
 
-Runner writes results.csv + summary.csv on completion. When done: fold the
-corrected rows into the money table, mark the old vit_suite mobilevitv2 rows
-contaminated (do NOT delete: they document the artifact), commit.
+Healthy-model rows: grad_cam 1.00, grad_cam++ 1.00, smoothgrad/occlusion 0.92,
+saliency/IG/vargrad/lime/rise 0.90, input_x_gradient 0.88. HiLRP 0.86.
+Old vit_suite mobilevitv2 rows stay in combined_summary.csv as artifact
+documentation; never quote them as findings.
+Small fix needed: gradient_shap errors in the mri-diffuser env
+("GradientShap.attribute() got an unexpected keyword argument
+'internal_batch_size'", captum version drift). Guard the kwarg in
+xai_bench/methods/captum_methods.py.
 
 ## 4. Conv-stack conservation diagnosis thread (before paper)
 
