@@ -114,9 +114,13 @@ def bn_merge_canonizer(model):
     pairs = []
     for name, mod in model.named_modules():
         conv = getattr(mod, "conv", None)
-        bn = getattr(mod, "bn", None)
-        if isinstance(conv, nn.Conv2d) and isinstance(bn, nn.BatchNorm2d):
-            pairs.append(([f"{name}.conv"], f"{name}.bn"))
+        if not isinstance(conv, nn.Conv2d):
+            continue
+        for bn_attr in ("bn", "norm"):      # timm ConvNormAct variants differ
+            bn = getattr(mod, bn_attr, None)
+            if isinstance(bn, nn.BatchNorm2d):
+                pairs.append(([f"{name}.conv"], f"{name}.{bn_attr}"))
+                break
     return NamedMergeBatchNorm(pairs)
 
 

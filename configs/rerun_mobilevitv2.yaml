@@ -1,0 +1,53 @@
+# Re-run of the CONTAMINATED mobilevitv2_100 baseline rows.
+#
+# The original vit_suite_10 run fed ImageNet-normalized inputs to a model that
+# expects raw [0,1] (timm pretrained_cfg mean 0, std 1): top-1 was ~0 and every
+# attribution row is invalid. InputStatsAdapter (xai_bench/models/timm_models.py)
+# now converts stats inside the model, so all method and metric call paths see
+# the correct input space. Protocol otherwise identical to vit_suite_10
+# (same methods, metrics, metric_kwargs, 50 cached images) so the rows are
+# drop-in replacements in the combined summary.
+
+models:
+  - "mobilevitv2_100"
+
+methods:
+  - "saliency"
+  - "integrated_gradients"
+  - "smoothgrad"
+  - "input_x_gradient"
+  - "vargrad"
+  - "gradient_shap"
+  - "grad_cam"
+  - "grad_cam_plus_plus"
+  - "lime"
+  - "occlusion"
+  - "rise"
+
+metrics:
+  - "faithfulness_correlation"
+  - "apf"
+  - "faithfulness_estimate"
+  - "pointing_game"
+  - "max_sensitivity"
+  - "sparseness"
+
+metric_kwargs:
+  faithfulness_correlation:
+    { nr_runs: 20, subset_size: 224, return_aggregate: false }
+  apf:
+    { nr_runs: 20, subset_size: 224, return_aggregate: false }
+  faithfulness_estimate: { features_in_step: 448, return_aggregate: false }
+  max_sensitivity: { nr_samples: 3, lower_bound: 0.2 }
+
+dataset: "imagenets_cached"
+dataset_kwargs:
+  { cache_path: "data/ImageNetS/cache_validation_100.pt", num_samples: 50 }
+num_images: 50
+seeds: [0]
+device: "auto"
+input_size: 224
+output_dir: "results"
+run_name: "rerun_mobilevitv2"
+save_saliency: false
+limit_methods_to_supported: true

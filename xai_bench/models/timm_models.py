@@ -5,6 +5,64 @@ from typing import Dict, Optional, Tuple
 
 from xai_bench.registry import MODELS
 
+# The datasets bake ImageNet normalization into every cached/streamed image.
+# Not every timm model expects those stats: the mobilevit family expects raw
+# [0,1] inputs (pretrained_cfg mean 0, std 1). Feeding it ImageNet-normalized
+# tensors is out-of-distribution (top-1 collapses to ~0), which contaminated the
+# original mobilevitv2 benchmark rows. The adapter below converts between the
+# two stats with one exact per-channel affine, INSIDE the model, so every call
+# path (forward, forward_features for CAM, captum, quantus perturbations) sees
+# the correct input space while the bench keeps one uniform image cache.
+_BENCH_MEAN = (0.485, 0.456, 0.406)
+_BENCH_STD = (0.229, 0.224, 0.225)
+
+
+class InputStatsAdapter(nn.Module):
+    """Wraps a timm model whose expected input stats differ from the bench's.
+
+    x_model = ((x * bench_std + bench_mean) - model_mean) / model_std
+            = x * (bench_std / model_std) + (bench_mean - model_mean) / model_std
+    """
+
+    def __init__(self, model: nn.Module, model_mean, model_std):
+        super().__init__()
+        self.model = model
+        bm = torch.tensor(_BENCH_MEAN).view(1, 3, 1, 1)
+        bs = torch.tensor(_BENCH_STD).view(1, 3, 1, 1)
+        mm = torch.tensor(model_mean).view(1, 3, 1, 1)
+        ms = torch.tensor(model_std).view(1, 3, 1, 1)
+        self.register_buffer("in_scale", bs / ms)
+        self.register_buffer("in_shift", (bm - mm) / ms)
+
+    def _adapt(self, x: torch.Tensor) -> torch.Tensor:
+        return x * self.in_scale + self.in_shift
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.model(self._adapt(x))
+
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
+        return self.model.forward_features(self._adapt(x))
+
+    def forward_head(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
+        return self.model.forward_head(x, **kwargs)
+
+    def __getattr__(self, name):
+        # delegate anything else (stages, blocks, layer4, pretrained_cfg, ...)
+        try:
+            return super().__getattr__(name)
+        except AttributeError:
+            return getattr(super().__getattr__("model"), name)
+
+
+def _needs_stats_adapter(model: nn.Module) -> Optional[Tuple[tuple, tuple]]:
+    cfg = getattr(model, "pretrained_cfg", None) or getattr(model, "default_cfg", {})
+    mean = tuple(cfg.get("mean", _BENCH_MEAN))
+    std = tuple(cfg.get("std", _BENCH_STD))
+    if all(abs(a - b) < 1e-6 for a, b in zip(mean, _BENCH_MEAN)) and \
+       all(abs(a - b) < 1e-6 for a, b in zip(std, _BENCH_STD)):
+        return None
+    return mean, std
+
 
 # CAM feature formats produced by a backbone's ``forward_features``:
 #   tokens_cls   : [B, N, C] flat token sequence with a leading class token (classic ViT/DeiT/BEiT)
@@ -92,6 +150,9 @@ def create_timm_model(
 ) -> ModelWrapper:
     name = timm_name or model_name
     model = timm.create_model(name, pretrained=pretrained, **kwargs)
+    stats = _needs_stats_adapter(model)
+    if stats is not None:
+        model = InputStatsAdapter(model, *stats)
     if cam_format is None or supports_attention is None:
         inferred_fmt, inferred_attn = _infer_arch(name)
         cam_format = cam_format or inferred_fmt
