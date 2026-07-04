@@ -67,15 +67,23 @@ reported "decay below stage3" on PVT/hybrids is at least partly a
 MEASUREMENT-CUT artifact, not a leak. Swin's capture points were all post-LN,
 which is why they read ~1.0.
 
-Next actions for this thread:
-- Re-measure all traces at a consistent cut (residual stream, pre-LN) across
-  architectures.
-- Consider a true elementwise identity-LN Function (out = x * (LN(x)/x).detach()
-  with stabilization) and compare traces + maps; LXT chose the grad-form for
-  LLMs where features are near-centered.
-- Only after that, revisit the mobilevit sign flip and efficientvit inflation
-  with the same per-module hook methodology (they may share this mechanism).
-- Paper framing: conservation statements must name the measurement cut.
+UPDATE (2026-07-05, later): the elementwise identity-LN swap (custom Function,
+grad_x = (y/x)*grad_y) did NOT flatten the trace: stage3 ~1.0, stage2 ~0.05,
+identical cliff. So the LN-cancellation hypothesis is falsified or incomplete;
+with elementwise pass-through the drop must sit INSIDE the stage3 blocks, which
+the probe did not capture. Status: cliff is robust to gamma (0/0.25/1.0), conv
+rules, and both LN rules. Two hypotheses proposed and killed by their own tests
+(conv absorption, LN mean-subtraction). Remaining candidates: residual-split
+semantics in grad x input, CP q-path zeroing interacting with Gamma hooks on
+q/kv Linears, GELU-identity on large activations.
+
+Next action (one focused session, not drive-by probes): instrument EVERY module
+boundary in pvt stage3 (norm1, attn, residual1, norm2, mlp, residual2, per
+block) under both LN rules, tabulate sum(R) per hop, find the exact first
+sum-breaking hop. Then re-check mobilevit sign flip and efficientvit inflation
+with the same methodology. Until resolved: paper conservation statements name
+the measurement cut (post-head-adjacent cut = tight: swin 1.00, mobilevit 1.05,
+pvt 1.01, all +-0.02); deeper cuts are under investigation.
 
 ## 5. Then (order per CLAUDE.md)
 
