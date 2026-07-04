@@ -58,6 +58,9 @@ def get_attributor(model_name):
     if model_name.startswith("efficientvit"):
         from xai_bench.methods.hilrp.efficientvit_lxt import attribute_efficientvit
         return attribute_efficientvit
+    if model_name.startswith("pvt"):
+        from xai_bench.methods.hilrp.pvt_lxt import attribute_pvt
+        return attribute_pvt
     raise ValueError(f"no HiLRP attributor for {model_name}")
 
 
