@@ -3,7 +3,6 @@ from typing import Callable, Optional, Tuple, Dict, Any
 
 import torch
 from torch.utils.data import Dataset
-from datasets import load_dataset
 from torchvision import transforms
 
 from xai_bench.registry import DATASETS
@@ -13,8 +12,11 @@ class ImageNetSDataset(Dataset):
     ImageNet-S dataset loaded via Hugging Face `datasets`.
     """
     def __init__(self, split: str = "validation", transform: Optional[Callable] = None, num_samples: Optional[int] = None):
+        # lazy import: HF `datasets` is only needed for streaming, not for the
+        # cached .pt loader (imagenets_cached) -- keeps envs without it working
+        from datasets import load_dataset
         self.transform = transform
-        
+
         print(f"Loading ImageNet-S {split} split...")
         ds = load_dataset("braceletboy/imagenet-s", split=split, streaming=True)
         
