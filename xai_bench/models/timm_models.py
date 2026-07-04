@@ -205,6 +205,8 @@ EFFICIENT_VIT_SUITE: Dict[str, Tuple[str, str]] = {
     # EfficientViT -- multi-scale linear attention (MIT family)
     "efficientvit_b1":               ("efficientvit_b1",               "nchw"),
     "efficientvit_b2":               ("efficientvit_b2",               "nchw"),
+    # PVT v2 -- spatial-reduction attention (HiLRP third-corollary leg)
+    "pvt_v2_b2":                     ("pvt_v2_b2",                     "nchw"),
 }
 
 

@@ -1,0 +1,49 @@
+# Baseline rows for the PVT v2 leg (third HiLRP corollary: spatial-reduction
+# attention). PVT was not in the original suites, so these rows complete the
+# Gate 3 comparison table. Protocol identical to vit_suite_10 / rerun_mobilevitv2
+# (same methods, metrics, metric_kwargs, 50 cached images). pvt_v2_b2 expects
+# ImageNet stats, so no input adaptation is involved.
+
+models:
+  - "pvt_v2_b2"
+
+methods:
+  - "saliency"
+  - "integrated_gradients"
+  - "smoothgrad"
+  - "input_x_gradient"
+  - "vargrad"
+  - "gradient_shap"
+  - "grad_cam"
+  - "grad_cam_plus_plus"
+  - "lime"
+  - "occlusion"
+  - "rise"
+
+metrics:
+  - "faithfulness_correlation"
+  - "apf"
+  - "faithfulness_estimate"
+  - "pointing_game"
+  - "max_sensitivity"
+  - "sparseness"
+
+metric_kwargs:
+  faithfulness_correlation:
+    { nr_runs: 20, subset_size: 224, return_aggregate: false }
+  apf:
+    { nr_runs: 20, subset_size: 224, return_aggregate: false }
+  faithfulness_estimate: { features_in_step: 448, return_aggregate: false }
+  max_sensitivity: { nr_samples: 3, lower_bound: 0.2 }
+
+dataset: "imagenets_cached"
+dataset_kwargs:
+  { cache_path: "data/ImageNetS/cache_validation_100.pt", num_samples: 50 }
+num_images: 50
+seeds: [0]
+device: "auto"
+input_size: 224
+output_dir: "results"
+run_name: "baselines_pvt"
+save_saliency: false
+limit_methods_to_supported: true
