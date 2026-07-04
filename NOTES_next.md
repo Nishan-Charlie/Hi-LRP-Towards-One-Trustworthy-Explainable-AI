@@ -48,14 +48,34 @@ Small fix needed: gradient_shap errors in the mri-diffuser env
 'internal_batch_size'", captum version drift). Guard the kwarg in
 xai_bench/methods/captum_methods.py.
 
-## 4. Conv-stack conservation diagnosis thread (before paper)
+## 4. Conservation-trace diagnosis: MECHANISM FOUND, interpretation corrected (2026-07-05)
 
-Bridge-compatible Gamma on deep conv stacks: sign flip at a signed-input
-boundary conv (mobilevit), 12x stage-3 inflation + pixel decay (efficientvit,
-last-capture trace +11 +/- 8). Localization unaffected. Options to explore:
-bridge-compatible alpha-beta as a custom Function, per-layer gamma schedules,
-or scoping pixel maps as visualization-only for conv-heavy hybrids. Token-level
-claims at transformer stages are unaffected (swin 1.00, mobilevit 1.05).
+Two kill-tests on pvt_v2_b2 falsified the earlier "conv transitions absorb"
+story:
+- Gamma sweep (conv_gamma 0 / 0.25 / 1.0): decay identical at gamma=0 (plain
+  epsilon). NOT a gamma effect.
+- Per-module hooks inside stage3: downsample conv barely moves relevance
+  (0.038 -> 0.083). The cliff is the STAGE-FINAL LayerNorm: block2-out +0.000
+  vs stage3-out +1.007, separated only by the patched LN.
+
+Mechanism candidate: LXT's layer_norm_forward keeps the mean-subtraction in the
+graph; in Gradient x Input the per-token sum through it is
+sum_c x_c g_c - gbar * sum_c x_c, which cancels when features have large
+channel means. The "identity rule" in grad-form is sum-preserving only for
+near-centered features. Consequence: pre-LN and post-LN cuts disagree, so the
+reported "decay below stage3" on PVT/hybrids is at least partly a
+MEASUREMENT-CUT artifact, not a leak. Swin's capture points were all post-LN,
+which is why they read ~1.0.
+
+Next actions for this thread:
+- Re-measure all traces at a consistent cut (residual stream, pre-LN) across
+  architectures.
+- Consider a true elementwise identity-LN Function (out = x * (LN(x)/x).detach()
+  with stabilization) and compare traces + maps; LXT chose the grad-form for
+  LLMs where features are near-centered.
+- Only after that, revisit the mobilevit sign flip and efficientvit inflation
+  with the same per-module hook methodology (they may share this mechanism).
+- Paper framing: conservation statements must name the measurement cut.
 
 ## 5. Then (order per CLAUDE.md)
 
