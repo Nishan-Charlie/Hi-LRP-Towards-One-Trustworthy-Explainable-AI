@@ -77,13 +77,35 @@ rules, and both LN rules. Two hypotheses proposed and killed by their own tests
 semantics in grad x input, CP q-path zeroing interacting with Gamma hooks on
 q/kv Linears, GELU-identity on large activations.
 
-Next action (one focused session, not drive-by probes): instrument EVERY module
-boundary in pvt stage3 (norm1, attn, residual1, norm2, mlp, residual2, per
-block) under both LN rules, tabulate sum(R) per hop, find the exact first
-sum-breaking hop. Then re-check mobilevit sign flip and efficientvit inflation
-with the same methodology. Until resolved: paper conservation statements name
-the measurement cut (post-head-adjacent cut = tight: swin 1.00, mobilevit 1.05,
-pvt 1.01, all +-0.02); deeper cuts are under investigation.
+SESSION 2 RESULTS (2026-07-05, four more falsifications, then an impossibility):
+- LN patch verified applied (not a silent no-op).
+- zero_params='bias' on Gamma explodes (1e22): biases in denominators are
+  load-bearing stabilizers; bias-share redistribution is not the fix.
+- Final-LN beta share of the logit is ~0 (w_t . beta + b_t = -0.005 vs logit 9).
+- THE KEY FINDING: an algebraic identity is violated inside the composite
+  context. For the patched LN, R_in + (beta . g) = R_out holds EXACTLY for any
+  g (verified in isolation to 4 decimals, any input scale). In the full model
+  at stage3.norm: R_out = +1.007, beta share = +0.008, but measured
+  R_in = 0.0000. Identities cannot fail; therefore retain_grad measurements
+  inside the zennit/LXT composite context are not measuring what they appear
+  to (suspects: LXT-patched BasicHook backward divides relevance by module
+  input; zennit forward-hook graph rewiring may orphan retained tensors).
+  Head path verified plain (mean pool + Gamma-hooked Linear), stage source
+  verified (LN input IS the last block output).
+
+Consequence: ALL deep-cut conservation traces measured so far (the pvt/hybrid
+"cliff", possibly the mobilevit sign flip and efficientvit inflation) are
+UNTRUSTED until the measurement mechanics are fixed. The head-adjacent cut
+(one plain-autograd hop from the hooked head) remains trustworthy: swin 1.00,
+mobilevit 1.05, pvt 1.01. Our own toy (relevance-direct, no zennit) remains
+exact at 6.5e-9.
+
+Next action (surgical, next session): minimal repro = stage3.norm +
+reshape/permute/contiguous + mean pool + Gamma-hooked Linear on real tensor
+values; measure the same three quantities; bisect ops (drop contiguous, drop
+hook, swap hook for plain linear) until the identity violation appears/vanishes.
+Then rebuild the trace tooling on whatever measurement primitive survives
+(likely: capture relevance INSIDE hook backwards, not via retain_grad).
 
 ## 5. Then (order per CLAUDE.md)
 
