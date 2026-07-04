@@ -90,8 +90,13 @@ segmentation masks -> enables pointing_game). Four findings, each a plank under 
 
 1. Attention-native methods collapse on ViTs (rollout pointing-game deit 0.48, vit 0.64,
    worse than plain gradients ~0.85, near-flat maps).
-2. Grad-CAM transfers to flat ViT/Swin (0.93-1.0) but breaks on hybrids
-   (mobilevitv2 0.49, efficientvit_b2 0.55). Exactly the gap the method targets.
+2. Grad-CAM breaks on LINEAR-ATTENTION models, not on conv-hybrids generally.
+   CORRECTED 2026-07-04: the original "mobilevitv2 0.49" was a preprocessing
+   artifact (the bench fed ImageNet-normalized inputs to a model expecting raw
+   [0,1]; top-1 was ~0). On the healthy model grad_cam scores 1.0 there. The
+   REAL gap is efficientvit_b2 (clean stats): grad_cam 0.551, below the 0.61
+   random-point prior, while HiLRP scores 0.960. The gap claim must name
+   linear attention (EfficientViT family), never mobilevitv2.
 3. Faithfulness-correlation is essentially noise (|mean| < 0.08, std ~0.22 across all
    cells). This is why the PRIMARY yardstick is Shapley-agreement, not deletion AUC.
 4. Captum LRP does not even run on the four timm transformers (unsupported Identity
@@ -109,9 +114,15 @@ Models: vit_base, deit_base, swin_t/s, pvt_v2, one hybrid (coatnet/mobilevit),
 plus dinov2/mae/clip for the SSL branch. NO fine-tuning anywhere. Medical/BraTS block
 DROPPED (no time to train). Localization ground truth comes from ImageNet-S / VOC masks.
 
-Win condition for Gate 3: pointing-game on the hierarchical/hybrid/linear-attention models
-where Grad-CAM collapsed (0.49-0.55), NOT deletion AUC (which our own bench proved cannot
-discriminate). Primary evidence overall: agreement with sampled Shapley (start early, slow).
+Win condition for Gate 3: pointing-game on the LINEAR-ATTENTION models where Grad-CAM
+genuinely collapses (efficientvit_b2: grad_cam 0.551 vs HiLRP 0.960, landed 2026-07-04),
+NOT deletion AUC (which our own bench proved cannot discriminate). On conv-hybrids with
+healthy preprocessing (mobilevitv2) grad_cam saturates the soft pointing metric (1.0) and
+HiLRP is competitive with gradient methods (0.86 vs 0.88-0.92): the mobilevit story is
+capability (stage maps, conservation), not pointing wins. Pointing on this eval set has a
+0.97 center-point prior; lead with energy pointing (HiLRP +0.168 over uniform baseline),
+mask localization, and the small-box subset (HiLRP 0.94). Primary evidence overall:
+agreement with sampled Shapley (pilot: HiLRP rho +0.58 vs saliency +0.20, n=10, m=32).
 
 ## Confirmed extension branches (after trunk)
 
