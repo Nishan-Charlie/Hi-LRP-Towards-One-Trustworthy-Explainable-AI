@@ -3,49 +3,86 @@
 Delete items as they close. This is "what were we about to do", not durable state
 (durable state lives in CLAUDE.md).
 
-## 0. Commit the checkpoint (do first)
+## 0. Bench contamination: re-run mobilevitv2 baseline rows (blocks the money table)
 
-Nothing is committed yet: hilrp package, swin_lxt, gate scripts, the lazy-import fix in
-imagenet_s.py. Commit as a green checkpoint before Gate 3. Include the lazy-import fix in
-the same commit (load-bearing for the harness to run).
+Found 2026-07-04: the bench hardcodes ImageNet normalization for ALL models
+(xai_bench/datasets/imagenet_s.py, imagenet_val.py, utils/image.py), but
+mobilevitv2_100 expects RAW [0,1] inputs (timm default_cfg mean 0, std 1). Its
+baseline rows in results/combined_summary.csv ran on out-of-distribution inputs
+(top-1 was ~0/20 on the cache). The grad_cam 0.49 "collapse" is contaminated.
+efficientvit_b2 expects ImageNet stats, so its 0.55 row is clean and carries the
+hybrid-gap finding meanwhile.
 
-## 1. Pixel-conservation-vs-logit diagnostic (30 min, gates class-sensitivity work)
+Fix: per-model preprocessing (see adapt_input in scripts/gate3_pointing.py),
+then re-run the vit_suite mobilevitv2 rows. Until then, any HiLRP-vs-baseline
+table on mobilevitv2 must carry the caveat.
 
-On the 20 gate2real images, plot pixel-conservation against logit magnitude.
-Question: idx 15-19 (labels 44/41) run consistently hotter (tokens 1.09-1.28, stage3 up
-to 1.43, pixels up to 0.98) than the label-915 images (tokens ~0.84-1.14). Two classes,
-two conservation profiles.
+## 1. Gate 3 status: pointing legs done, table pending fair baselines
 
-- If clean monotone relationship vs logit -> benign (gamma-rule x activation stats), note
-  and move on.
-- If 44/41 sit off the trend line -> gamma mass inflation is class-dependent, dig in
-  BEFORE building class-sensitivity results on top of it.
-  Sanity already confirmed: idx 2 (853->619 wrong) and idx 18 (44->41 wrong) have normal
-  conservation profiles, so conservation holds regardless of correctness. Good.
+Ran 2026-07-04 (scripts/gate3_pointing.py, 100 cached ImageNet-S imgs, gamma=0.25,
+CP, per-model input adaptation, results/hilrp_gate3/):
 
-## 2. Gate 3 (after diagnostic)
+- swin_base: HiLRP 0.950. Beats 9 of 11 baselines; grad_cam and grad_cam++ are
+  saturated at 1.0 on this model (parity leg, as expected).
+- mobilevitv2_100: HiLRP 0.860, conservation at last capture 1.051 +/- 0.012.
+  Nominally beats all 11 baseline rows including grad_cam 0.49, BUT those rows
+  are contaminated (item 0). Honest claim until re-run: HiLRP localizes well
+  (0.86) on the healthy model; the comparison table needs clean baselines.
 
-Runner pulls already-cached baselines from the bench, adds hilrp as a registered method.
-Report BOTH:
+Remaining for Gate 3 close:
+- efficientvit_b2 port (clean baseline row 0.55 is the real target now).
+  Sized: BN-only (canonizer for efficientvit_mit ConvNormAct pairs), Hardswish
+  identity patch, ReLU conserves natively in Gradient x Input, LiteMLA needs the
+  CP analog. Comparable effort to the mobilevit port.
+- maxvit leg optional after that.
+- deletion AUC alongside (reviewers expect it; never as the discriminating signal).
+- Register hilrp as a bench METHODS entry so the standard runner computes the
+  full quantus grid for it.
 
-- deletion AUC vs Chefer / Grad-CAM / rollout (reviewers expect it), AND
-- pointing-game on Swin-T AND the hybrid/linear-attention models (mobilevitv2,
-  efficientvit_b1/b2, maxvit) where Grad-CAM collapsed to 0.49-0.55.
-  The second set is the money comparison. Headline: "HiLRP holds pointing-game on exactly
-  the architectures where the CNN method breaks."
-  Framing: token-level conservation = guaranteed quantity; pixel-level = controlled
-  gamma-deviation. Do not report deletion AUC as the discriminating signal (our bench proved
-  it can't discriminate).
+## 2. MobileViTv2 port lessons (do not relearn)
 
-## 3. Shapley reference (start in background NOW, it's the slow one)
+- Zennit AlphaBeta / ZPlus are INCOMPATIBLE with the LXT zennit bridge
+  (monkey_patch_zennit assumes the mul/div Gradient x Input hook shape;
+  multi-term rules explode to 1e18). Bridge-compatible family: Gamma, Epsilon.
+- Pure Gamma on the conv stack inverts total sign at the stage3 -> stage4
+  boundary conv (signed inputs). BN merge and boundary-epsilon do not fix it.
+  With correct preprocessing the maps localize well anyway; pixel-sum residual
+  is small (-0.11 +/- 0.09). Documented, not hidden. Token-level conservation at
+  transformer stages is the guaranteed quantity (mobilevit last capture 1.05).
+- Detaching the whole context_vector in separable attention kills all
+  cross-token relevance routing (pointing drops below floor). Detach only
+  context_scores; divide_gradient(out, 2) on the value*context mul.
 
-Generate sampled permutation Shapley on 50 images first (pilot), then scale to 200-500.
-Over SAM segments. This is the PRIMARY evidence track (agreement with axiomatic method).
-Each image = hundreds-to-thousands of forward passes, so it dominates compute budget.
-Do not let it become the week-4 bottleneck.
+## 3. Conservation-vs-logit diagnostic: done, benign for current metrics
 
-## 4. Then (after Gate 3 passes)
+corr(logit, conservation) ~ -0.42 (mild monotone trend). Labels 44/41 sit
+~1.2 sigma above the tokens trend line (+0.119 vs -0.040, n=5): mild
+class-dependent gamma inflation, order 10%. Our class-sensitivity metrics are
+correlation-based (shift and scale invariant), so immune. Rule going forward:
+per-map normalization for any cross-class MAGNITUDE claim. Re-check on a larger
+sample when the Shapley eval set exists.
+
+## 4. Shapley reference (start in background NOW, it's the slow one)
+
+Unchanged: sampled permutation Shapley over SAM segments, pilot 50 imgs, then
+200-500. PRIMARY evidence track. Needs SAM checkpoint + segment cache
+infrastructure. Do not let it become the week-4 bottleneck.
+
+## 5. Then (after Gate 3 closes)
 
 - PVT spatial-reduction rule (third corollary).
 - Equivariance theorem + consistency metric.
 - SSL-scalar branch (dinov2/mae/clip).
+
+## Environment
+
+mri-diffuser conda env for everything:
+C:\Users\nisha\miniconda3\envs\mri-diffuser\python.exe
+(torch 2.6.0+cu124 CUDA, timm 1.0.27, lxt 2.1, zennit, quantus, captum, datasets).
+pip install lxt needs PYTHONUTF8=1 on Windows. Call the env python by path,
+conda run mangles output. IDE diagnostics point at the wrong interpreter
+(Python312 AppData): ignore its missing-module errors for timm/lxt/pytest.
+
+Checkpoint commit: 7b57eeb (hilrp package, ports, gate scripts, dataset fix,
+CLAUDE.md, this file). Gate results in results/ are gitignored, evidence lives
+on disk and in CLAUDE.md numbers.
