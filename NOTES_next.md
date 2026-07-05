@@ -29,6 +29,21 @@ subset pointing 0.94 (n=17). For the paper: lead with energy pointing +
 ImageNet-S mask localization + small-box subset. The bench cache stores only
 bboxes; masks need re-caching from ImageNet-S proper.
 
+## 2a. Shapley PAPER-GRADE RESULTS (2026-07-05, n=50, m=64, two-pass honest protocol)
+
+Two architectures, results/shapley_pilot/<model>/agreement.csv:
+
+- swin_tiny:       hilrp +0.528 | grad_cam +0.515 | smoothgrad +0.312 | saliency +0.214 | ig +0.192
+- efficientvit_b2: hilrp +0.417 | smoothgrad +0.321 | ig +0.281 | saliency +0.240 | grad_cam +0.077
+
+THE CROSS-YARDSTICK STORY CONFIRMED: grad_cam's Shapley agreement collapses
+0.515 -> 0.077 on linear attention, mirroring its pointing collapse (1.0 ->
+0.55); HiLRP is highest on both. Two independent yardsticks, one story.
+Protocol note: the two-pass fix mattered: contaminated (patched-gradient)
+baselines had DEPRESSED saliency/smoothgrad (0.08/0.12 -> honest 0.21/0.31);
+HiLRP unchanged (0.528). Remaining scale-up: pvt leg, mobilevit (needs
+adapt_input wiring), SAM segments, m=128, 200-500 imgs.
+
 ## 2. Shapley pilot: done, signal strong
 
 10 imgs, m=32 perms, SLIC regions, swin_tiny (results/shapley_pilot/):
