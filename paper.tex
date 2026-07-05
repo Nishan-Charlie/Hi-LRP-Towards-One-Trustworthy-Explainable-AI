@@ -370,6 +370,31 @@ Heuristic methods like Grad-CAM are structurally incapable of providing this lay
   \label{fig:qualitative}
 \end{figure}
 
+\subsection{RQ2: Pretraining Objective Determines Explanation Structure}
+\label{sec:rq2}
+A capability unique to a conservation-based, label-free attributor is to explain a model \emph{in its own representational objective} rather than through a bolted-on linear probe that would replace every model's objective with a shared classifier. We exploit this to ask whether the pretraining objective, and not the architecture, shapes what a model finds explanatory. We fix the architecture (ViT-B/16, identical $197{\times}768$ token layout) and vary only the pretraining across four public checkpoints, supervised (AugReg), DINO, MAE, and CLIP, attributing each under one common label-free scalar: the view-invariance similarity $s=\cos(g(x),g(x'))$ between a horizontal flip pair. Architecture, scalar, and inputs are identical, so any difference is caused by the objective alone.
+
+Table~\ref{tab:rq2} reports the results over 30 images. The four objectives produce structurally different explanations: the mean pairwise Spearman agreement of their maps is $0.33$, far from the $1.0$ that would hold if the objective were irrelevant, and MAE is the strongest outlier ($0.17$--$0.18$ agreement with the others). The differences are interpretable and consistent with known representational properties. DINO's view-invariance evidence localizes the object best (label-free Pointing $0.97$), recovering its documented emergent object-centricity without using any label; MAE routes almost no relevance to the input pixels ($0.07$ of the scalar), consistent with a reconstruction objective whose \textsc{cls} embedding is not organized for view invariance; and CLIP's evidence is the least object-localized ($0.37$). This is a mechanistic finding that the attribution method itself makes measurable.
+
+\begin{table}[h]
+  \centering
+  \caption{RQ2: attributing one common label-free scalar on a fixed ViT-B/16 across four pretraining objectives (30 images). Label-free Pointing uses no labels; pixel-relevance is the fraction of the scalar reaching the input.}
+  \label{tab:rq2}
+  \setlength{\tabcolsep}{5pt}
+  \begin{tabular}{l c c c}
+    \toprule
+    Objective & View sim. & Label-free Point & Pixel-rel. \\
+    \midrule
+    Supervised & 0.966 & 0.60 & 0.57 \\
+    DINO       & 0.993 & \textbf{0.97} & 0.50 \\
+    MAE        & 0.999 & 0.50 & \textbf{0.07} \\
+    CLIP       & 0.982 & 0.37 & 0.39 \\
+    \midrule
+    \multicolumn{4}{l}{\footnotesize Mean pairwise map agreement (Spearman): $\mathbf{0.33}$ (vs.\ $1.0$ if objective-invariant)} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
 \section{Limitations}
 \label{sec:limitations}
 We report the boundaries of the present method and study candidly.
