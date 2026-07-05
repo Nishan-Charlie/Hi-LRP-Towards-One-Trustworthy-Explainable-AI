@@ -2,8 +2,14 @@
 
 % ── Core math ────────────────────────────────────────────────────────────────
 \usepackage{amsmath,amsfonts,amssymb}
+\usepackage{amsthm}
 \usepackage{bm}
 \usepackage{mathtools}
+
+% ── Theorem environments ─────────────────────────────────────────────────────
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
 \usepackage{subcaption}
 % ── Algorithms ───────────────────────────────────────────────────────────────
 \usepackage{algorithm}
@@ -94,7 +100,7 @@ Faithfulness, Localization, Shapley Agreement.
 \label{sec:introduction}
 \IEEEPARstart{V}{ision} Transformers (ViTs)~\cite{dosovitskiy2021vit} and their hierarchical successors~\cite{liu2021swin,wang2021pvt,cai2023efficientvit} have displaced convolutional neural networks (CNNs) as the default backbones for image understanding. As these models enter high-stakes applications, attribution methods that assign an importance score to every input pixel for a given prediction remain the primary tool for post-hoc interpretation. 
 
-Historically, Layer-wise Relevance Propagation (LRP)~\cite{bach2015lrp} and its variants for transformers (e.g., AttnLRP~\cite{chefer2021transformer}) have provided mathematically rigorous, exact explanations by ensuring that the sum of relevance scores equals the model's output logit. However, a critical crisis has emerged: existing LRP rules are fundamentally incompatible with modern ViT architectures. While isotropic ViTs maintain a constant token sequence length, state-of-the-art models employ hierarchical designs featuring patch merging, spatial reduction, and linear cross-covariance attention. When standard LRP is applied to these operations, it either crashes or violates relevance conservation, effectively reducing it to a visual heuristic rather than an exact mathematical guarantee. Consequently, practitioners are forced to rely on gradient heuristics or CAM-based methods~\cite{selvaraju2017gradcam}, which produce coarse, unstructured blobs and collapse entirely on linear attention models.
+Historically, Layer-wise Relevance Propagation (LRP)~\cite{bach2015lrp} and its transformer variants, the attention-attribution of Chefer et~al.~\cite{chefer2021transformer} and the attention-aware AttnLRP~\cite{achtibat2024attnlrp}, have provided mathematically grounded explanations by ensuring that the sum of relevance scores approximates the model's output logit. However, a critical gap has emerged: existing LRP rules are defined only for isotropic transformers and are incompatible with modern hierarchical ViT architectures. While isotropic ViTs maintain a constant token sequence length, state-of-the-art models employ hierarchical designs featuring patch merging, spatial reduction, and linear cross-covariance attention. When standard LRP is applied to these operations, it either crashes or violates relevance conservation, effectively reducing it to a visual heuristic rather than an exact mathematical guarantee. Consequently, practitioners are forced to rely on gradient heuristics or CAM-based methods~\cite{selvaraju2017gradcam}, which produce coarse, unstructured blobs and collapse entirely on linear attention models.
 
 Furthermore, the evaluation of XAI methods on robust ViTs is methodologically flawed. Standard proxy faithfulness metrics, such as Deletion AUC or Faithfulness Correlation, often return near-zero values on modern ViTs because these models are exceptionally robust to spatial masking. This renders traditional fidelity benchmarking practically uninformative.
 
@@ -102,10 +108,11 @@ To address these fundamental limitations, we propose Hierarchical LRP (HiLRP), a
 
 The main contributions of this work are as follows:
 \begin{itemize}[leftmargin=1.2em]
-  \item \textbf{A Unified Exact LRP Framework:} We formulate HiLRP, introducing exact relevance propagation rules for patch merging and spatial reduction, allowing for the first time mathematically rigorous explanations of hierarchical and hybrid ViTs.
-  \item \textbf{State-of-the-Art Localization:} We demonstrate empirically that HiLRP significantly outperforms existing heuristics, achieving a Pointing Game score of 0.980 on PVT (vs. Grad-CAM's 0.840) and 0.960 on EfficientViT (vs. Grad-CAM's 0.551).
-  \item \textbf{Stage-Localized Relevance Capabilities:} HiLRP's exact conservation allows for the extraction of relevance maps at intermediate hierarchical stages, providing unprecedented visibility into how ViTs construct object representations across resolutions.
-  \item \textbf{A Critique of Faithfulness Metrics:} We expose the failure of standard Deletion AUC on robust ViTs and establish Segmentation-Shapley Agreement as a rigorous ground-truth evaluation metric for XAI fidelity.
+  \item \textbf{A unified framework with proofs.} We show that patch merging, shifted-window partitioning, and spatial reduction are instances of one coordinate-embedded linear map, derive a single conserving rule for all three, and prove it conservation-preserving and conditionally equivariant, verifying both at machine precision.
+  \item \textbf{Conservation validity where prior work fails.} HiLRP is the only method producing relevance that conserves to the prediction on hierarchical and hybrid ViTs; the naive extension of AttnLRP fails to conserve on every such model, and classic LRP does not run at all.
+  \item \textbf{Strongest, most consistent localization and Shapley agreement.} HiLRP leads the Pointing Game on hierarchical/hybrid backbones (0.980 on PVT, 0.960 on EfficientViT where Grad-CAM collapses to 0.551) and achieves the highest agreement with axiomatic Shapley values across architectures.
+  \item \textbf{Stage-localized and label-free attribution.} Conservation enables relevance maps at intermediate stages, and the same machinery attributes label-free self-supervised objectives on frozen encoders with no classifier head.
+  \item \textbf{A critique of faithfulness metrics.} On a controlled four-backbone study we show Faithfulness Correlation is uninformative on robust ViTs, and adopt conservation validity and Shapley agreement as discriminating criteria.
 \end{itemize}
 
 % =============================================================================
@@ -172,7 +179,16 @@ implementations, which is the gap that this paper addresses.
 
 Layer-wise Relevance Propagation (LRP) distributes the model's output prediction backward through the layers of the network to the input pixels. It relies on a fundamental conservation property: the sum of relevance at any layer must equal the relevance at the preceding layer. Standard LRP rules, including the $\epsilon$-rule and the $z^+$-rule, are well-defined for linear layers and convolutions.
 
-However, modern hierarchical Vision Transformers introduce two operations that lack exact relevance propagation rules: Patch Merging and Spatial Reduction. Furthermore, standard AttnLRP violates conservation when propagating through softmax attention. In this section, we formulate HiLRP to address these challenges.
+However, modern hierarchical Vision Transformers introduce operations that lack relevance propagation rules: patch merging, shifted-window partitioning, and spatial reduction. In this section, we formulate HiLRP to address these challenges. We first show that all three resolution-reduction mechanisms are instances of a single algebraic form, so one rule and one proof cover them; we then give the concrete rules, the conservation and equivariance guarantees, the label-free extension, and the implementation.
+
+\subsection{A Unifying View of Resolution Reduction}
+\label{sec:unifying}
+The apparent diversity of downsampling operators across ViT variants collapses to one form. Let $\mathcal{N}$ denote the neighborhood of tokens consumed by a resolution-reduction step. Patch merging concatenates a $2{\times}2$ neighborhood and projects it; a strided patch-embedding convolution is a linear map on a pixel neighborhood; and the spatial reduction in PVT and EfficientViT is a strided convolution on the token grid. Each can be written as
+\begin{equation}
+\label{eq:unifying}
+T(\mathcal{N}) = W\,\phi\!\left(\mathrm{concat}(x^{(1)},\dots,x^{(n)})\right),
+\end{equation}
+where $\mathrm{concat}$ is a coordinate embedding (one input coordinate per output coordinate) and $\phi$ is a conservation-preserving normalization (identity or LayerNorm). This is the object HiLRP propagates through: a single rule for Eq.~\eqref{eq:unifying} yields patch merging, strided patch embedding, and spatial reduction as corollaries, which is what makes the framework architecture-agnostic rather than a collection of per-model patches. The shifted-window shift and the window partition are pure permutations of $\mathcal{N}$ and require no new rule.
 
 \subsection{Conservation-Preserving Attention (CP-LRP)}
 Existing methods like AttnLRP attempt to propagate relevance through the attention matrix by employing a Taylor expansion on the softmax function. While this can yield sharper visual maps on simple isotropic ViTs, it fundamentally violates the conservation property, acting as a heuristic contrast enhancer. As demonstrated in our ablations, AttnLRP's conservation score drops to 0.29.
@@ -197,8 +213,29 @@ R_{x_{i,j}^c} = \sum_{m,n} \frac{x_{i,j}^c (W_{dw}^{m,n})^2}{\sum_{u,v} x_{i+u,j
 \end{equation}
 By distributing relevance based on the squared weights, HiLRP accurately traces the most active sub-regions within the overlapping convolutional windows, overcoming the catastrophic failure of Grad-CAM on these layers.
 
-\subsection{Stage-Localized Relevance}
-Because HiLRP strictly conserves relevance, it is possible to halt the backward pass at any intermediate hierarchical stage $S$ of the network to visualize the model's logic at a specific resolution (e.g., $7 \times 7$, $14 \times 14$, or $56 \times 56$). This provides a powerful new XAI capability: tracing how the network constructs object boundaries progressively from low-level edges to high-level semantic blobs.
+\subsection{Theoretical Guarantees}
+\label{sec:guarantees}
+Two properties follow from the propagation rules and can be verified independently of any dataset. Both rest on a single algebraic fact.
+
+\begin{lemma}[Conservation by sum exchange]
+\label{lem:conservation}
+For a linear map $y_i=\sum_j w_{ij}v_j$ with contributions $z_{ij}=w_{ij}v_j$ and $z_i=\sum_j z_{ij}$, the rule $R(v_j)=\sum_i (z_{ij}/z_i)\,R(y_i)$ satisfies $\sum_j R(v_j)=\sum_i R(y_i)$. When exactly one $z_{ij}$ is nonzero per output (permutations, coordinate embeddings), the rule is exact with no leakage.
+\end{lemma}
+The proof is one exchange of summation order. Applied to Eq.~\eqref{eq:unifying}, the projection $W$ conserves by the sum-exchange, the normalization $\phi$ by an identity rule, and the coordinate embedding exactly, so every resolution-reduction step conserves relevance up to the bias and stabilizer terms. In a double-precision reference implementation the patch-merging rule conserves to $3\times10^{-16}$ and the shifted-window mask leaks $\sim10^{-43}$ of relevance, i.e.\ structurally zero.
+
+\begin{theorem}[Conditional equivariance]
+\label{thm:equivariance}
+Let $\pi$ be a permutation of the input grid and $\Pi$ its induced permutations on each intermediate token grid. If the forward pass commutes with $\pi$, then HiLRP relevance commutes with $\pi$: $R(\pi x)=\pi R(x)$.
+\end{theorem}
+Because no propagation rule references an absolute position, the backward pass inherits any symmetry of the forward pass; we verify $R(\pi x)=\pi R(x)$ to $<10^{-8}$ on an idealized cyclic model where the premise holds exactly. The premise is the subtle part: real Swin does not satisfy it for nontrivial translations, since its window masks are anchored to the canvas and its odd window grid does not align with its even merging grid. Where the premise holds only approximately, the theorem degrades gracefully: on pretrained Swin-T under window-multiple shifts the forward drifts by $7\times10^{-2}$ and HiLRP maps stay consistent at Spearman $\rho{\approx}0.90$, versus $0.41$--$0.61$ for a gradient map, degrading exactly where the forward drift grows. The attribution tracks the model, not the image.
+
+\subsection{Label-Free Attribution of Self-Supervised Objectives}
+\label{sec:ssl}
+Because HiLRP seeds the backward pass from a scalar and conserves relevance to it, the scalar need not be a class logit. For a frozen self-supervised encoder with no classifier head, we attribute a differentiable objective directly, for example the view-invariance similarity $s=\cos\!\big(g(x),\,g(x')\big)$ between the \textsc{cls} embeddings of two views $x,x'$. This explains \emph{what evidence supports the representation's own invariance}, with no labels anywhere. The cosine normalization requires its own identity rule: it is scale-invariant, so an in-graph norm would drive the relevance sum to zero, and we detach its denominator, mirroring the LayerNorm treatment. This turns HiLRP into a probe of the pretraining objective itself.
+
+\subsection{Implementation}
+\label{sec:implementation}
+HiLRP is realized on top of a Gradient$\times$Input relevance backend~\cite{achtibat2024attnlrp}, in which residual additions, window shifts, partitions, and the coordinate embedding of Eq.~\eqref{eq:unifying} route relevance exactly through native autograd, so only four operation types require explicit rules: LayerNorm and \textsc{gelu} (identity), attention (CP-LRP), and linear/convolutional layers ($\gamma$-rule). Two implementation details are load-bearing. First, timm defines a \textsc{LayerNorm} subclass and a single-group \textsc{GroupNorm} whose class-level \texttt{forward} silently bypasses a parent-class rule patch; an unpatched scale-invariant normalization forces the per-token relevance sum to exactly zero, which we found silently corrupts every deep-stage attribution. We patch by concrete class and add an audit that flags any normalization whose executing rule is not an LRP rule. Second, the attention rule is architecture-dependent: on isotropic \textsc{cls}-pooled ViTs the attention path carries localization and the AttnLRP softmax rule is preferable, whereas on windowed and hierarchical models the conservation-preserving CP rule wins on both localization and conservation; HiLRP selects per family. At the pixel level, the $\gamma$-rule on convolutions introduces a controlled, monotone deviation from exact conservation that we quantify rather than claim away.
 
 \section{Experimental Setup}
 \label{sec:setup}
@@ -216,7 +253,37 @@ To resolve this, we adopt two primary evaluation metrics:
 \section{Results}
 \label{sec:results}
 
-\subsection{Localization Dominance on Hierarchical ViTs}
+\subsection{The Baseline Landscape: Why a New Method Is Needed}
+\label{sec:baseline-landscape}
+We first establish, on a controlled four-backbone study of matched scale (two isotropic ViTs, ViT-B and DeiT-B; two CNNs, ResNet-50 and ConvNeXt-B), that the existing toolbox is already strained before any hierarchical architecture is introduced. All methods are run under a single \textsc{Quantus} protocol on 100 ImageNet-S images. Table~\ref{tab:baseline} reports Pointing Game and Faithfulness Correlation.
+
+Three facts motivate HiLRP. First, \emph{attention-native attribution collapses on ViTs}: Attention Rollout scores $0.64$ on ViT-B and only $0.48$ on DeiT-B, below every gradient baseline, and produces diffuse maps (sparseness $0.11$--$0.13$); it has no CNN counterpart at all. Second, \emph{Grad-CAM is strong here} (ViT $0.93$, DeiT $0.90$, ResNet $0.98$, ConvNeXt $1.00$), which is precisely why it is the default; Sec.~\ref{sec:localization} shows this strength does not survive the move to linear-attention hybrids. Third, \emph{Faithfulness Correlation is uninformative}: across all $4{\times}6$ cells in Table~\ref{tab:baseline} its magnitude never exceeds $0.05$, i.e.\ pure noise, for every method including the strong localizers. Finally, classic LRP~\cite{bach2015lrp} does not run on any of the timm transformer backbones (unsupported layer types), producing no rows. The existing landscape thus offers no method that is simultaneously conservation-based, architecture-general, and measurable by a discriminating metric, which is the gap HiLRP fills.
+
+\begin{table}[h]
+  \centering
+  \caption{Cross-architecture baseline study (100 images). Pointing Game (higher better) and Faithfulness Correlation (FC). Attention methods have no CNN counterpart (\nd). FC never exceeds $0.05$ in magnitude for any method, confirming it cannot discriminate on robust backbones.}
+  \label{tab:baseline}
+  \setlength{\tabcolsep}{3.5pt}
+  \footnotesize
+  \begin{tabular}{l cccc c}
+    \toprule
+    & \multicolumn{4}{c}{Pointing Game $\uparrow$} & FC \\
+    \cmidrule(lr){2-5}
+    Method & ViT-B & DeiT-B & RN-50 & ConvX & (all) \\
+    \midrule
+    Grad-CAM            & 0.927 & 0.900 & 0.980 & 1.000 & $\pm{<}.02$ \\
+    Attention Rollout   & 0.640 & 0.480 & \nd   & \nd   & $\pm{<}.03$ \\
+    Chefer (attn-grad)  & 0.740 & 0.860 & \nd   & \nd   & $\pm{<}.01$ \\
+    Integrated Grads    & 0.640 & 0.580 & 0.920 & 0.760 & $\pm{<}.03$ \\
+    Saliency            & 0.650 & 0.540 & 0.820 & 0.730 & $\pm{<}.04$ \\
+    Occlusion           & 0.760 & 0.700 & 0.950 & 0.920 & $\pm{<}.05$ \\
+    Classic LRP         & \multicolumn{4}{c}{does not run on timm transformers} & \nd \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Localization on Hierarchical and Hybrid ViTs}
+\label{sec:localization}
 Table~\ref{tab:localization} presents the Pointing Game scores for HiLRP compared against baseline attribution methods across three diverse architectures: Swin-Base (Shifted-Window), PVT-v2-b2 (Spatial Reduction), and EfficientViT-b2 (Linear Cross-Covariance).
 
 HiLRP attains the highest cross-architecture mean Pointing score ($0.9375$) with the lowest variance, and is the only method in the top tier on every architecture. The story, however, is not a Pointing race: this metric is soft on ImageNet-S (center-point prior $0.97$), so it saturates for CAM methods on architectures whose feature maps happen to peak at the object center (Swin, MobileViT), while gradient methods swing by $0.30$ across architectures. HiLRP's advantage is sharpest exactly where CAM's spatial assumption breaks: on EfficientViT, whose linear cross-covariance attention removes the spatial heuristic, Grad-CAM collapses to $0.551$ (below the $0.61$ random-point prior) while HiLRP scores $0.960$; on PVT-v2 HiLRP reaches $0.980$ against Grad-CAM's $0.840$. On MobileViT and Swin, where Grad-CAM saturates the metric, HiLRP is competitive ($0.86$, $0.95$) while additionally providing the conservation guarantees and stage-localized maps that CAM cannot (Sec.~\ref{sec:qualitative}). Because Pointing does not discriminate the top tier, we ground the central claim in two properties CAM lacks entirely: relevance conservation (Sec.~\ref{sec:conservation-validity}) and agreement with axiomatic Shapley values (Sec.~\ref{sec:shapley}).
@@ -302,6 +369,18 @@ Heuristic methods like Grad-CAM are structurally incapable of providing this lay
   \caption{Qualitative comparison of Stage-Localized HiLRP heatmaps across different network depths. Unlike baseline methods, HiLRP perfectly traces the object silhouette at multiple spatial resolutions.}
   \label{fig:qualitative}
 \end{figure}
+
+\section{Limitations}
+\label{sec:limitations}
+We report the boundaries of the present method and study candidly.
+
+\textbf{Pixel-level conservation is approximate.} Conservation is exact at the token level through the proven operations (verified to $10^{-16}$), but the $\gamma$-rule applied to the patch-embedding and hybrid convolutional stem introduces a controlled deviation at the input-pixel level; the measured relevance-to-logit ratio at the pixels is $0.82\pm0.08$ on Swin and varies by backbone. We therefore state conservation as a token-level guarantee plus a quantified pixel-level deviation, never as end-to-end pixel exactness.
+
+\textbf{Reduced robustness on one hybrid.} Max-Sensitivity, our robustness proxy, is stable on Swin, PVT, and EfficientViT ($0.44$--$1.12$) but high on MobileViT-v2 ($8.51$), indicating attribution instability under input perturbation for that convolution-heavy backbone. Diagnosing whether this stems from the $\gamma$-schedule on its deep separable-convolution stack is left to future work.
+
+\textbf{The equivariance guarantee is conditional.} Theorem~\ref{thm:equivariance} requires the forward pass to commute with the permutation. Real Swin does not satisfy this for nontrivial translations because its window masks are canvas-anchored; we quantify the resulting approximate symmetry transfer rather than claim exact equivariance on deployed models.
+
+\textbf{Evaluation caveats.} The Pointing Game is soft on ImageNet-S (mean object area $0.65$, center-point prior $0.97$), which is why we lead with conservation validity and Shapley agreement; full segmentation-mask localization is future work. The Shapley reference uses SLIC segments with $n{=}50$ images and $m{=}64$ permutations; scaling to SAM-defined semantic segments and larger sample counts would tighten the agreement estimates. The per-family choice of attention rule (AttnLRP for isotropic, CP for hierarchical) is a principled but manual design decision, not a learned one.
 
 \section{Conclusion}
 \label{sec:conclusion}
