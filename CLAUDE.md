@@ -1,4 +1,4 @@
-# CLAUDE.md — HiLRP / xai_bench
+# CLAUDE.md - HiLRP / xai_bench
 
 Project state for Claude Code. This is the spec, not a diary. Keep it tight.
 Read this and `NOTES_next.md` at the start of every session.
@@ -16,6 +16,42 @@ A conservation-guaranteed attribution framework for hierarchical and hybrid visi
 transformers, formulated as relevance flow on a multi-resolution token graph. Extends
 AttnLRP/LRP to Swin/PVT/CvT/CNN+ViT, where no conservation-based attribution currently
 has defined rules.
+
+## Paper framing (do not drift)
+
+The paper is NOT "HiLRP is the best heatmap for every model and metric." That claim is
+false and fragile. The paper is:
+
+Custom ViT-style models are now common in domain applications, and each new mixture of
+CNN stems, local attention, patch merging, spatial reduction, shifted windows, pooling,
+and normalization creates a new XAI support gap. Existing methods depend on architectural
+assumptions: Grad-CAM needs a meaningful terminal spatial feature map, attention rollout
+needs usable global attention, Captum LRP needs supported modules, and perturbation
+methods are output-level and expensive. HiLRP gives a principled conservation-valid
+explanation path for this regime, even when it is not the top visual localizer on every
+single metric.
+
+Correct high-level claim:
+"HiLRP is the first conservation-valid relevance propagation framework for hierarchical
+and hybrid Vision Transformers, deriving unified flow-conserving rules for
+resolution-changing token operations and enabling stage-localized attribution."
+
+Core value proposition: coverage + conservation + extensibility. Use the mixed benchmark
+results as evidence that no single heuristic XAI method is reliable across modern ViT
+families, and that architecture-aware conservation rules are needed.
+
+Do not write:
+- "HiLRP beats all baselines on all metrics."
+- "HiLRP is the first LRP for ViTs."
+- "HiLRP gives exact pixel-level conservation."
+- "MobileViT proves Grad-CAM collapse."
+
+Do write:
+- "HiLRP is conservation-valid where naive LRP/AttnLRP extensions fail."
+- "HiLRP is strongest where CAM assumptions break, especially EfficientViT and PVT."
+- "On models where CAM saturates soft pointing, HiLRP remains useful because it provides
+  conservation, stage maps, and defined rules."
+- "Pixel-level conservation is approximate and quantified."
 
 ## Three novelty claims
 
@@ -101,6 +137,46 @@ segmentation masks -> enables pointing_game). Four findings, each a plank under 
    cells). This is why the PRIMARY yardstick is Shapley-agreement, not deletion AUC.
 4. Captum LRP does not even run on the four timm transformers (unsupported Identity
    layers -> 0 rows). The literal infrastructure gap the method fills.
+5. Grad-CAM's high pointing where it "wins" (swin/mobilevit 1.0) is the DATASET CENTER
+   PRIOR, not localization (confirmed 2026-07-06, paper sec:gradcam-blob). A content-free
+   center-Gaussian blob also scores pointing 1.0; Grad-CAM maps correlate 0.72/0.63 with
+   that blob (center-of-mass within 11-21% of image center), while HiLRP correlates only
+   0.25/0.14 (structure-following). This is WHY pointing saturates and why conservation
+   validity + Shapley agreement are the real discriminators.
+
+HiLRP now covers all 8 ViT-family benchmark models (quantus grid, mean pointing 0.90):
+vit_base 0.78, deit_base 0.84, swin_base 0.96, pvt_v2_b2 0.98, efficientvit_b1 0.94,
+efficientvit_b2 0.96, maxvit_small 0.96, mobilevitv2 0.78. `hilrp` is a registered bench
+METHOD (dedicated run: class-patches contaminate other methods in-process).
+
+Full benchmark interpretation (important for paper quality): the existing benchmark is
+not a failed attempt to show HiLRP wins everything. It is evidence that XAI behavior is
+architecture-dependent. Grad-CAM is strong on some CNN-like or spatial-feature models,
+fails on linear-attention EfficientViT, and saturates soft pointing on Swin/MobileViT.
+Attention rollout collapses on ViTs. Gradient methods vary by model family. Perturbation
+methods are expensive and output-level. Faithfulness metrics are often near zero with
+large variance. This motivates a paper framed as benchmark + metric critique + HiLRP as
+the conservation-valid resolution for hierarchical/hybrid architectures.
+
+If the user cannot scale beyond 100 images, do not panic. Use a fixed paired protocol:
+same 100 images for all compared methods, paired bootstrap confidence intervals, paired
+Wilcoxon tests, and claims only for large effects. With n=100, strong claims are allowed
+for large gaps such as efficientvit_b2 HiLRP 0.960 vs grad_cam 0.551. Do not claim tiny
+differences. Shapley can remain smaller and focused because it is expensive: n=50-100,
+key models only, key baselines only.
+
+If scaling to 1000 is possible, scale only cheap metrics and key baselines. Do NOT run
+every metric and every slow method blindly. Recommended two-tier design:
+1. Large-scale tier: 1000 images, 8-10 models, 5-6 methods, cheap metrics such as
+   pointing, sparseness, selected robustness, and faithfulness-correlation only as a
+   metric-failure diagnostic.
+2. Deep-validation tier: 50-100 images, Swin/PVT/EfficientViT, Shapley agreement,
+   conservation validity, qualitative stage maps.
+
+For A* positioning, the contribution set is strongest as:
+large cross-architecture benchmark + metric failure diagnosis + conservation-valid HiLRP
+rules + Shapley validation + RQ2 pretraining-objective finding. Scale and statistics are
+the gate, not more method invention.
 
 ## Sensitivity testing note
 
@@ -173,6 +249,36 @@ evaluation roles:
   (report with the weak-discrimination caveat), ImageNet-S / VOC mask localization.
 - SAM only defines regions; all importance signal comes from the target model, so no
   second-model faithfulness trap.
+Current Shapley status (2026-07-05, n=50, m=64, SLIC/two-pass honest protocol):
+- swin_tiny:       HiLRP +0.528 | Grad-CAM +0.515 | SmoothGrad +0.312 | Saliency +0.214 | IG +0.192
+- pvt_v2_b2:       HiLRP +0.531 | Grad-CAM +0.449 | IG +0.279 | SmoothGrad +0.260 | Saliency +0.137
+- efficientvit_b2: HiLRP +0.417 | SmoothGrad +0.321 | IG +0.281 | Saliency +0.240 | Grad-CAM +0.077
+Reading: HiLRP is highest on all three Shapley legs. Grad-CAM agrees on Swin/PVT
+but collapses on linear attention, matching its pointing collapse on EfficientViT.
+Use this as the independent yardstick that supports the architecture-dependent XAI
+story. Remaining Shapley work: SAM segments, optional mobilevit wiring, and CIs.
+
+## HiLRP improvement priorities
+
+Improve HiLRP where it is actually weak, not by chasing every metric:
+
+1. MobileViT robustness: max_sensitivity is high (~8.51), an honest limitation (in paper).
+   Gamma sweep done (`gamma_selection.py`): gamma does NOT reduce spikiness, it is inherent
+   to the deep separable-conv pixel-gradient. The reported "blank heatmap" was a DISPLAY bug
+   (heavy-tailed: ~27% of |mass| in top 1% of pixels), NOT a method failure; the map localizes
+   (0.86). Fixed via `hilrp/viz.py:normalize_for_display` (percentile-99 clip + optional
+   post-hoc smooth). RULE: use that helper for ALL map rendering. gamma=0.25 is the global
+   default, justified by the ablation (paper sec:gamma); no per-model tuning.
+2. Metric hardening: Pointing Game is soft on ImageNet-S. Add energy-in-mask,
+   small-object subset, and full mask localization when masks are cached. Lead with
+   these before deletion AUC.
+3. Conservation tables: this is the discriminator. Show naive AttnLRP/LRP either inflates
+   or zeroes relevance on hierarchical/hybrid models, while HiLRP remains conservation-valid.
+4. Optional visualization variants: smoothing or TTA map averaging may be offered only as
+   clearly labeled post-hoc visualization. Always report the conservation cost. Never
+   fold these into the core method.
+5. Per-family attention mode: flat CLS ViTs use AttnLRP mode; windowed/hierarchical/
+   hybrid models use CP mode. Present this as a design rule, not an ad hoc fix.
 
 ## Competitive positioning (related work + baselines)
 
@@ -229,12 +335,17 @@ right. Wrong indexing still conserves numerically but scrambles the spatial map.
 faithfulness. A rule can conserve and still smear relevance uselessly. That is why the
 gamma-rule and Gate 2/3 matter.
 
-## RQ2 (the strongest empirical contribution, survives the scoop analysis)
+## RQ2 (executed 2026-07-06, the "so what" that lifts toward A*)
 
-Pretraining objective as a determinant of explainability, tested via a controlled factorial
-across supervised / DINOv2 / MAE / CLIP / EVA. The method enables this by explaining each
-model IN ITS OWN OBJECTIVE (SSL-scalar attribution) instead of bolting a linear probe on
-everything. OT or Spearman can compare the resulting maps across objectives.
+Pretraining objective as a determinant of explainability. EXECUTED (`scripts/rq2_pretraining.py`,
+paper sec:rq2): fixed ViT-B/16, 4 pretrainings (supervised/DINO/MAE/CLIP), one common
+label-free scalar cos(cls(x), cls(flip(x))). n=30 result: cross-objective map agreement 0.33
+(vs 1.0 if objective irrelevant), so the objective, not the architecture, shapes the
+explanation. DINO localizes best (label-free pointing 0.97, recovering its known object
+emergence with NO labels), MAE routes ~0 relevance to pixels (0.07, reconstruction objective).
+The method enables this by explaining each model IN ITS OWN OBJECTIVE instead of a linear probe.
+Scale-up for A*: n>=100, significance test on the agreement, a second architecture (ViT-S),
+optionally a MAE-reconstruction scalar.
 
 ## Repo structure target
 

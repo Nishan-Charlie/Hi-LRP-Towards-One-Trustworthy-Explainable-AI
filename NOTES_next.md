@@ -3,6 +3,33 @@
 Delete items as they close. This is "what were we about to do", not durable state
 (durable state lives in CLAUDE.md).
 
+## !! BLOCKER for A* scaling (2026-07-06): cache is only 100 images
+
+`data/ImageNetS/cache_validation_100.pt` has 100 images. Lineage scripts
+(`lineage_comparison.py`, `lineage_naive_legs.py`) are now set to N_IMAGES=1000
+-> they will IndexError at image 100. To scale (the #1 A* lever), BUILD A
+500-1000 IMAGE CACHE first: use `cache_imagenets.py` (see [[xai-bench-run-setup]]
+for the flaky-HF-streaming gotcha; pre-cache locally). Then re-run pointing /
+Shapley / lineage / conservation at n>=500 with 95% CIs + paired Wilcoxon vs
+baselines. Until the cache exists, keep N_IMAGES<=100.
+
+## SESSION 2026-07-06 done (paper additions, all committed <= fe604dc)
+
+- GradCAM center-blob CONFIRMED (user's hypothesis): center-Gaussian blob also
+  scores pointing 1.0; GradCAM corr 0.72/0.63 with it vs HiLRP 0.25/0.14. Paper
+  sec:gradcam-blob.
+- Gamma-selection ablation: gamma=0.25 robust no-tuning default. Paper sec:gamma,
+  scripts/gamma_selection.py.
+- MobileViT "blank map" = display bug (heavy-tailed), fixed hilrp/viz.py.
+- 8-model HiLRP coverage complete (mean pointing 0.90); MaxViT ported; per-family
+  attn_mode enforced in bench dispatch.
+- RQ2 done (n=30): cross-objective agreement 0.33, DINO 0.97, MAE 0.07. Paper
+  sec:rq2.
+- IN FLIGHT: lineage_naive_legs on all 6 hierarchical/hybrid (bg, N_IMAGES was 100
+  at launch) -> full LRP/AttnLRP/HiLRP lineage table. classic LRP=0 rows,
+  AttnLRP-naive fails to conserve (swin 3.08x, others zeroed), AttnLRP-proper=flat
+  ViT only, HiLRP conserves everywhere.
+
 ## 0. THE BIG CORRECTION (2026-07-04, evening): mobilevitv2 gap was an artifact
 
 Healthy-model re-run (results/rerun_mobilevitv2/) shows grad_cam = 1.000 and
