@@ -52,6 +52,7 @@ xai_bench/methods/captum_methods.py.
 
 Two kill-tests on pvt_v2_b2 falsified the earlier "conv transitions absorb"
 story:
+
 - Gamma sweep (conv_gamma 0 / 0.25 / 1.0): decay identical at gamma=0 (plain
   epsilon). NOT a gamma effect.
 - Per-module hooks inside stage3: downsample conv barely moves relevance
@@ -60,60 +61,59 @@ story:
 
 Mechanism candidate: LXT's layer_norm_forward keeps the mean-subtraction in the
 graph; in Gradient x Input the per-token sum through it is
-sum_c x_c g_c - gbar * sum_c x_c, which cancels when features have large
+sum_c x_c g_c - gbar \* sum_c x_c, which cancels when features have large
 channel means. The "identity rule" in grad-form is sum-preserving only for
 near-centered features. Consequence: pre-LN and post-LN cuts disagree, so the
 reported "decay below stage3" on PVT/hybrids is at least partly a
 MEASUREMENT-CUT artifact, not a leak. Swin's capture points were all post-LN,
 which is why they read ~1.0.
 
-UPDATE (2026-07-05, later): the elementwise identity-LN swap (custom Function,
-grad_x = (y/x)*grad_y) did NOT flatten the trace: stage3 ~1.0, stage2 ~0.05,
-identical cliff. So the LN-cancellation hypothesis is falsified or incomplete;
-with elementwise pass-through the drop must sit INSIDE the stage3 blocks, which
-the probe did not capture. Status: cliff is robust to gamma (0/0.25/1.0), conv
-rules, and both LN rules. Two hypotheses proposed and killed by their own tests
-(conv absorption, LN mean-subtraction). Remaining candidates: residual-split
-semantics in grad x input, CP q-path zeroing interacting with Gamma hooks on
-q/kv Linears, GELU-identity on large activations.
+UPDATE (2026-07-05, session 2): the LN-cancellation mechanism was ALSO
+falsified. The elementwise identity-LN swap left the cliff unchanged, and the
+decisive finding is an algebraic impossibility: for the patched LN,
+R_in + (beta . g) = R_out holds exactly for ANY g (verified in isolation to 4
+decimals), but in the full model at stage3.norm the measured values are
+0.000 + 0.008 vs 1.007. Identities cannot fail, so retain_grad measurements
+inside the zennit/LXT composite context do not measure what they appear to
+(suspect: LXT-patched BasicHook backward divides relevance by module input;
+zennit graph rewiring may orphan retained tensors). ALL deep-cut traces
+(pvt cliff, mobilevit sign flip, efficientvit inflation) are UNTRUSTED until
+the measurement primitive is rebuilt. Trustworthy: head-adjacent cuts
+(swin 1.00, mobilevit 1.05, pvt 1.01) and the float64 toy (6.5e-9, no zennit).
 
-SESSION 2 RESULTS (2026-07-05, four more falsifications, then an impossibility):
-- LN patch verified applied (not a silent no-op).
-- zero_params='bias' on Gamma explodes (1e22): biases in denominators are
-  load-bearing stabilizers; bias-share redistribution is not the fix.
-- Final-LN beta share of the logit is ~0 (w_t . beta + b_t = -0.005 vs logit 9).
-- THE KEY FINDING: an algebraic identity is violated inside the composite
-  context. For the patched LN, R_in + (beta . g) = R_out holds EXACTLY for any
-  g (verified in isolation to 4 decimals, any input scale). In the full model
-  at stage3.norm: R_out = +1.007, beta share = +0.008, but measured
-  R_in = 0.0000. Identities cannot fail; therefore retain_grad measurements
-  inside the zennit/LXT composite context are not measuring what they appear
-  to (suspects: LXT-patched BasicHook backward divides relevance by module
-  input; zennit forward-hook graph rewiring may orphan retained tensors).
-  Head path verified plain (mean pool + Gamma-hooked Linear), stage source
-  verified (LN input IS the last block output).
+Next action (surgical, one session): minimal repro = stage3.norm + reshape +
+pool + Gamma-hooked Linear on real tensor values; bisect ops until the identity
+violation appears/vanishes; rebuild trace tooling on the surviving primitive
+(likely capture relevance inside hook backwards, not retain_grad).
 
-Consequence: ALL deep-cut conservation traces measured so far (the pvt/hybrid
-"cliff", possibly the mobilevit sign flip and efficientvit inflation) are
-UNTRUSTED until the measurement mechanics are fixed. The head-adjacent cut
-(one plain-autograd hop from the hooked head) remains trustworthy: swin 1.00,
-mobilevit 1.05, pvt 1.01. Our own toy (relevance-direct, no zennit) remains
-exact at 6.5e-9.
+## 5. Gate 3 CLOSED (2026-07-05): full four-architecture table
 
-Next action (surgical, next session): minimal repro = stage3.norm +
-reshape/permute/contiguous + mean pool + Gamma-hooked Linear on real tensor
-values; measure the same three quantities; bisect ops (drop contiguous, drop
-hook, swap hook for plain linear) until the identity violation appears/vanishes.
-Then rebuild the trace tooling on whatever measurement primitive survives
-(likely: capture relevance INSIDE hook backwards, not via retain_grad).
+PVT leg done (third corollary live, `pvt_lxt.py`, commit 4e396f4) and its
+baselines done (`results/baselines_pvt/`; gradient_shap kwarg fix verified).
+Final pointing table (HiLRP first, best baselines after):
 
-## 5. Then (order per CLAUDE.md)
+- swin_base:       HiLRP 0.950 | grad_cam 1.00 | smoothgrad 0.79
+- mobilevitv2:     HiLRP 0.860 | grad_cam 1.00 | smoothgrad 0.92 (healthy re-run)
+- efficientvit_b2: HiLRP 0.960 | grad_cam 0.551 | smoothgrad 0.92
+- pvt_v2_b2:       HiLRP 0.890 | grad_cam 0.840 | smoothgrad 0.92
 
-- PVT spatial-reduction rule (third corollary).
+Cross-architecture means: HiLRP 0.915 (highest, lowest variance),
+smoothgrad 0.888, grad_cam++ 0.861, grad_cam 0.848. HiLRP is the only method
+in the top tier on every architecture; CAMs fail on linear attention and are
+mediocre on SRA; gradient methods swing 0.62-0.92 by architecture. Headline:
+architecture-consistent reliability + the efficientvit win, not "beats CAM
+everywhere".
+
+## 6. Then (order per CLAUDE.md)
+
+- Rebuild conservation-trace measurement primitive (thread 4, blocks paper
+  conservation table).
 - Equivariance theorem + consistency metric.
 - SSL-scalar branch (dinov2/mae/clip).
 - Register hilrp in the bench METHODS registry so the standard runner computes
   the full quantus grid for it (deletion AUC alongside, with the caveat).
+- Shapley scale-up (SAM segments, more baselines, 50 imgs then 200-500).
+- ImageNet-S mask re-cache for hard localization.
 
 ## Environment
 
