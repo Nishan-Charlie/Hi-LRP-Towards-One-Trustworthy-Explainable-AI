@@ -104,47 +104,68 @@ def main():
     data = torch.load(os.path.join("data", "ImageNetS", "cache_validation_100.pt"),
                       map_location="cpu", weights_only=False)
 
-    # attribution methods to score against the reference
+    # Two model instances, same weights: the VANILLA one computes the Shapley
+    # values and all baseline attributions (no patched forwards anywhere near
+    # the reference or the baselines); the PATCHED one is used only for HiLRP.
     from xai_bench.methods.hilrp.swin_lxt import attribute_swin, ensure_patched
-    ensure_patched()
+    from xai_bench.models.timm_models import create_timm_model
+    from xai_bench.registry import METHODS
+    import captum.attr as ca
 
+    wrapper = create_timm_model(MODEL)          # vanilla, for baselines
+    wrapper.model.eval().to(device)
+    vanilla = wrapper.model
+    grad_cam = METHODS.get("grad_cam")(model_wrapper=wrapper, model=vanilla)
+    ig = ca.IntegratedGradients(vanilla)
+    sg = ca.NoiseTunnel(ca.Saliency(vanilla))
+
+    ensure_patched()                            # class-level; `model` becomes the HiLRP instance
+
+    def baseline_maps(x, target):
+        maps = {}
+        xg = x.clone().requires_grad_(True)
+        vanilla.zero_grad(set_to_none=True)
+        vanilla(xg)[0, target].backward()
+        maps["saliency"] = xg.grad[0].abs().sum(0).cpu().numpy()
+        maps["ig"] = ig.attribute(x, target=target, n_steps=32)[0].sum(0).detach().cpu().numpy()
+        maps["smoothgrad"] = sg.attribute(x, target=target, nt_type="smoothgrad",
+                                          nt_samples=16, stdevs=0.15)[0].abs().sum(0).detach().cpu().numpy()
+        gc = grad_cam(x, target)
+        maps["grad_cam"] = (gc[0] if gc.ndim == 3 else gc).detach().cpu().numpy()
+        return maps
+
+    method_names = ["hilrp", "saliency", "ig", "smoothgrad", "grad_cam"]
     rows = []
     for idx in range(n_images):
         img = data[idx]["image"]
         labels = make_regions(img)
         x = img.unsqueeze(0).to(device)
         with torch.no_grad():
-            target = int(model(x)[0].argmax())
+            target = int(vanilla(x)[0].argmax())
 
-        shap, mc_std = shapley_sampled(model, img, labels, target, n_perms, device)
+        shap, mc_std = shapley_sampled(vanilla, img, labels, target, n_perms, device)
         np.save(os.path.join(OUT, f"regions_{idx}.npy"), labels)
         np.save(os.path.join(OUT, f"shapley_{idx}.npy"), shap)
         np.save(os.path.join(OUT, f"mc_std_{idx}.npy"), mc_std)
 
-        # HiLRP agreement (patched forward changes logits negligibly; same target)
         res = attribute_swin(model, x, target=target)
-        hilrp_r = region_sums(res["pixel_map"].numpy(), labels)
-        rho_hilrp = spearmanr(shap, hilrp_r).statistic
-
-        # simple gradient baseline for contrast (saliency = |grad| sum)
-        xg = x.clone().requires_grad_(True)
-        model.zero_grad(set_to_none=True)
-        model(xg)[0, target].backward()
-        sal = xg.grad[0].abs().sum(0).cpu().numpy()
-        rho_sal = spearmanr(shap, region_sums(sal, labels)).statistic
+        rhos = {"hilrp": spearmanr(shap, region_sums(res["pixel_map"].numpy(), labels)).statistic}
+        for name, m in baseline_maps(x, target).items():
+            rhos[name] = spearmanr(shap, region_sums(m, labels)).statistic
 
         snr = np.abs(shap).mean() / (mc_std.mean() + 1e-12)
-        rows.append((idx, target, rho_hilrp, rho_sal, snr))
-        print(f"img{idx}: target {target}  rho(HiLRP) {rho_hilrp:+.3f}  "
-              f"rho(saliency) {rho_sal:+.3f}  shapley SNR {snr:.1f}")
+        rows.append([idx, target] + [rhos[n] for n in method_names] + [snr])
+        print(f"img{idx}: target {target}  " +
+              "  ".join(f"{n} {rhos[n]:+.3f}" for n in method_names) + f"  SNR {snr:.1f}")
 
     with open(os.path.join(OUT, "agreement.csv"), "w") as f:
-        f.write("idx,target,rho_hilrp,rho_saliency,snr\n")
+        f.write("idx,target," + ",".join("rho_" + n for n in method_names) + ",snr\n")
         for r in rows:
             f.write(",".join(str(v) for v in r) + "\n")
-    arr = np.array([[r[2], r[3]] for r in rows], dtype=float)
-    print(f"\nmean Spearman vs Shapley: HiLRP {np.nanmean(arr[:,0]):+.3f}   "
-          f"saliency {np.nanmean(arr[:,1]):+.3f}   (n={len(rows)}, m={n_perms} perms)")
+    arr = np.array([r[2:2 + len(method_names)] for r in rows], dtype=float)
+    print(f"\nmean Spearman vs Shapley (n={len(rows)}, m={n_perms} perms):")
+    for j, n in enumerate(method_names):
+        print(f"  {n:12s} {np.nanmean(arr[:, j]):+.3f}")
     print(f"written to {OUT}")
 
 
