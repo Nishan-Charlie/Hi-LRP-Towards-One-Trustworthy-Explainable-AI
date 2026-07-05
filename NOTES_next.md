@@ -114,8 +114,9 @@ Final pointing table (HiLRP first, best baselines after):
 
 - swin_base:       HiLRP 0.950 | grad_cam 1.00 | smoothgrad 0.79
 - mobilevitv2:     HiLRP 0.860 | grad_cam 1.00 | smoothgrad 0.92 (healthy re-run)
-- efficientvit_b2: HiLRP 0.960 | grad_cam 0.551 | smoothgrad 0.92
-- pvt_v2_b2:       HiLRP 0.890 | grad_cam 0.840 | smoothgrad 0.92
+- efficientvit_b2: HiLRP 0.960 | grad_cam 0.551 | smoothgrad 0.92 (outright win)
+- pvt_v2_b2:       HiLRP 0.980 | grad_cam 0.840 | smoothgrad 0.92 (outright win;
+  0.890 -> 0.980 after the norm-subclass fix, conservation 1.010 +/- 0.011)
 
 Cross-architecture means: HiLRP 0.915 (highest, lowest variance),
 smoothgrad 0.888, grad_cam++ 0.861, grad_cam 0.848. HiLRP is the only method
