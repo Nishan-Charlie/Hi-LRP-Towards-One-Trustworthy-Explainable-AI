@@ -40,10 +40,27 @@ os.makedirs(OUT, exist_ok=True)
 MEAN = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
 STD = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
 
-MODEL = "swin_tiny_patch4_window7_224"
+MODEL = "swin_tiny_patch4_window7_224"     # override with argv[3]
 N_SEGMENTS = 24
 BLUR_KERNEL = 51          # heavy blur = information removal without OOD black
 BATCH = 32
+
+
+def get_hilrp_attributor(model_name):
+    """Same dispatch as gate3: pick the HiLRP attributor for the architecture."""
+    if model_name.startswith("swin"):
+        from xai_bench.methods.hilrp.swin_lxt import attribute_swin, ensure_patched
+        return attribute_swin, ensure_patched
+    if model_name.startswith("mobilevit"):
+        from xai_bench.methods.hilrp.mobilevit_lxt import attribute_mobilevit, ensure_patched
+        return attribute_mobilevit, ensure_patched
+    if model_name.startswith("efficientvit"):
+        from xai_bench.methods.hilrp.efficientvit_lxt import attribute_efficientvit, ensure_patched
+        return attribute_efficientvit, ensure_patched
+    if model_name.startswith("pvt"):
+        from xai_bench.methods.hilrp.pvt_lxt import attribute_pvt, ensure_patched
+        return attribute_pvt, ensure_patched
+    raise ValueError(model_name)
 
 
 def make_regions(img_norm):
@@ -100,26 +117,30 @@ def main():
     n_perms = int(sys.argv[2]) if len(sys.argv) > 2 else 32
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    model = timm.create_model(MODEL, pretrained=True).eval().to(device)
+    model_name = sys.argv[3] if len(sys.argv) > 3 else MODEL
+    # mobilevit needs raw [0,1] inputs (see gate3 adapt_input); pass 2 below uses
+    # a bare timm model without the stats adapter, so guard until wired.
+    assert not model_name.startswith("mobilevit"), "wire adapt_input before using mobilevit here"
+    out = os.path.join(OUT, model_name)
+    os.makedirs(out, exist_ok=True)
     data = torch.load(os.path.join("data", "ImageNetS", "cache_validation_100.pt"),
                       map_location="cpu", weights_only=False)
 
-    # Two model instances, same weights: the VANILLA one computes the Shapley
-    # values and all baseline attributions (no patched forwards anywhere near
-    # the reference or the baselines); the PATCHED one is used only for HiLRP.
-    from xai_bench.methods.hilrp.swin_lxt import attribute_swin, ensure_patched
+    # TWO PASSES, because the HiLRP patches are CLASS-level and would otherwise
+    # alter the gradients of every baseline (identical forward numerics, but
+    # detached-std LN and CP-detached attention change all gradient paths).
+    # Pass 1 computes the Shapley reference and ALL baseline maps on the truly
+    # vanilla classes; only then are the classes patched for the HiLRP pass.
     from xai_bench.models.timm_models import create_timm_model
     from xai_bench.registry import METHODS
     import captum.attr as ca
 
-    wrapper = create_timm_model(MODEL)          # vanilla, for baselines
+    wrapper = create_timm_model(model_name)     # vanilla pass
     wrapper.model.eval().to(device)
     vanilla = wrapper.model
     grad_cam = METHODS.get("grad_cam")(model_wrapper=wrapper, model=vanilla)
     ig = ca.IntegratedGradients(vanilla)
     sg = ca.NoiseTunnel(ca.Saliency(vanilla))
-
-    ensure_patched()                            # class-level; `model` becomes the HiLRP instance
 
     def baseline_maps(x, target):
         maps = {}
@@ -135,7 +156,9 @@ def main():
         return maps
 
     method_names = ["hilrp", "saliency", "ig", "smoothgrad", "grad_cam"]
-    rows = []
+
+    # ---- pass 1: vanilla classes -- Shapley reference + baseline maps --------
+    per_image = []
     for idx in range(n_images):
         img = data[idx]["image"]
         labels = make_regions(img)
@@ -144,29 +167,45 @@ def main():
             target = int(vanilla(x)[0].argmax())
 
         shap, mc_std = shapley_sampled(vanilla, img, labels, target, n_perms, device)
-        np.save(os.path.join(OUT, f"regions_{idx}.npy"), labels)
-        np.save(os.path.join(OUT, f"shapley_{idx}.npy"), shap)
-        np.save(os.path.join(OUT, f"mc_std_{idx}.npy"), mc_std)
+        np.save(os.path.join(out, f"regions_{idx}.npy"), labels)
+        np.save(os.path.join(out, f"shapley_{idx}.npy"), shap)
+        np.save(os.path.join(out, f"mc_std_{idx}.npy"), mc_std)
 
-        res = attribute_swin(model, x, target=target)
+        base_r = {name: region_sums(m, labels)
+                  for name, m in baseline_maps(x, target).items()}
+        per_image.append((idx, labels, target, shap, mc_std, base_r))
+        print(f"pass1 img{idx}: target {target}  SNR "
+              f"{np.abs(shap).mean() / (mc_std.mean() + 1e-12):.1f}")
+
+    del vanilla, wrapper, grad_cam, ig, sg      # nothing vanilla survives pass 2
+
+    # ---- pass 2: patch the classes, HiLRP on a fresh instance -----------------
+    attribute, ensure_patched = get_hilrp_attributor(model_name)
+    ensure_patched()
+    hmodel = timm.create_model(model_name, pretrained=True).eval().to(device)
+
+    rows = []
+    for idx, labels, target, shap, mc_std, base_r in per_image:
+        x = data[idx]["image"].unsqueeze(0).to(device)
+        res = attribute(hmodel, x, target=target)
         rhos = {"hilrp": spearmanr(shap, region_sums(res["pixel_map"].numpy(), labels)).statistic}
-        for name, m in baseline_maps(x, target).items():
-            rhos[name] = spearmanr(shap, region_sums(m, labels)).statistic
+        for name, r in base_r.items():
+            rhos[name] = spearmanr(shap, r).statistic
 
         snr = np.abs(shap).mean() / (mc_std.mean() + 1e-12)
         rows.append([idx, target] + [rhos[n] for n in method_names] + [snr])
         print(f"img{idx}: target {target}  " +
               "  ".join(f"{n} {rhos[n]:+.3f}" for n in method_names) + f"  SNR {snr:.1f}")
 
-    with open(os.path.join(OUT, "agreement.csv"), "w") as f:
+    with open(os.path.join(out, "agreement.csv"), "w") as f:
         f.write("idx,target," + ",".join("rho_" + n for n in method_names) + ",snr\n")
         for r in rows:
             f.write(",".join(str(v) for v in r) + "\n")
     arr = np.array([r[2:2 + len(method_names)] for r in rows], dtype=float)
-    print(f"\nmean Spearman vs Shapley (n={len(rows)}, m={n_perms} perms):")
+    print(f"\n[{model_name}] mean Spearman vs Shapley (n={len(rows)}, m={n_perms} perms):")
     for j, n in enumerate(method_names):
         print(f"  {n:12s} {np.nanmean(arr[:, j]):+.3f}")
-    print(f"written to {OUT}")
+    print(f"written to {out}")
 
 
 if __name__ == "__main__":
