@@ -231,12 +231,24 @@ HONEST FRAMING: superiority = conservation-validity + guards, NOT pointing (whic
 is mixed and on a soft 0.97-center-prior metric). Never claim pointing wins on
 mobilevit. Artifact: paper/lineage_table.md (tracked; results/ is gitignored).
 
-## 5e. hilrp quantus grid: CUDA error at img 35 (checkpointed, resumable)
+## 5e. hilrp quantus grid: DONE (empty_cache fix held, results/hilrp_grid/summary.csv)
 
-results/hilrp_grid/results.json has partial rows. Suspect VRAM accumulation
-from repeated composite contexts under quantus's many explain calls. Try:
-torch.cuda.empty_cache() per call in hilrp_method, or device: cpu, or smaller
-num_images per session. Not blocking (pointing rows exist from gate3).
+Full grid, 50 imgs, 4 architectures. faith_corr / apf / faith_est / pointing /
+max_sens / sparseness:
+- pvt_v2_b2       0.053 / 0.028 / -0.226 / 0.98 / 0.44 / 0.62
+- efficientvit_b2 -0.023 / -0.020 / 0.027 / 0.96 / 1.12 / 0.66
+- swin_base       0.008 / -0.008 / -0.198 / 0.96 / 0.51 / 0.58
+- mobilevitv2     0.012 / 0.017 / 0.006 / 0.78 / 8.51 / 0.77
+
+Reading: (1) faithfulness_correlation ~0 for HiLRP on all four - but this is the
+METRIC failing (established plank 3: faith_corr is noise for EVERY method,
+|mean|<0.08); do not read it as an HiLRP weakness, read it as why Shapley is the
+primary yardstick. (2) pointing strong (0.78-0.98, consistent with gate3).
+(3) max_sensitivity (robustness, lower better): HiLRP stable on pvt/swin/
+efficientvit (0.44-1.12) but UNSTABLE on mobilevitv2 (8.51) - honest robustness
+caveat for the conv-hybrid, worth a sentence. (4) HiLRP now sits in the bench
+table beside all baselines. CUDA fix = empty_cache + zero_grad per explain call
+in hilrp_method (committed ef0bf40).
 
 ## 6. Then (order per CLAUDE.md)
 
