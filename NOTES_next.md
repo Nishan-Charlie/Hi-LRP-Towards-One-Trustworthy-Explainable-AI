@@ -1,4 +1,4 @@
-# NOTES_next.md — live threads
+# NOTES_next.md - live threads
 
 Delete items as they close. This is "what were we about to do", not durable state
 (durable state lives in CLAUDE.md).
@@ -31,18 +31,21 @@ bboxes; masks need re-caching from ImageNet-S proper.
 
 ## 2a. Shapley PAPER-GRADE RESULTS (2026-07-05, n=50, m=64, two-pass honest protocol)
 
-Two architectures, results/shapley_pilot/<model>/agreement.csv:
+Three architectures, results/shapley_pilot/<model>/agreement.csv:
 
 - swin_tiny:       hilrp +0.528 | grad_cam +0.515 | smoothgrad +0.312 | saliency +0.214 | ig +0.192
+- pvt_v2_b2:       hilrp +0.531 | grad_cam +0.449 | ig +0.279 | smoothgrad +0.260 | saliency +0.137
 - efficientvit_b2: hilrp +0.417 | smoothgrad +0.321 | ig +0.281 | saliency +0.240 | grad_cam +0.077
 
-THE CROSS-YARDSTICK STORY CONFIRMED: grad_cam's Shapley agreement collapses
-0.515 -> 0.077 on linear attention, mirroring its pointing collapse (1.0 ->
-0.55); HiLRP is highest on both. Two independent yardsticks, one story.
+THE CROSS-YARDSTICK STORY CONFIRMED: HiLRP is highest on all three Shapley legs.
+Grad-CAM agreement collapses on linear attention (0.515/0.449 -> 0.077),
+mirroring its pointing collapse on efficientvit_b2 (1.0-ish -> 0.55), while
+HiLRP remains best. Two independent yardsticks, one story. PVT is now the third
+corollary leg: HiLRP +0.531 vs Grad-CAM +0.449, SNR 4.41.
 Protocol note: the two-pass fix mattered: contaminated (patched-gradient)
 baselines had DEPRESSED saliency/smoothgrad (0.08/0.12 -> honest 0.21/0.31);
-HiLRP unchanged (0.528). Remaining scale-up: pvt leg, mobilevit (needs
-adapt_input wiring), SAM segments, m=128, 200-500 imgs.
+HiLRP unchanged (0.528). Remaining scale-up: mobilevit (needs adapt_input
+wiring), SAM segments, m=128, 100+ imgs if compute allows.
 
 ## 2. Shapley pilot: done, signal strong
 
@@ -249,6 +252,86 @@ efficientvit (0.44-1.12) but UNSTABLE on mobilevitv2 (8.51) - honest robustness
 caveat for the conv-hybrid, worth a sentence. (4) HiLRP now sits in the bench
 table beside all baselines. CUDA fix = empty_cache + zero_grad per explain call
 in hilrp_method (committed ef0bf40).
+
+## 5f. RQ2 DONE (2026-07-05): pretraining objective determines explanation
+
+scripts/rq2_pretraining.py. Fixed ViT-B/16, 4 pretrainings (supervised/DINO/
+MAE/CLIP), one common label-free scalar cos(cls(x),cls(flip(x))). n=30:
+- cross-objective map agreement (mean pairwise Spearman) = 0.33 (vs 1.0 if
+  objective irrelevant). MAE the outlier (0.17-0.18 with others).
+- label-free pointing: DINO 0.97 (matches known object-emergence, no labels!),
+  supervised 0.60, MAE 0.50, CLIP 0.37.
+- pixel-relevance: MAE 0.07 (reconstruction objective, ~no relevance to pixels),
+  others 0.39-0.57.
+Figure results/rq2_pretraining/rq2_maps.png (DINO traces geometry, MAE patch-
+grid, CLIP sparse). In paper as sec:rq2. TO SCALE FOR A*: n>=100, significance
+test on agreement, second architecture (ViT-S), maybe MAE-reconstruction scalar.
+
+## 5h. MobileViT "blank heatmap" RESOLVED (2026-07-06): display, not method
+
+User reported near-blank MobileViT maps. Diagnosis: NOT blank - heavy-tailed
+(~27% of |mass| in top 1% of pixels, from the deep separable-conv stem), so
+symmetric-max normalization washes it out. Map localizes fine (pointing 0.86).
+Fix: hilrp/viz.py:normalize_for_display (99pct clip + optional post-hoc smooth),
+wired into gate2_real_swin show_relevance (commit b058e52). With it the maps
+clearly trace object geometry (yurt lattice, hut silhouette). conv_gamma sweep
+does NOT change spikiness (it's inherent to the conv pixel-gradient). USE THIS
+HELPER in every viz script; MobileViT is the worst case but all benefit.
+Figure: results/hilrp_gate2real/mobilevit_qualitative.png.
+
+## 5g. 10-MODEL HiLRP coverage COMPLETE: MaxViT ported, per-family attn_mode fixed
+
+DONE. HiLRP quantus grid on all 8 ViT-family benchmark models (50 imgs),
+pointing_game: vit_base 0.78, deit_base 0.84, swin_base 0.96, pvt_v2_b2 0.98,
+efficientvit_b1 0.94, efficientvit_b2 0.96, maxvit_small 0.96, mobilevitv2 0.78.
+Mean 0.90. (results/hilrp_grid + hilrp_grid_rest2). CNNs resnet/convnext are
+baselines-only (HiLRP-for-ViT not the point). Fold into a full benchmark table.
+
+MaxViT port (maxvit_lxt.py): fwd 4.5e-7, pointing 10/10 smoke, wired into bench
++ gate3 dispatch. CRITICAL FIX: bench hilrp dispatch now binds
+attn_mode='attnlrp' for flat vit/deit (was defaulting to cp -> vit_base 0.52;
+attnlrp -> 0.78, matching lineage 0.77). rest2 run (vit/deit/efficientvit_b1/
+maxvit) in results/hilrp_grid_rest2/. Combined with hilrp_grid (swin/pvt/
+efficientvit_b2/mobilevit), HiLRP now covers all 8 ViT-family benchmark models.
+
+## A* PUSH PLAN (reframed 2026-07-05): benchmark + method + metric critique
+
+Contribution is A*-shaped if framed correctly:
+benchmark across ViT families + metric-failure diagnosis + HiLRP as the
+conservation-valid resolution for custom hierarchical/hybrid ViTs + Shapley
+validation + RQ2 pretraining-objective finding.
+
+Do NOT frame as "HiLRP wins every metric." The correct thesis is: XAI behavior
+is architecture-dependent, common metrics can fail, and domain/custom ViTs need
+a principled fallback that still gives a conservation-valid explanation path.
+HiLRP is coverage + conservation + extensibility, not universal visual dominance.
+
+If stuck at n=100:
+1. Keep all comparisons paired on the same images.
+2. Add paired bootstrap 95% CIs and paired Wilcoxon tests.
+3. Claim only large effects: efficientvit_b2 HiLRP 0.960 vs grad_cam 0.551 is
+   claimable; 0.96 vs 0.92 is not.
+4. Keep Shapley focused: n=50-100, Swin/PVT/EfficientViT, key baselines only.
+5. Make the compute limit explicit and methodological, not hidden.
+
+If scaling to n=1000:
+1. Scale only the cheap large-tier metrics: pointing, sparseness, selected
+   robustness, and faithfulness-correlation as a metric-failure diagnostic.
+2. Use 5-6 key methods, not every slow method: HiLRP, Grad-CAM, SmoothGrad,
+   Integrated Gradients, Saliency, Attention Rollout where applicable.
+3. Keep Shapley at n=50-100 or n=100 max unless there is spare compute.
+4. Do not run LIME/RISE/occlusion/GradientShap over 1000 unless a reviewer asks.
+
+Paper-quality priorities:
+1. Rewrite intro around custom/domain ViTs creating recurring XAI support gaps.
+2. Promote the existing benchmark as evidence of architecture-dependent XAI,
+   not as a failed universal leaderboard.
+3. Replace placeholder qualitative figures with real stage maps, lineage failure
+   maps, RQ2 maps, and Shapley agreement plots.
+4. Clean all overclaims: no exact pixel conservation, no mobilevit Grad-CAM
+   collapse claim, no universal metric win claim.
+5. Add CIs/significance to existing n=50-100 tables before running more models.
+6. Improve HiLRP where weak: MobileViT robustness gamma sweep first.
 
 ## 6. Then (order per CLAUDE.md)
 
