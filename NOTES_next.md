@@ -179,6 +179,43 @@ Demo (scripts/ssl_scalar_demo.py, ViT-S/16 DINO vs supervised AugReg, 12 imgs):
 RQ2 scale-up next: more images, map-correlation metrics between pretrainings,
 MAE reconstruction scalar, DINOv2 (needs 518px or interpolated pos-embed).
 
+## 5d. LINEAGE COMPARISON DONE (2026-07-05): LRP / AttnLRP vs HiLRP
+
+scripts/lineage_comparison.py, 100 imgs, pointing + conservation at deep/head cuts.
+
+Leg A, vit_base (AttnLRP's home turf):
+- AttnLRP (inherited, attn_mode flag): pointing 0.770, cons deep +0.15
+- HiLRP-CP (our default):              pointing 0.670, cons deep +0.61
+- bench: Chefer-proxy 0.740, rollout 0.640, saliency 0.650, grad_cam 0.927
+- captum LRP: nonfunctional on timm transformers (0 rows)
+
+Reading: on flat CLS-pooled ViTs the attention path carries localization, so
+the attnlrp mode points better and CP conserves 4x more. NEW PER-FAMILY
+DEFAULT: attn_mode='attnlrp' for flat CLS ViTs, 'cp' for windowed/hierarchical
+(where CP won both pointing AND conservation). Flat ViT is parity-with-lineage
+territory (0.77 vs Chefer 0.74), not a win claim; grad_cam still tops soft
+pointing there (0.927).
+
+Leg B, swin_base (our turf):
+- HiLRP:        pointing 0.950, cons deep +0.95 +/- 0.06
+- AttnLRP-naive (flat recipe, vanilla window attention):
+                pointing 0.980, cons deep +3.08 +/- 0.78
+
+Reading: pointing does NOT discriminate on this saturated metric (3 pts).
+Conservation DOES: the naive adaptation inflates deep relevance 3.1x with high
+variance, so its magnitudes are meaningless, stage decompositions invalid, and
+no guarantee exists. Plus the norm-subclass trap: a naive user on PVT gets
+silently zeroed relevance sums (we measured 0.89 -> 0.98 pointing from our
+guard alone). THE LINEAGE CLAIM, sharpened: HiLRP = AttnLRP's rules where they
+exist, plus guarantees and guards where they do not.
+
+## 5e. hilrp quantus grid: CUDA error at img 35 (checkpointed, resumable)
+
+results/hilrp_grid/results.json has partial rows. Suspect VRAM accumulation
+from repeated composite contexts under quantus's many explain calls. Try:
+torch.cuda.empty_cache() per call in hilrp_method, or device: cpu, or smaller
+num_images per session. Not blocking (pointing rows exist from gate3).
+
 ## 6. Then (order per CLAUDE.md)
 
 - Rebuild conservation-trace measurement primitive (thread 4, blocks paper
