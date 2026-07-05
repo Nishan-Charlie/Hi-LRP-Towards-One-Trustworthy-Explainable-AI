@@ -47,9 +47,11 @@ def denorm(img_t):
 
 
 def show_relevance(ax, R, title, res_note=None):
-    R = R.numpy() if torch.is_tensor(R) else R
-    v = np.abs(R).max() + 1e-12
-    ax.imshow(R, cmap="bwr", vmin=-v, vmax=v, interpolation="nearest")
+    # robust percentile normalization: relevance is heavy-tailed, so symmetric-max
+    # renders spiky maps (e.g. MobileViT) near-blank. See hilrp.viz.
+    from xai_bench.methods.hilrp.viz import normalize_for_display
+    m, v = normalize_for_display(R, percentile=99.0)
+    ax.imshow(m, cmap="bwr", vmin=-v, vmax=v, interpolation="nearest")
     ax.set_title(title + (f"\n{res_note}" if res_note else ""), fontsize=8)
     ax.axis("off")
 
