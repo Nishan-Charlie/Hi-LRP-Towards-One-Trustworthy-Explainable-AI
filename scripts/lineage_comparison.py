@@ -29,11 +29,26 @@ import torch
 warnings.filterwarnings("ignore")
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import glob
 import timm
 
-N_IMAGES = 100
+N_IMAGES = 1000
 OUT = os.path.join("results", "hilrp_lineage")
 os.makedirs(OUT, exist_ok=True)
+
+
+def load_cache():
+    """Load the largest available cache_validation_*.pt (so N_IMAGES scales as
+    the cache grows) and return (data, n) with n clamped to what exists."""
+    global N_IMAGES
+    caches = glob.glob(os.path.join("data", "ImageNetS", "cache_validation_*.pt"))
+    if not caches:
+        raise FileNotFoundError("no ImageNet-S cache; run cache_imagenets.py --num 500")
+    path = max(caches, key=lambda p: int(p.rsplit("_", 1)[-1].split(".")[0]))
+    data = torch.load(path, map_location="cpu", weights_only=False)
+    N_IMAGES = min(N_IMAGES, len(data))
+    print(f"cache: {path} ({len(data)} imgs), using N_IMAGES={N_IMAGES}")
+    return data
 
 
 def pointing(pm, bboxes):
@@ -62,8 +77,7 @@ def run_leg(tag, attributor, model, data, **kw):
 
 
 def main():
-    data = torch.load(os.path.join("data", "ImageNetS", "cache_validation_100.pt"),
-                      map_location="cpu", weights_only=False)
+    data = load_cache()
 
     # ---------------- Leg A: plain ViT ----------------
     print("=== Leg A: vit_base_patch16_224 (AttnLRP's home turf) ===")

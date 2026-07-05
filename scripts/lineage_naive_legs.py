@@ -37,7 +37,7 @@ from zennit.canonizers import NamedMergeBatchNorm
 from zennit.composites import LayerMapComposite
 from zennit.rules import Gamma
 
-N_IMAGES = 100
+N_IMAGES = 1000
 
 MODELS = ["swin_base_patch4_window7_224", "pvt_v2_b2", "efficientvit_b1",
           "efficientvit_b2", "maxvit_small_tf_224", "mobilevitv2_100"]
@@ -125,9 +125,14 @@ def pointing(pm, bboxes):
 
 
 def main():
+    global N_IMAGES
     naive_patch_once()
-    data = torch.load(os.path.join("data", "ImageNetS", "cache_validation_100.pt"),
-                      map_location="cpu", weights_only=False)
+    import glob
+    caches = glob.glob(os.path.join("data", "ImageNetS", "cache_validation_*.pt"))
+    path = max(caches, key=lambda p: int(p.rsplit("_", 1)[-1].split(".")[0]))
+    data = torch.load(path, map_location="cpu", weights_only=False)
+    N_IMAGES = min(N_IMAGES, len(data))
+    print(f"cache: {path} ({len(data)} imgs), N_IMAGES={N_IMAGES}")
 
     print("AttnLRP-naive legs (generic LXT recipe, generous: canonizer + correct stats)")
     for name in MODELS:
