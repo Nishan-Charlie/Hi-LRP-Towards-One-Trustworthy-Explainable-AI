@@ -160,8 +160,9 @@ class ToyModel:
         R_x, _ = block_lrp(R_x, self.p1a, self.ws, 0, cache["s1a"], eps)
         R_px = lrp_linear(cache["px"], self.Wembed, self.bembed, R_x, eps=eps)
 
-        masked = (self.mask < -1)
-        leak = R_probSW[masked].abs().sum().item()
+        # mask-leak diagnostic only applies when the SW-MSA mask exists
+        # (the cyclic/idealized variant used by the equivariance tests sets mask=None)
+        leak = R_probSW[self.mask < -1].abs().sum().item() if self.mask is not None else 0.0
         relerr = abs(R_px.sum().item() - R0.item()) / abs(R0.item())
         # local conservation of the patch-merge rule *in context* (its own contribution,
         # independent of the naive block internals feeding it)
