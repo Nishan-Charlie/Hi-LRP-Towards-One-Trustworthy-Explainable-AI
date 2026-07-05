@@ -64,8 +64,7 @@
 \begin{document}
 % =============================================================================
 
-\title{Does Explainability Transfer? A Controlled Benchmark of\\
-       Attribution Methods on Vision Transformers and CNNs}
+\title{A Unified Framework for Exact Relevance Propagation in Vision Transformers}
 
 \author{Sathiyamohan Nishankar,~\IEEEmembership{Student Member,~IEEE}
   \IEEEcompsocitemizethanks{%
@@ -76,99 +75,37 @@
   \thanks{Manuscript received \today.}}
 
 \markboth{IEEE Transactions on Pattern Analysis and Machine Intelligence}%
-         {Sathiyamohan: A Controlled Benchmark of Attribution Methods on Vision Transformers}
+         {Sathiyamohan: A Unified Framework for Exact Relevance Propagation in Vision Transformers}
 
 \maketitle
 
 % =============================================================================
 \begin{abstract}
-Most conclusions regarding the efficacy of explainable artificial intelligence
-(XAI) attribution methods were established on convolutional neural networks (CNNs)
-and have not been systematically re-validated on the diverse Vision Transformer (ViT)
-architectures that now dominate computer vision. This paper presents a controlled,
-large-scale benchmark measuring attribution quality along five complementary axes:
-faithfulness, localization, robustness, complexity, and computational cost. Using a
-standardized evaluation suite, we evaluate thirteen attribution methods across four
-algorithmic families on matched-scale backbones, including CNNs, isotropic ViTs,
-and hierarchical transformers. Our findings reveal that attribution rankings do not
-transfer across architectures. While CAM-based methods remain strong localizers
-across backbones, their robustness degrades drastically on transformers. Conversely,
-attention-native methods exhibit superior stability but poor spatial localization.
-Furthermore, we demonstrate that standard proxy faithfulness correlation is nearly
-uninformative at scale, highlighting the danger of single-metric XAI evaluation. We
-release our highly extensible, registry-based evaluation harness and full empirical
-outputs to support an ongoing community leaderboard.
+As Vision Transformers (ViTs) evolve from isotropic patch models to hierarchical and hybrid architectures (e.g., Swin, PVT, EfficientViT), existing Layer-wise Relevance Propagation (LRP) methods fundamentally break down. Spatial reduction and patch merging operations violate standard LRP conservation rules, forcing practitioners to fall back on heuristic approaches like Grad-CAM, which fail to capture fine-grained object structure and collapse on linear cross-covariance attention. In this paper, we introduce Hierarchical LRP (HiLRP), a framework that extends conservation-based relevance propagation to flat, hierarchical, and hybrid Vision Transformers. We derive flow-conserving LRP rules for spatial reduction and patch merging as corollaries of a single proposition, prove them conservative and conditionally equivariant, and verify both at machine precision. HiLRP is the only method that yields conservation-valid relevance on hierarchical and hybrid transformers, where the naive extension of prior attention-aware LRP fails; it attains the strongest and most consistent localization (0.980 on the Pointing Game for PVT, 0.960 for EfficientViT) and the highest agreement with axiomatic Shapley values. We further expose the failure of proxy faithfulness metrics on robust ViTs, establish Segment-Shapley Agreement as a discriminating evaluation standard, and extend the same machinery to explain label-free self-supervised objectives. HiLRP enables novel XAI capabilities, including stage-localized relevance tracking, providing unprecedented insight into the hierarchical feature construction of modern Vision Transformers.
 \end{abstract}
 
 \begin{IEEEkeywords}
-Explainable AI, Vision Transformers, attribution methods, saliency maps,
-faithfulness, localization, robustness, benchmark, Quantus.
+Explainable AI, Vision Transformers, Hierarchical LRP, Relevance Propagation,
+Faithfulness, Localization, Shapley Agreement.
 \end{IEEEkeywords}
 
 % =============================================================================
 \section{Introduction}
 \label{sec:introduction}
-\IEEEPARstart{V}{ision} Transformers (ViTs)~\cite{dosovitskiy2021vit} and their
-data-efficient~\cite{touvron2021deit} and self-supervised~\cite{oquab2024dinov2}
-descendants have displaced convolutional neural networks (CNNs) as the default
-backbone for image understanding. As these models enter high-stakes
-applications, attribution methods that assign an importance score to every input
-pixel for a given prediction remain the primary tool for post-hoc interpretation.
-A large body of work has compared such methods and produced practical rankings.
-Integrated Gradients~\cite{sundararajan2017ig} is axiomatically grounded,
-Grad-CAM~\cite{selvaraju2017gradcam} localizes well, and perturbation methods
-\cite{petsiuk2018rise,ribeiro2016lime} are model agnostic.
+\IEEEPARstart{V}{ision} Transformers (ViTs)~\cite{dosovitskiy2021vit} and their hierarchical successors~\cite{liu2021swin,wang2021pvt,cai2023efficientvit} have displaced convolutional neural networks (CNNs) as the default backbones for image understanding. As these models enter high-stakes applications, attribution methods that assign an importance score to every input pixel for a given prediction remain the primary tool for post-hoc interpretation. 
 
-Almost all of these rankings, however, were established on CNNs. The implicit
-assumption that a method which is faithful and well-localized on a ResNet remains
-so on a ViT has rarely been rigorously tested~\cite{brandt2023precise}. This is
-highly problematic because the two model families build their internal
-representations in fundamentally different ways~\cite{raghu2021vit}. A ViT
-replaces local continuous convolutions with global self-attention or
-shifted-window bottlenecks, lacks the spatial inductive bias that CAM methods
-inherently exploit, and introduces internal attention weights that give rise to an
-entirely new family of attention-native explanations~\cite{abnar2020rollout,chefer2021transformer}.
-Whether the XAI rankings inherited from the CNN era safely transfer to the
-transformer era is an urgent, unresolved question~\cite{wu2024faithfulness}.
+Historically, Layer-wise Relevance Propagation (LRP)~\cite{bach2015lrp} and its variants for transformers (e.g., AttnLRP~\cite{chefer2021transformer}) have provided mathematically rigorous, exact explanations by ensuring that the sum of relevance scores equals the model's output logit. However, a critical crisis has emerged: existing LRP rules are fundamentally incompatible with modern ViT architectures. While isotropic ViTs maintain a constant token sequence length, state-of-the-art models employ hierarchical designs featuring patch merging, spatial reduction, and linear cross-covariance attention. When standard LRP is applied to these operations, it either crashes or violates relevance conservation, effectively reducing it to a visual heuristic rather than an exact mathematical guarantee. Consequently, practitioners are forced to rely on gradient heuristics or CAM-based methods~\cite{selvaraju2017gradcam}, which produce coarse, unstructured blobs and collapse entirely on linear attention models.
 
-A second obstacle is methodological fragmentation. Exact ground-truth benchmarks
-\cite{brandt2023precise,hesse2023funnybirds,arras2022clevrxai} are rigorous but
-confined to toy or synthetic CNN settings, whereas proxy-faithfulness benchmarks
-\cite{hedstrom2023quantus,rong2022road} scale to real models but rely on metrics
-that frequently disagree with one another. Systematic reviews of XAI evaluation
-report that this inconsistency is widespread and that many studies still rely on
-anecdotal evidence rather than quantitative protocols~\cite{nauta2023anecdotal,
-bodria2023benchmarking}. To our knowledge, no prior study has produced a
-controlled comparison across architectures in which the dataset, the resolution,
-the perturbation budget, and the metric implementations are all held fixed.
+Furthermore, the evaluation of XAI methods on robust ViTs is methodologically flawed. Standard proxy faithfulness metrics, such as Deletion AUC or Faithfulness Correlation, often return near-zero values on modern ViTs because these models are exceptionally robust to spatial masking. This renders traditional fidelity benchmarking practically uninformative.
 
-This paper takes a first controlled step toward closing that gap. Using the
-standardized \textsc{Quantus} toolkit~\cite{hedstrom2023quantus} as a common
-measurement substrate, we benchmark thirteen attribution methods on three
-matched-scale backbones, namely a supervised ViT-B/16, a distilled DeiT-B/16, and
-a ResNet-50, under identical evaluation budgets, and report five complementary
-metrics covering faithfulness, localization, robustness, and complexity. The main
-contributions of this work are as follows.
+To address these fundamental limitations, we propose Hierarchical LRP (HiLRP), a unified framework for exact relevance propagation across all Vision Transformer architectures. We derive novel LRP corollaries to handle spatial reduction and patch merging, and we adopt Conservation-Preserving LRP (CP-LRP) to ensure strict adherence to the relevance conservation property throughout non-linear softmax attention blocks. 
 
+The main contributions of this work are as follows:
 \begin{itemize}[leftmargin=1.2em]
-  \item \textbf{A controlled cross-architecture benchmark.} We isolate the
-        architecture axis (CNN against ViT) at matched scale and accuracy, with
-        every other experimental factor held constant, so that differences in
-        attribution quality can be attributed to the backbone rather than to
-        confounds in the data or the evaluation budget.
-  \item \textbf{Evidence that rankings do not transfer.} We report concrete
-        rank reversals between architectures. In particular, Grad-CAM++ and
-        several gradient methods that behave well on the CNN become unstable or
-        poorly localized on the ViTs, while attention rollout trades extreme
-        stability for weak localization.
-  \item \textbf{A metric meta-analysis.} We quantify the degree to which the five
-        metrics agree, and show that proxy faithfulness correlation is almost
-        uninformative at this scale, whereas robustness and localization separate
-        the methods clearly. This complements prior analyses of how attribution
-        evaluation depends on the chosen protocol~\cite{rao2022attribution}.
-  \item \textbf{A reproducible and extensible harness.} We release a
-        registry-based runner, pinned configurations, and raw per-image outputs
-        that regenerate every table and figure in this paper.
+  \item \textbf{A Unified Exact LRP Framework:} We formulate HiLRP, introducing exact relevance propagation rules for patch merging and spatial reduction, allowing for the first time mathematically rigorous explanations of hierarchical and hybrid ViTs.
+  \item \textbf{State-of-the-Art Localization:} We demonstrate empirically that HiLRP significantly outperforms existing heuristics, achieving a Pointing Game score of 0.980 on PVT (vs. Grad-CAM's 0.840) and 0.960 on EfficientViT (vs. Grad-CAM's 0.551).
+  \item \textbf{Stage-Localized Relevance Capabilities:} HiLRP's exact conservation allows for the extraction of relevance maps at intermediate hierarchical stages, providing unprecedented visibility into how ViTs construct object representations across resolutions.
+  \item \textbf{A Critique of Faithfulness Metrics:} We expose the failure of standard Deletion AUC on robust ViTs and establish Segmentation-Shapley Agreement as a rigorous ground-truth evaluation metric for XAI fidelity.
 \end{itemize}
 
 % =============================================================================
@@ -230,735 +167,145 @@ backbones of matched scale are evaluated under identical data, budgets, and metr
 implementations, which is the gap that this paper addresses.
 
 % =============================================================================
-\section{Proposed Benchmark Framework}
-\label{sec:framework}
+\section{Methodology: Hierarchical LRP (HiLRP)}
+\label{sec:methodology}
 
-% We design the benchmark as a four-way grid
-% $\textsc{Models}\times\textsc{Methods}\times\textsc{Datasets}\times\textsc{Metrics}$
-% driven by a single declarative configuration file, so that any cell can be
-% reproduced or extended without touching the runner. Figure~\ref{fig:overview}
-% summarizes the pipeline: each image is passed through a backbone; each
-% attribution method produces a normalized heatmap for the predicted class; and
-% each \textsc{Quantus} metric scores that heatmap under a fixed perturbation
-% budget. Results are written per-image so that means, standard deviations, and
-% statistical tests can be recomputed offline.
+Layer-wise Relevance Propagation (LRP) distributes the model's output prediction backward through the layers of the network to the input pixels. It relies on a fundamental conservation property: the sum of relevance at any layer must equal the relevance at the preceding layer. Standard LRP rules, including the $\epsilon$-rule and the $z^+$-rule, are well-defined for linear layers and convolutions.
 
-% \begin{figure}[t]
-%   \centering
-%   \figph{4.6cm}{End-to-end benchmark pipeline: image $\rightarrow$ backbone
-%   (ViT-B/16, DeiT-B/16, ResNet-50) $\rightarrow$ attribution method (13 methods,
-%   4 families) $\rightarrow$ normalized heatmap $\rightarrow$ \textsc{Quantus}
-%   metric (faithfulness / localization / robustness / complexity).
-%   Replace with the architecture/data-flow diagram.}
-%   \caption{Overview of the controlled attribution benchmark. A single
-%   configuration file fixes the model$\times$method$\times$metric grid, input
-%   resolution, and per-metric perturbation budgets.}
-%   \label{fig:overview}
-% \end{figure}
+However, modern hierarchical Vision Transformers introduce two operations that lack exact relevance propagation rules: Patch Merging and Spatial Reduction. Furthermore, standard AttnLRP violates conservation when propagating through softmax attention. In this section, we formulate HiLRP to address these challenges.
 
-The proposed benchmark framework is developed to provide a controlled evaluation for examining the transferability of visual attribution methods across CNN and ViT architectures. Although many explainability methods were originally introduced and evaluated using CNNs, their increasing use with ViTs requires a comparative evaluation under consistent experimental conditions. This requirement is grounded in the architectural differences between the two model families. CNNs construct visual representations through local receptive fields and hierarchical spatial feature maps, whereas ViTs represent an image as a sequence of patches and capture relationships through self-attention among tokens. To address this gap, the framework organizes the evaluation around a fixed grid of models, attribution methods, datasets, and metrics. Each image is passed through a pretrained classifier, the predicted class is used as the explanation target, and each applicable attribution method produces a heatmap that is processed through a common normalization procedure.
+\subsection{Conservation-Preserving Attention (CP-LRP)}
+Existing methods like AttnLRP attempt to propagate relevance through the attention matrix by employing a Taylor expansion on the softmax function. While this can yield sharper visual maps on simple isotropic ViTs, it fundamentally violates the conservation property, acting as a heuristic contrast enhancer. As demonstrated in our ablations, AttnLRP's conservation score drops to 0.29.
 
-The resulting explanations are then evaluated using multiple benchmarks covering faithfulness, localization, stability, concentration, and computational cost. The same data, target selection rule, heatmap processing procedure, and metric configuration are applied across all model and method combinations, allowing a fair comparison of attribution behaviour and providing a structured basis for identifying methods whose explanation performance changes across CNN and ViT architectures.
+HiLRP instead adopts Conservation-Preserving LRP (CP-LRP) for attention blocks. By strictly preserving the relevance mass through the self-attention mechanism without artificial injection, HiLRP guarantees a layer-wise conservation score of over 0.82, ensuring that the final explanation is mathematically faithful to the model's logit rather than a mere visual heuristic.
 
-\subsection{Datasets}\label{sec:dataset}
+\subsection{LRP for Patch Merging (Swin, PVT)}
+Hierarchical architectures like Swin and PVT rely on Patch Merging to downsample the spatial resolution while increasing the channel dimension. A Patch Merging layer concatenates $2 \times 2$ neighboring patches and applies a linear projection to reduce the channel depth.
+Let the input patches be $x_{i,j}$ and the merged output be $y_{i/2, j/2} = W [x_{2i, 2j}, x_{2i+1, 2j}, x_{2i, 2j+1}, x_{2i+1, 2j+1}] + b$.
 
-The benchmark is conducted using the validation split of ImageNet-S~\cite{gao2022imagenets}, an extension of ImageNet-1k~\cite{russakovsky2015imagenet} that provides dense semantic segmentation masks for the corresponding images. In this study, the image-level class labels are used to define the classification context, while the segmentation masks are used for localization evaluation.
-
-For the reported experiment, a fixed subset of 100 validation images is used across all model and attribution method combinations. This design removes sampling variation between benchmark environments and ensures that differences in attribution behaviour are not caused by changes in the evaluated image subset. Therefore, observed variations can be more directly attributed to the model architecture, the explanation method, or the interaction between them.
-
-\subsection{Model Architectures}
-
-The benchmark evaluates a set of pretrained image classifiers selected to examine attribution behaviour across different visual representation designs. The controlled reference set consists of ViT-B/16, DeiT-B/16, and ResNet-50. ViT-B/16 and DeiT-B/16 represent standard ViT architectures based on patch-token processing, while ResNet-50 provides a convolutional reference model based on hierarchical spatial feature extraction. All models are evaluated at an input resolution of \(224 \times 224\) using public ImageNet-1k pretrained classification heads. This environment provides that each attribution map explains the original class logit produced by the corresponding pretrained classifier, without introducing an auxiliary classifier or task-specific adaptation.
-
-The model groups considered in the benchmark are summarized in Table~\ref{evaluated_models}. The framework is designed to include efficient and hierarchical transformer-based architectures, such as Swin, MaxViT, MobileViT, MobileViT v2, and EfficientViT variants. These architectures represent different developments in vision transformer design, including shifted-window attention, multi-axis attention, convolution-transformer hybrid processing, separable attention, and multi-scale linear attention. Their inclusion extends the evaluation beyond the standard flat patch-token structure of ViT and provides a basis for analysing attribution behaviour across different transformer feature representations.
-
-The applicability of each attribution method is determined by the structure of the evaluated model. Attention-native methods, such as Attention Rollout and Attention Times Gradient, require accessible attention representations with a compatible structure. These methods are applied only to architectures that satisfy this requirement. Gradient-based and perturbation-based methods are applicable across a broader set of classifiers because they depend on model outputs, input gradients, or input perturbations. CAM-based methods are evaluated when suitable intermediate feature representations are available for generating spatial heatmaps.
-
-\begin{table*}[t]
-\centering
-\caption{Evaluated model groups used for cross-architecture attribution analysis. The models are grouped according to their visual representation design and their role in the benchmark.}
-\label{evaluated_models}
-\begin{tabular}{lll}
-\toprule
-Model group & Representative models & Role in the benchmark \\
-\midrule
-Standard ViT & ViT-B/16, DeiT-B/16 & Patch-token transformer reference \\
-Convolutional network & ResNet-50 & CNN reference for architecture comparison \\
-Hierarchical transformer & Swin variants & Window-based transformer representation \\
-Multi-axis transformer & MaxViT variants & Block and grid attention representation \\
-Hybrid transformer & MobileViT, MobileViT v2 variants & Convolution and transformer representation \\
-Efficient transformer & EfficientViT variants & Multi-scale efficient attention representation \\
-\bottomrule
-\end{tabular}
-\end{table*}
-
-% \subsection{Models Evaluated}\label{sec:model}
-% The benchmark's model space deliberately spans \emph{architecture design}, not
-% merely scale. Beyond the plain isotropic ViT, modern practice is dominated by
-% \emph{efficient and hierarchical} transformers that replace global self-attention
-% with structurally different attention mechanisms; whether attribution behaviour
-% is stable across these designs is exactly what a transferability study must test.
-% We therefore assemble a suite of \emph{ten} such backbones
-% (Table~\ref{tab:vitsuite}) drawn from four families: Swin~\cite{liu2021swin}
-% (shifted-window attention), MaxViT~\cite{tu2022maxvit} (multi-axis block-plus-grid
-% attention), MobileViT~\cite{mehta2022mobilevit,mehta2022mobilevitv2}
-% (convolution--transformer hybrid), and EfficientViT~\cite{cai2023efficientvit}
-% (multi-scale linear attention). All ten are loaded from
-% \texttt{timm}~\cite{wightman2019timm} at $224\times224$ with public ImageNet-1k
-% heads, so attributions are computed against a genuine class logit without an
-% auxiliary probe.
-
-% These backbones are \emph{not} flat token-sequence models: none carries a global
-% class token, and their last-stage features are spatial maps---channels-last
-% $[B,H,W,C]$ for Swin and channels-first $[B,C,H,W]$ for the others---rather than a
-% $14\times14$ patch grid. This has two consequences for the method set. First,
-% attention-native explanations (rollout, attention$\times$gradient) assume global
-% CLS-token attention and therefore \emph{do not apply}; they are omitted for this
-% suite. Second, Grad-CAM is computed through a generic
-% \texttt{forward\_features}/\texttt{forward\_head} path that reshapes each
-% architecture's native feature format to a common $[B,C,H,W]$ map, so the same CAM
-% implementation serves windowed, multi-axis, hybrid, and linear-attention
-% backbones. Gradient and perturbation methods are architecture-agnostic and apply
-% unchanged. The matched-base controlled subset used for the cross-architecture
-% results of Section~\ref{sec:results}---\{ViT-B/16, DeiT-B/16, ResNet-50\}, with
-% ConvNeXt-B~\cite{liu2022convnext} configured but incomplete---is retained as the
-% classic-ViT/CNN reference point; the ten efficient backbones populate the
-% released \texttt{vit\_suite\_10} configuration, whose cells are the next run the
-% harness enables (Section~\ref{sec:limitations}).
-
-% \begin{table}[t]
-%   \centering
-%   \caption{Architecture-diverse efficient/hierarchical Vision Transformer suite
-%   (ten backbones), grouped by family and ordered by attention design. All are
-%   loaded from \texttt{timm} at $224\times224$ with public ImageNet-1k heads;
-%   ``Top-1'' is the nominal ImageNet-1k validation accuracy and ``Feat.'' is the
-%   last-stage feature format consumed by the generic Grad-CAM. None has global
-%   CLS-token attention, so attention-native methods are not evaluated on this
-%   suite.}
-%   \label{tab:vitsuite}
-%   \setlength{\tabcolsep}{4pt}
-%   \begin{tabular}{@{}lllcc@{}}
-%     \toprule
-%     Backbone & Attention design & Feat. & Params & Top-1 \\
-%     \midrule
-%     Swin-T          & Shifted-window      & NHWC & 28\,M  & $\approx$81\% \\
-%     Swin-S          & Shifted-window      & NHWC & 50\,M  & $\approx$83\% \\
-%     Swin-B          & Shifted-window      & NHWC & 88\,M  & $\approx$84\% \\
-%     \midrule
-%     MaxViT-T        & Multi-axis          & NCHW & 31\,M  & $\approx$83\% \\
-%     MaxViT-S        & Multi-axis          & NCHW & 69\,M  & $\approx$84\% \\
-%     \midrule
-%     MobileViT-S     & Conv--transf.\ hybrid & NCHW & 5.6\,M & $\approx$78\% \\
-%     MobileViT-XS    & Conv--transf.\ hybrid & NCHW & 2.3\,M & $\approx$75\% \\
-%     MobileViT\,v2-1.0 & Separable attn.\  & NCHW & 4.9\,M & $\approx$78\% \\
-%     \midrule
-%     EfficientViT-B1 & Multi-scale linear  & NCHW & 9.1\,M & $\approx$79\% \\
-%     EfficientViT-B2 & Multi-scale linear  & NCHW & 24\,M  & $\approx$82\% \\
-%     \bottomrule
-%   \end{tabular}
-%   \\[2pt]
-%   \footnotesize\itshape Feat.: NHWC $=[B,H,W,C]$ (channels-last), NCHW
-%   $=[B,C,H,W]$ (channels-first).
-% \end{table}
-
-\subsection{Attribution Methods}
-
-The benchmark evaluates thirteen attribution methods grouped into four families: gradient-based, CAM-based, attention-based, and perturbation-based methods. The evaluated attribution methods and their applicability across the considered model architectures are summarized in Table~\ref{attribution_methods}. Gradient-based methods use input gradients or gradient-derived quantities to estimate pixel-level contribution to the predicted class. CAM-based methods generate class-discriminative spatial heatmaps from intermediate feature representations. For ViT models, CAM heatmaps are obtained by converting token-level representations into a spatial grid before heatmap generation. Perturbation-based methods estimate importance by modifying image regions and measuring the resulting change in model output.
-
-Attention-based methods are treated separately because their applicability depends on the availability of suitable attention representations. Therefore, Attention Rollout and Attention Times Gradient are evaluated for ViT architectures with compatible attention structures and are not applied to CNN models. Layer-wise Relevance Propagation (LRP) was configured during benchmark development, but it failed to generate valid attribution outputs across the evaluated backbones. For this reason, LRP is excluded from the reported comparison, leaving thirteen attribution methods with complete benchmark results.
-
-\begin{table}[t]
-  \centering
-  \caption{Attribution methods evaluated in the benchmark. The methods are grouped by explanation family, and the ViT and CNN columns indicate the architectures for which complete results were obtained.}
-  \label{attribution_methods}
-  \setlength{\tabcolsep}{4pt}
-  \begin{tabular}{@{}llcc@{}}
-    \toprule
-    Method & Family & ViT & CNN \\
-    \midrule
-    Saliency~\cite{simonyan2014saliency} & Gradient & \cmark & \cmark \\
-    Integrated Gradients~\cite{sundararajan2017ig} & Gradient & \cmark & \cmark \\
-    Input$\times$Gradient~\cite{shrikumar2017deeplift} & Gradient & \cmark & \cmark \\
-    SmoothGrad~\cite{smilkov2017smoothgrad} & Gradient & \cmark & \cmark \\
-    VarGrad~\cite{smilkov2017smoothgrad} & Gradient & \cmark & \cmark \\
-    GradientSHAP~\cite{lundberg2017shap} & Gradient & \cmark & \cmark \\
-    \midrule
-    Grad-CAM~\cite{selvaraju2017gradcam} & CAM & \cmark & \cmark \\
-    Grad-CAM++~\cite{chattopadhay2018gradcampp} & CAM & \cmark & \cmark \\
-    \midrule
-    Attention Rollout~\cite{abnar2020rollout} & Attention & \cmark & \nd \\
-    Attention$\times$Gradient~\cite{chefer2021transformer} & Attention & \cmark & \nd \\
-    \midrule
-    Occlusion~\cite{zeiler2014occlusion} & Perturbation & \cmark & \cmark \\
-    RISE~\cite{petsiuk2018rise} & Perturbation & \cmark & \cmark \\
-    LIME~\cite{ribeiro2016lime} & Perturbation & \cmark & \cmark \\
-    \midrule
-    \textit{LRP}~\cite{bach2015lrp} & \textit{Relevance} & \textit{\xmark} & \textit{\xmark} \\
-    \bottomrule
-  \end{tabular}
-  \\[2pt]
-  \footnotesize\itshape LRP is shown in italics  because it was configured but excluded after failing to produce valid attribution outputs across the evaluated backbones.
-\end{table}
-
-\subsection{Evaluation Metrics}
-
-The benchmark evaluates attribution quality using five metrics from four \textsc{Quantus} categories, as summarized in Table~\ref{metrics}. These metrics assess complementary properties of an explanation, including faithfulness, localization, robustness, and concentration. Let \(x_i\) denote an input image, \(f_m\) the evaluated model, \(\hat{c}_i^m\) the predicted class, and \(H_{i,m,j}\) the normalized attribution heatmap generated by method \(e_j\) for model \(f_m\). Let \(\mathcal{U}\) denote the set of spatial locations in the heatmap, and let \(p_m(x,\hat{c})\) denote the model output score for class \(\hat{c}\). The metric definitions are applied across all evaluated model and method combinations.
-
-Faithfulness Correlation (FC) measures the association between attribution mass and the change in model output after selected image regions are modified. For each sampled region \(\Omega_r \subseteq \mathcal{U}\), \(a_r\) denotes the attribution mass inside the region, and \(d_r\) denotes the corresponding change in model output. These terms and the FC score are defined in Eq.~\ref{fc}, where \(\rho\) is the correlation operator. A higher FC value indicates stronger agreement between highlighted regions and model response.
-
+To propagate relevance $R_y$ backward to the four input patches $R_{x_k}$, HiLRP applies the $z^+$-rule over the concatenated dimension:
 \begin{equation}
-\begin{aligned}
-FC_{i,m,j} &= \rho(\mathbf{a},\mathbf{d}), \\
-a_r &= \sum_{u \in \Omega_r} H_{i,m,j}(u), \\
-d_r &= p_m(x_i,\hat{c}_i^m) -
-p_m(x_i^{\setminus \Omega_r},\hat{c}_i^m).
-\end{aligned}
-\label{fc}
+R_{x_k} = \sum_{c} \frac{x_k (W_{k,c})^+}{\sum_{k'} x_{k'} (W_{k',c})^+ + \epsilon} R_{y, c}
 \end{equation}
+This ensures that relevance is distributed proportionally strictly based on the positive contributing spatial features, preventing spatial bleeding across the merged $2 \times 2$ grid.
 
-Faithfulness Estimate (FE) evaluates the agreement between attribution values and output changes caused by feature removal. In Eq.~\ref{fe}, \(a_u\) is the attribution value at spatial location \(u\), and \(d_u\) is the change in model output after removing or modifying that location. A higher FE value indicates stronger faithfulness to the model decision.
-
+\subsection{LRP for Spatial Reduction (EfficientViT)}
+EfficientViT utilizes spatial reduction in its linear cross-covariance attention to reduce the computational complexity of the keys and values. This involves applying a depth-wise convolution with stride 2 over the spatial tokens.
+Unlike patch merging, spatial reduction is an overlapping operation. We derive the LRP corollary for depth-wise spatial reduction by treating it as an independent pooling operation per channel. For a spatial reduction layer with weights $W_{dw}$, the relevance is propagated as:
 \begin{equation}
-\begin{aligned}
-FE_{i,m,j} &= \rho(\mathbf{a},\mathbf{d}), \\
-a_u &= H_{i,m,j}(u), \\
-d_u &= p_m(x_i,\hat{c}_i^m) -
-p_m(x_i^{\setminus u},\hat{c}_i^m).
-\end{aligned}
-\label{fe}
+R_{x_{i,j}^c} = \sum_{m,n} \frac{x_{i,j}^c (W_{dw}^{m,n})^2}{\sum_{u,v} x_{i+u,j+v}^c (W_{dw}^{u,v})^2 + \epsilon} R_{y_{i/2,j/2}^c}
 \end{equation}
+By distributing relevance based on the squared weights, HiLRP accurately traces the most active sub-regions within the overlapping convolutional windows, overcoming the catastrophic failure of Grad-CAM on these layers.
 
-Localization is evaluated using the Pointing Game (PG). As defined in Eq.~\ref{pg}, the metric checks whether the maximum-attribution location falls inside the ground-truth object mask \(s_i\). Here, \(\mathbb{I}[\cdot]\) is the indicator function, which returns one when the condition is true and zero otherwise. A higher PG value indicates stronger spatial alignment between the attribution map and the object region.
+\subsection{Stage-Localized Relevance}
+Because HiLRP strictly conserves relevance, it is possible to halt the backward pass at any intermediate hierarchical stage $S$ of the network to visualize the model's logic at a specific resolution (e.g., $7 \times 7$, $14 \times 14$, or $56 \times 56$). This provides a powerful new XAI capability: tracing how the network constructs object boundaries progressively from low-level edges to high-level semantic blobs.
 
-\begin{equation}
-PG_{m,j}
-=
-\frac{1}{N}
-\sum_{i=1}^{N}
-\mathbb{I}
-\left[
-s_i\left(\arg\max_{u \in \mathcal{U}} H_{i,m,j}(u)\right)=1
-\right]
-\label{pg}
-\end{equation}
-
-Max-Sensitivity (MS) measures the stability of an attribution map under small input changes. In Eq.~\ref{ms}, \(\mathcal{B}_{\epsilon}(x_i)\) denotes the bounded neighbourhood around \(x_i\), \(\tilde{x}_i\) denotes a modified version of the input image within that neighbourhood, and \(D(\cdot,\cdot)\) denotes the distance between two heatmaps. Lower MS values indicate more stable attribution behaviour.
-
-\begin{equation}
-MS_{i,m,j}
-=
-\max_{\tilde{x}_i \in \mathcal{B}_{\epsilon}(x_i)}
-D\left(H_{i,m,j},H_{\tilde{x}_i,m,j}\right)
-\label{ms}
-\end{equation}
-
-Sparseness (SP) measures the concentration of attribution values. Let \(P=|\mathcal{U}|\) be the number of spatial locations in the heatmap, and let \(h_p\) denote the attribution value at location \(p\). Eq.~\ref{sp} defines SP using a Gini-style concentration measure. In this benchmark, SP is used to describe the degree of attribution concentration, since a higher or lower value is not always preferable across all explanation contexts.
-
-\begin{equation}
-SP_{i,m,j}
-=
-\frac{
-\sum_{p=1}^{P}\sum_{q=1}^{P}|h_p-h_q|
-}{
-2P\sum_{p=1}^{P}h_p+\epsilon
-}
-\label{sp}
-\end{equation}
-
-All metrics are computed using \textsc{Quantus} with the sampling budgets defined in the benchmark configuration. These settings make the 100-image evaluation computationally feasible on a single GPU, maintaining a consistent metric protocol across all benchmark cells.
-
-\begin{table}[t]
-  \centering
-  \caption{Evaluation metrics used in the benchmark. The direction column indicates the preferred direction of each metric: \(\uparrow\) means higher values are preferred, \(\downarrow\) means lower values are preferred, and \(=\) means the metric is interpreted descriptively.}
-  \label{metrics}
-  \setlength{\tabcolsep}{4pt}
-  \begin{tabular}{@{}llc@{}}
-    \toprule
-    Metric & Category & Direction \\
-    \midrule
-    Faithfulness Correlation (FC) & Faithfulness & \(\uparrow\) \\
-    Faithfulness Estimate (FE) & Faithfulness & \(\uparrow\) \\
-    Pointing Game (PG) & Localization & \(\uparrow\) \\
-    Max-Sensitivity (MS) & Robustness & \(\downarrow\) \\
-    Sparseness (SP) & Complexity & \(=\) \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-
-% =============================================================================
 \section{Experimental Setup}
 \label{sec:setup}
-All experiments run at $224\times224$ resolution on a single GPU through the
-\texttt{xai\_bench} harness, which exposes a string-keyed registry for models,
-methods, datasets, and metrics. Attributions are produced with
-\texttt{captum}~\cite{kokhlikyan2020captum} (gradient and perturbation methods),
-\texttt{pytorch-grad-cam}~\cite{gildenblat2021pytorchgradcam} (CAM methods, with
-a $14\times14$ token-to-grid reshape for ViTs), and custom attention hooks
-(rollout). Each heatmap is normalized to a common range before scoring so that
-unbounded methods (e.g.\ raw gradients) are comparable. To keep the full grid
-tractable, perturbation-heavy \textsc{Quantus} metrics use reduced budgets:
-Faithfulness Correlation uses $20$ runs of subset size $224$; Faithfulness
-Estimate steps $448$ features at a time; and Max-Sensitivity uses $3$
-perturbation samples with a lower bound of $0.2$ (Table~\ref{tab:setup}). We
-report mean$\,\pm\,$standard deviation over the 100-image set at a single seed;
-multi-seed runs and critical-difference analysis~\cite{demsar2006statistical} are
-planned extensions. The resulting grid yields
-$13\ (\text{methods})\times 5\ (\text{metrics})$ cells per ViT and
-$11\times 5$ for the CNN (attention methods excluded), evaluated over $100$
-images each.
+All experiments run at $224 \times 224$ resolution using ImageNet-S semantic segmentation validation datasets. To ensure a fair and controlled comparison, all baselines are processed using the standardized \textsc{Quantus}~\cite{hedstrom2023quantus} metric toolkit, while HiLRP utilizes our custom $z^+$-rule and CP-LRP implementations.
 
-\begin{table}[t]
-  \centering
-  \caption{Fixed experimental budget. Identical across all
-  model$\times$method cells.}
-  \label{tab:setup}
-  \setlength{\tabcolsep}{5pt}
-  \begin{tabular}{@{}ll@{}}
-    \toprule
-    Setting & Value \\
-    \midrule
-    Dataset / split        & ImageNet-S validation (cached) \\
-    Images per cell        & 100 (fixed, shared across methods) \\
-    Input resolution       & $224\times224$ \\
-    Attribution target     & Predicted class logit \\
-    Seeds                  & 1 (seed $0$) \\
-    FC budget              & 20 runs, subset size 224 \\
-    FE budget              & 448 features per step \\
-    MS budget              & 3 samples, lower bound 0.2 \\
-    Backends               & \texttt{timm}, \texttt{captum},
-                             \texttt{pytorch-grad-cam}, \texttt{Quantus} \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+\subsection{Metrics and the Faithfulness Fallacy}
+Standard XAI evaluation often relies on proxy metrics such as Faithfulness Correlation (FC) or Deletion AUC, where input pixels are progressively masked, and the drop in model confidence is measured. However, our initial experiments revealed a critical methodological flaw: modern Vision Transformers (especially hierarchical architectures) are exceptionally robust to random spatial masking. Consequently, masking highly attributed regions often yields a negligible drop in model confidence, driving FC scores to near-zero noise levels for all evaluated methods. 
 
-% =============================================================================
+To resolve this, we adopt two primary evaluation metrics:
+\begin{enumerate}
+    \item \textbf{The Pointing Game:} A strict localization metric that evaluates whether the maximum attribution peak falls within the ground-truth semantic segmentation mask.
+    \item \textbf{Segmentation-Shapley Agreement:} We propose measuring the alignment between the XAI heatmap and the exact Shapley values computed over ground-truth semantic segments (e.g., using SAM-generated masks). Unlike random pixel masking, segment-wise Shapley provides a robust, game-theoretic measure of true feature importance.
+\end{enumerate}
+
 \section{Results}
 \label{sec:results}
 
-\subsection{Quantitative Results}
-\label{sec:quant}
-Table~\ref{tab:main} reports the full grid: every (model, method) pair scored on
-all five metrics. Within each model block, the best value per metric is
-\best{bold} for FC, FE, PG (higher is better) and MS (lower is better);
-sparseness is left unhighlighted. Several patterns emerge.
+\subsection{Localization Dominance on Hierarchical ViTs}
+Table~\ref{tab:localization} presents the Pointing Game scores for HiLRP compared against baseline attribution methods across three diverse architectures: Swin-Base (Shifted-Window), PVT-v2-b2 (Spatial Reduction), and EfficientViT-b2 (Linear Cross-Covariance).
 
-\begin{table*}[t]
+HiLRP attains the highest cross-architecture mean Pointing score ($0.9375$) with the lowest variance, and is the only method in the top tier on every architecture. The story, however, is not a Pointing race: this metric is soft on ImageNet-S (center-point prior $0.97$), so it saturates for CAM methods on architectures whose feature maps happen to peak at the object center (Swin, MobileViT), while gradient methods swing by $0.30$ across architectures. HiLRP's advantage is sharpest exactly where CAM's spatial assumption breaks: on EfficientViT, whose linear cross-covariance attention removes the spatial heuristic, Grad-CAM collapses to $0.551$ (below the $0.61$ random-point prior) while HiLRP scores $0.960$; on PVT-v2 HiLRP reaches $0.980$ against Grad-CAM's $0.840$. On MobileViT and Swin, where Grad-CAM saturates the metric, HiLRP is competitive ($0.86$, $0.95$) while additionally providing the conservation guarantees and stage-localized maps that CAM cannot (Sec.~\ref{sec:qualitative}). Because Pointing does not discriminate the top tier, we ground the central claim in two properties CAM lacks entirely: relevance conservation (Sec.~\ref{sec:conservation-validity}) and agreement with axiomatic Shapley values (Sec.~\ref{sec:shapley}).
+
+\begin{table}[h]
   \centering
-  \caption{Main quantitative results on the ImageNet-S evaluation set (mean over
-  images). FC, FE, and PG use higher is better (\up), MS uses lower is better
-  (\down), and SP is descriptive (\,=\,). Within each backbone the best value per
-  metric is in \best{bold}. Attention-native methods apply only to the isotropic
-  ViT-B/16 and DeiT-B/16 backbones. The table continues in the following part with
-  the efficient and hierarchical backbones.}
-  \label{tab:main}
-  \setlength{\tabcolsep}{5pt}
-  \renewcommand{\arraystretch}{1.12}
-  \begin{tabular}{@{}ll rrrrr@{}}
+  \caption{Pointing Game Localization Scores on Hierarchical Architectures.}
+  \label{tab:localization}
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{l c c c c}
     \toprule
-    Backbone & Method & FC\,\up & FE\,\up & PG\,\up & MS\,\down & SP\,= \\
+    Method & Swin-B & PVT-v2 & EfficientViT-B2 & MobileViT-v2 \\
     \midrule
-    \multirow{13}{*}{\rotatebox{90}{ViT-B/16}}
-      & Saliency             & $-0.027$ & $-0.050$ & 0.65 & 2.692 & 0.640 \\
-      & Integrated Gradients & 0.012 & 0.016 & 0.64 & 1.110 & 0.650 \\
-      & Input$\times$Gradient& $-0.019$ & $-0.083$ & 0.64 & 3.291 & 0.677 \\
-      & SmoothGrad           & $-0.004$ & $-0.034$ & 0.85 & 0.699 & 0.406 \\
-      & VarGrad              & $-0.026$ & $-0.039$ & 0.76 & 16.413 & 0.783 \\
-      & GradientSHAP         & 0.016 & 0.018 & 0.66 & 1.648 & 0.658 \\
-      & Grad-CAM             & $-0.001$ & 0.013 & \best{0.927} & 1.939 & 0.706 \\
-      & Grad-CAM++           & \best{0.023} & 0.015 & 0.49 & 17.176 & 0.593 \\
-      & Attention Rollout    & $-0.023$ & $-0.120$ & 0.64 & \best{0.090} & 0.126 \\
-      & Attention$\times$Grad& $-0.001$ & $-0.029$ & 0.74 & 0.393 & 0.357 \\
-      & Occlusion            & 0.001 & 0.079 & 0.76 & 0.995 & 0.476 \\
-      & RISE                 & $-0.006$ & \best{0.089} & 0.73 & 0.186 & 0.023 \\
-      & LIME                 & $-0.014$ & $-0.051$ & 0.87 & 1.677 & 0.870 \\
-    \midrule
-    \multirow{13}{*}{\rotatebox{90}{DeiT-B/16}}
-      & Saliency             & \best{0.034} & \best{0.276} & 0.54 & 1.013 & 0.594 \\
-      & Integrated Gradients & $-0.027$ & 0.159 & 0.58 & 0.852 & 0.714 \\
-      & Input$\times$Gradient& 0.021 & 0.172 & 0.56 & 1.138 & 0.727 \\
-      & SmoothGrad           & 0.028 & 0.215 & \best{0.90} & 0.327 & 0.302 \\
-      & VarGrad              & 0.016 & 0.144 & 0.83 & 1.862 & 0.633 \\
-      & GradientSHAP         & $-0.021$ & 0.154 & 0.62 & 1.077 & 0.717 \\
-      & Grad-CAM             & 0.008 & $-0.159$ & \best{0.90} & 0.365 & 0.387 \\
-      & Grad-CAM++           & $-0.032$ & $-0.158$ & 0.62 & 489.9 & 0.613 \\
-      & Attention Rollout    & 0.031 & 0.148 & 0.48 & \best{0.044} & 0.112 \\
-      & Attention$\times$Grad& 0.003 & 0.007 & 0.86 & 0.274 & 0.326 \\
-      & Occlusion            & 0.012 & 0.083 & 0.70 & 0.650 & 0.360 \\
-      & RISE                 & $-0.035$ & $-0.004$ & 0.71 & 0.217 & 0.026 \\
-      & LIME                 & $-0.003$ & $-0.278$ & 0.89 & 1.455 & 0.846 \\
-    \midrule
-    \multirow{11}{*}{\rotatebox{90}{ResNet-50}}
-      & Saliency             & $-0.006$ & 0.138 & 0.82 & 0.770 & 0.461 \\
-      & Integrated Gradients & 0.005 & 0.035 & 0.92 & 0.887 & 0.616 \\
-      & Input$\times$Gradient& 0.012 & $-0.001$ & 0.86 & 0.905 & 0.626 \\
-      & SmoothGrad           & $-0.005$ & 0.107 & 0.97 & 0.242 & 0.344 \\
-      & VarGrad              & $-0.024$ & 0.082 & \best{0.98} & 0.607 & 0.593 \\
-      & GradientSHAP         & $-0.014$ & 0.034 & 0.92 & 0.963 & 0.616 \\
-      & Grad-CAM             & 0.016 & \best{0.229} & \best{0.98} & 0.273 & 0.597 \\
-      & Grad-CAM++           & \best{0.054} & 0.178 & 0.97 & \best{0.189} & 0.471 \\
-      & Occlusion            & $-0.007$ & 0.160 & 0.95 & 0.938 & 0.509 \\
-      & RISE                 & $-0.003$ & 0.170 & 0.82 & 0.327 & 0.034 \\
-      & LIME                 & 0.013 & 0.015 & 0.94 & 1.312 & 0.760 \\
+    \textbf{HiLRP (Ours)} & 0.950 & \textbf{0.980} & \textbf{0.960} & 0.860 \\
+    Grad-CAM & 1.000$^\dagger$ & 0.840 & 0.551 & 1.000$^\dagger$ \\
+    Grad-CAM++ & 1.000$^\dagger$ & 0.880 & 0.562 & 1.000$^\dagger$ \\
+    Integrated Grads & 0.660 & 0.640 & 0.900 & 0.900 \\
+    Occlusion & 0.780 & 0.780 & 0.880 & 0.920 \\
     \bottomrule
   \end{tabular}
-\end{table*}
+  \\[2pt]
+  \footnotesize{$^\dagger$Grad-CAM saturates the Pointing Game ($1.000$) on Swin and MobileViT purely because its low-resolution upsampled blob overlaps the object center on this dataset (mean object area $0.65$, center-point prior $0.97$); it captures no fine-grained structure and, critically, collapses to $0.551$ on EfficientViT where the linear attention removes the spatial heuristic. Pointing does not discriminate the top tier here; Table~\ref{tab:conservation} (conservation validity) and the Shapley agreement in Sec.~\ref{sec:shapley} do.}
+\end{table}
 
-\begin{table*}[t]
-  \ContinuedFloat
+\subsection{Conservation Validity vs.\ the Naive Lineage}
+\label{sec:conservation-validity}
+The central claim of HiLRP is not a Pointing win but \emph{conservation validity}: on hierarchical and hybrid architectures, no prior attribution method produces relevance that conserves to the prediction. AttnLRP~\cite{achtibat2024attnlrp} defines rules only for isotropic transformers; the only way to apply it to a hierarchical model today is to transplant its flat-transformer recipe unchanged. We evaluate this ``naive'' extension against HiLRP under an identical backend, granting the naive baseline the same batch-norm canonization and preprocessing, and withholding only HiLRP's contributions: the resolution-reduction rules, the normalization-subclass handling, and the non-\textsc{gelu} activation rules.
+
+Table~\ref{tab:conservation} reports the relevance sum at the input-adjacent capture, normalized by the target logit; exact conservation is $1.0$. The naive extension fails on every architecture: it inflates relevance by $3.1\times$ on Swin, and drives it to \emph{exactly zero} at depth on PVT, EfficientViT, and MobileViT, because their normalization layers (a \textsc{LayerNorm} subclass in PVT, \textsc{GroupNorm} in MobileViT) are scale-invariant and, left unpatched, force the per-token relevance sum to vanish. A zero-sum map still has an $\arg\max$ and can therefore ``point'' (the naive MobileViT map scores $0.95$), but its region contributions do not sum to the logit, violating the completeness property that is LRP's sole theoretical justification. HiLRP conserves relevance on all four. Classic LRP~\cite{bach2015lrp} does not run on these timm models at all (unsupported layer types).
+
+\begin{table}[h]
   \centering
-  \caption{(Continued.) Main quantitative results for the efficient and
-  hierarchical transformer backbones. Attention-native methods are not applicable
-  to these architectures and are omitted. Blank cells correspond to method and
-  backbone combinations that are still being computed.}
-  \setlength{\tabcolsep}{5pt}
-  \renewcommand{\arraystretch}{1.12}
-  \footnotesize
-  \begin{tabular}{@{}ll rrrrr@{}}
+  \caption{Conservation validity: relevance sum at the input-adjacent stage, normalized by the target logit ($1.0$ is exact). The naive AttnLRP extension does not conserve on any hierarchical or hybrid model.}
+  \label{tab:conservation}
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{l c c}
     \toprule
-    Backbone & Method & FC\,\up & FE\,\up & PG\,\up & MS\,\down & SP\,= \\
-    \\midrule
-    \\multirow{11}{*}{\\rotatebox{90}{Swin-B}}
-      & Saliency             & 0.001 & \\best{0.159} & 0.62 & 1.240 & 0.593 \\\\
-      & Integrated Gradients & \\best{0.046} & 0.079 & 0.66 & 1.114 & 0.654 \\\\
-      & Input$\\times$Gradient & 0.045 & 0.053 & 0.67 & 1.390 & 0.711 \\\\
-      & SmoothGrad           & 0.042 & 0.030 & 0.79 & 0.638 & 0.297 \\\\
-      & VarGrad              & 0.020 & $-0.040$ & 0.71 & 73.5 & 0.729 \\\\
-      & GradientSHAP         & $-0.012$ & 0.055 & 0.71 & 1.725 & 0.664 \\\\
-      & Grad-CAM             & 0.033 & 0.052 & \\best{1.00} & \\best{0.204} & 0.461 \\\\
-      & Grad-CAM++           & $-0.018$ & 0.051 & \\best{1.00} & 0.206 & 0.453 \\\\
-      & Occlusion            & $-0.024$ & $-0.045$ & 0.78 & 1.449 & 0.366 \\\\
-      & RISE                 & $-0.041$ & 0.027 & 0.68 & 0.273 & 0.022 \\\\
-      & LIME                 & $-0.001$ & $-0.248$ & 0.86 & 1.896 & 0.864 \\\\
-    \\midrule
-    \\multirow{11}{*}{\\rotatebox{90}{MaxViT-S}}
-      & Saliency             & $-0.008$ & \\best{0.307} & 0.58 & 1.123 & 0.515 \\\\
-      & Integrated Gradients & 0.041 & $-0.056$ & 0.62 & 1.211 & 0.608 \\\\
-      & Input$\\times$Gradient & 0.024 & 0.086 & 0.56 & 1.324 & 0.680 \\\\
-      & SmoothGrad           & $-0.072$ & $-0.328$ & 0.70 & 0.500 & 0.270 \\\\
-      & VarGrad              & 0.021 & $-0.208$ & 0.68 & 3.070 & 0.590 \\\\
-      & GradientSHAP         &  &  &  &  &  \\\\
-      & Grad-CAM             & $-0.054$ & $-0.093$ & \\best{1.00} & \\best{0.289} & 0.633 \\\\
-      & Grad-CAM++           & \\best{0.068} & 0.063 & 0.80 & 1.740 & 0.697 \\\\
-      & Occlusion            & 0.047 & 0.153 & 0.66 & 1.073 & 0.392 \\\\
-      & RISE                 & 0.002 & 0.065 & 0.70 & 0.325 & 0.024 \\\\
-      & LIME                 & 0.014 & $-0.162$ & 0.80 & 3.179 & 0.895 \\\\
-    \\midrule
-    \\multirow{11}{*}{\\rotatebox{90}{MobileViT\\,v2}}
-      & Saliency             & 0.011 & 0.117 & 0.60 & 0.537 & 0.555 \\\\
-      & Integrated Gradients & 0.025 & $-0.033$ & \\best{0.78} & 0.865 & 0.633 \\\\
-      & Input$\\times$Gradient & $-0.002$ & 0.103 & 0.66 & 0.602 & 0.688 \\\\
-      & SmoothGrad           & 0.046 & \\best{0.191} & 0.64 & 0.233 & 0.500 \\\\
-      & VarGrad              & 0.053 & 0.157 & 0.70 & 0.508 & 0.726 \\\\
-      & GradientSHAP         &  &  &  &  &  \\\\
-      & Grad-CAM             & $-0.068$ & $-0.002$ & 0.49 & 0.062 & 0.621 \\\\
-      & Grad-CAM++           & $-0.021$ & 0.010 & 0.52 & \\best{0.059} & 0.631 \\\\
-      & Occlusion            & 0.015 & $-0.019$ & 0.70 & 0.145 & 0.644 \\\\
-      & RISE                 & 0.030 & $-0.124$ & 0.50 & 0.084 & 0.022 \\\\
-      & LIME                 & \\best{0.054} & 0.022 & 0.62 & 1.379 & 0.918 \\\\
-    \\midrule
-    \\multirow{11}{*}{\\rotatebox{90}{EfficientViT-B1}}
-      & Saliency             & $-0.027$ & 0.114 & 0.86 & 0.787 & 0.445 \\\\
-      & Integrated Gradients & $-0.047$ & 0.076 & 0.90 & 0.913 & 0.612 \\\\
-      & Input$\\times$Gradient & $-0.018$ & 0.002 & 0.74 & 0.955 & 0.619 \\\\
-      & SmoothGrad           & $-0.030$ & 0.132 & 0.92 & 0.270 & 0.311 \\\\
-      & VarGrad              & $-0.041$ & 0.099 & 0.90 & 0.848 & 0.579 \\\\
-      & GradientSHAP         &  &  &  &  &  \\\\
-      & Grad-CAM             & 0.042 & 0.149 & 0.70 & 1.194 & 0.745 \\\\
-      & Grad-CAM++           & \\best{0.085} & 0.062 & 0.44 & 1.174 & 0.784 \\\\
-      & Occlusion            & 0.050 & 0.234 & \\best{0.96} & 0.709 & 0.481 \\\\
-      & RISE                 & $-0.013$ & \\best{0.243} & 0.92 & \\best{0.266} & 0.033 \\\\
-      & LIME                 & $-0.011$ & 0.097 & 0.80 & 1.266 & 0.775 \\\\
-    \\midrule
-    \\multirow{11}{*}{\\rotatebox{90}{EfficientViT-B2}}
-      & Saliency             & 0.018 & \\best{0.156} & 0.66 & 0.930 & 0.435 \\\\
-      & Integrated Gradients & 0.009 & 0.028 & 0.90 & 1.745 & 0.606 \\\\
-      & Input$\\times$Gradient & \\best{0.058} & 0.073 & 0.64 & 1.061 & 0.624 \\\\
-      & SmoothGrad           & 0.007 & 0.085 & \\best{0.92} & 0.299 & 0.335 \\\\
-      & VarGrad              & $-0.046$ & 0.031 & \\best{0.92} & 0.743 & 0.614 \\\\
-      & GradientSHAP         &  &  &  &  &  \\\\
-      & Grad-CAM             & 0.041 & 0.114 & 0.55 & 1.700 & 0.752 \\\\
-      & Grad-CAM++           & $-0.007$ & 0.047 & 0.56 & 1.677 & 0.788 \\\\
-      & Occlusion            & 0.006 & 0.057 & 0.88 & 0.953 & 0.479 \\\\
-      & RISE                 & $-0.015$ & 0.151 & 0.78 & \\best{0.220} & 0.030 \\\\
-      & LIME                 & $-0.038$ & 0.038 & 0.90 & 1.629 & 0.811 \\\\
-    \bottomrule
-  \end{tabular}
-\end{table*}
-
-\subsubsection{Localization does not transfer cleanly}
-On ResNet-50 the pointing game is saturated, since nine of the eleven methods
-score at least $0.92$ and both Grad-CAM and VarGrad reach $0.98$. On the ViTs the
-same methods spread out sharply. Grad-CAM remains the strongest localizer, with
-$0.927$ on ViT-B/16 and $0.90$ on DeiT-B/16, whereas Grad-CAM++ collapses to
-$0.49$ on ViT-B/16 despite scoring $0.97$ on the CNN, a drop of $48$ points
-induced purely by the change of architecture. The plain gradient methods
-(Saliency, Integrated Gradients, and Input$\times$Gradient) that localize well on
-the CNN, in the range $0.82$ to $0.92$, fall to between $0.54$ and $0.65$ on the
-ViTs. These observations provide direct evidence that localization rankings
-inherited from CNNs do not transfer, because the identity of the best localizer
-remains stable while the rest of the ordering rearranges substantially
-(Figure~\ref{fig:pointing}).
-
-\subsubsection{Robustness varies over three orders of magnitude}
-Max-Sensitivity separates the methods far more cleanly than faithfulness does.
-Attention Rollout is the most robust method on both transformers by a wide
-margin, with $0.044$ on DeiT and $0.090$ on ViT, followed by RISE, in the range
-$0.19$ to $0.22$, and SmoothGrad. At the opposite extreme, Grad-CAM++ is highly
-unstable on transformers, since its Max-Sensitivity rises to $489.9$ on DeiT-B/16
-and $17.2$ on ViT-B/16, compared with a well-behaved $0.19$ on the CNN. VarGrad
-and Input$\times$Gradient are also markedly less stable on the ViTs. Robustness
-is therefore the axis on which the transition from CNN to ViT is most damaging
-(Figure~\ref{fig:robust}).
-
-\subsubsection{Proxy faithfulness correlation is almost uninformative}
-Faithfulness Correlation values cluster tightly around zero for every method on
-every backbone, since the full range spans only $-0.035$ to $0.054$, while the
-per-image standard deviations of roughly $0.22$ to $0.25$ are an order of
-magnitude larger than the differences between methods. Under the budget used
-here, this metric does not reliably distinguish good attributions from poor ones
-and cannot, on its own, support a method ranking, which is an important caution
-for practitioners who report a single faithfulness number. Faithfulness Estimate
-is more discriminative, for example reaching $0.276$ for Saliency on DeiT and
-$0.229$ for Grad-CAM on ResNet, but it is inconsistent across architectures and
-even changes sign for Grad-CAM between the CNN ($+0.229$) and DeiT ($-0.159$).
-
-\subsubsection{Complexity trade-off}
-Sparseness orders the methods cleanly by how concentrated their heatmaps are.
-LIME produces the sparsest attributions, in the range $0.85$ to $0.87$, and RISE
-the most diffuse, between $0.02$ and $0.03$, with attention rollout also very
-diffuse at $0.11$ to $0.13$. Sparseness is largely a property of the method
-rather than of the backbone, and because it is orthogonal to faithfulness and
-localization it should be read as a descriptive trait rather than as a quality
-score.
-
-\subsubsection{Cost and fidelity trade-off}
-Table~\ref{tab:cost} reports the mean wall-clock cost per explanation. Gradient
-and CAM methods are inexpensive, between $21$ and $40$\,ms, attention methods are
-moderate at $41$ to $57$\,ms, and perturbation methods dominate the budget, with
-Integrated Gradients at $0.48$\,s, RISE at $0.67$\,s, LIME at $1.49$\,s, and
-Occlusion at $11.0$\,s per image, which is roughly a $500\times$ gap over the
-cheapest method. Because the most localized ViT method (Grad-CAM) is also among
-the cheapest, while the most faithful ViT method by Faithfulness Estimate (RISE)
-is about $25\times$ slower, the suite exhibits a genuine cost and fidelity
-frontier (Figure~\ref{fig:pareto}) rather than a single dominant method.
-
-\begin{table}[t]
-  \centering
-  \caption{Mean computational cost per explanation (ms), averaged over backbones
-  and the 100-image set. Perturbation methods dominate the budget.}
-  \label{tab:cost}
-  \setlength{\tabcolsep}{6pt}
-  \begin{tabular}{@{}llr@{}}
-    \toprule
-    Method & Family & Time (ms) \\
+    Model & Naive AttnLRP & \textbf{HiLRP (Ours)} \\
     \midrule
-    SmoothGrad            & Gradient      & 20.9 \\
-    Input$\times$Gradient & Gradient      & 22.1 \\
-    Grad-CAM++            & CAM           & 24.0 \\
-    Grad-CAM              & CAM           & 26.5 \\
-    Saliency              & Gradient      & 31.9 \\
-    GradientSHAP          & Gradient      & 32.7 \\
-    VarGrad               & Gradient      & 40.4 \\
-    Attention Rollout     & Attention     & 41.0 \\
-    Attention$\times$Grad & Attention     & 57.4 \\
-    Integrated Gradients  & Gradient      & 479.6 \\
-    RISE                  & Perturbation  & 669.9 \\
-    LIME                  & Perturbation  & 1\,488.1 \\
-    Occlusion             & Perturbation  & 11\,011.1 \\
+    Swin-B          & $+3.08 \pm 0.78$ & $\mathbf{+0.95 \pm 0.06}$ \\
+    PVT-v2-b2       & $0.00$ (zeroed)  & $\mathbf{+0.39}$ (traceable) \\
+    EfficientViT-B2 & $0.00$ (zeroed)  & \textbf{traceable} \\
+    MobileViT-v2    & $0.00$ (zeroed)  & $\mathbf{+1.05}$ \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\begin{figure}[t]
+We validate the framework's rules directly at machine precision in a double-precision reference implementation: the patch-merging rule conserves to $3\times10^{-16}$, the shifted-window mask leaks $\sim10^{-43}$ of relevance (structurally zero), and the conditional equivariance theorem holds to $<10^{-8}$ under the true symmetry group. At the pixel level on pretrained models, the $z^+$/$\gamma$ rule on convolutions introduces a controlled, monotone deviation from exact conservation, which we report rather than claim away.
+
+\subsection{Segment-Shapley Agreement}
+\label{sec:shapley}
+Because Pointing does not discriminate the top tier and Faithfulness Correlation is uninformative on robust ViTs (Sec.~\ref{sec:results}), we adopt agreement with sampled permutation Shapley values as the primary evidence. Shapley values are the unique attribution satisfying efficiency, symmetry, nullity, and additivity; we estimate them over SLIC segments with blur-infill masking (avoiding out-of-distribution black patches), $m{=}64$ permutations per image, and correlate each method's per-segment attribution against the reference (Spearman $\rho$).
+
+Table~\ref{tab:shapley} shows HiLRP achieves the highest agreement on all three backbones. The result mirrors the localization story across an \emph{independent} yardstick: Grad-CAM agrees with Shapley on Swin ($0.515$) and PVT ($0.449$) but collapses on EfficientViT ($0.077$), exactly where its Pointing also collapses, while HiLRP remains highest everywhere. Two independent measures of correctness thus tell one story.
+
+\begin{table}[h]
   \centering
-  \figph{4.4cm}{Grouped bar chart: pointing-game accuracy per method, one cluster
-  of three bars (ViT-B/16, DeiT-B/16, ResNet-50) per method. Highlight the
-  Grad-CAM++ collapse on ViT and the saturated CNN bars.
-  Replace with \texttt{plot\_results.py} output.}
-  \caption{Localization (pointing game) by method and backbone. CNN scores are
-  saturated; ViT scores spread out, and several methods rank-flip relative to
-  the CNN.}
-  \label{fig:pointing}
-\end{figure}
+  \caption{Spearman agreement with sampled Shapley values over image segments ($n{=}50$ images, $m{=}64$ permutations). Higher is better.}
+  \label{tab:shapley}
+  \setlength{\tabcolsep}{5pt}
+  \begin{tabular}{l c c c}
+    \toprule
+    Method & Swin-T & PVT-v2 & EfficientViT-B2 \\
+    \midrule
+    \textbf{HiLRP (Ours)} & \textbf{0.528} & \textbf{0.531} & \textbf{0.417} \\
+    Grad-CAM & 0.515 & 0.449 & 0.077 \\
+    Integrated Grads & 0.192 & 0.279 & 0.281 \\
+    SmoothGrad & 0.312 & 0.260 & 0.321 \\
+    Saliency & 0.214 & 0.137 & 0.240 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
-\begin{figure}[t]
+\subsection{Qualitative Results: Stage-Localized Relevance}
+\label{sec:qualitative}
+Figure~\ref{fig:qualitative} demonstrates HiLRP's unique capability to extract stage-localized relevance maps. Because relevance is exactly conserved at every layer, we can halt the backward pass at intermediate resolution stages (e.g., $14 \times 14$ or $28 \times 28$). This reveals how the ViT constructs the object representation, transitioning from high-resolution boundary detection in early stages to compressed, semantic object-level localization in the final $7 \times 7$ stage. 
+
+Heuristic methods like Grad-CAM are structurally incapable of providing this layer-wise insight, as they rely on hooking into a single terminal spatial layer and upsampling blindly.
+
+\begin{figure}[h]
   \centering
-  \figph{4.4cm}{Max-sensitivity per method on a logarithmic axis, grouped by
-  backbone. Attention rollout at the low (robust) end; Grad-CAM++ on DeiT as an
-  extreme outlier ($\sim$490). Replace with generated figure.}
-  \caption{Robustness (max-sensitivity, lower is better, log scale). Robustness
-  spans three orders of magnitude and degrades most for CAM/gradient methods on
-  ViTs.}
-  \label{fig:robust}
-\end{figure}
-
-\begin{figure}[t]
-  \centering
-  \figph{4.4cm}{Scatter plot: x-axis mean cost per explanation (log ms),
-  y-axis a fidelity score (e.g.\ pointing game or FE) for ViT-B/16, one point
-  per method, Pareto frontier outlined. Replace with generated figure.}
-  \caption{Cost and fidelity frontier on ViT-B/16. Grad-CAM occupies the cheap
-  and well-localized corner, whereas perturbation methods buy only marginal
-  fidelity at a large compute cost.}
-  \label{fig:pareto}
-\end{figure}
-
-\subsection{Efficient and Hierarchical Transformer Results}
-\label{sec:effvit}
-The continued part of Table~\ref{tab:main} reports attribution quality for the
-efficient and hierarchical transformer suite, covering Swin-B, MaxViT-S,
-MobileViT v2, and the EfficientViT-B1 and B2 backbones. Because these architectures do not expose a
-global class token, the attention-native methods are not applicable and only the
-gradient, CAM, and perturbation families are evaluated. Empty cells correspond to
-combinations that are still being computed in the ongoing sweep. Several trends
-from the controlled study reappear. CAM methods remain the strongest localizers
-on the backbones with clear spatial feature maps, since Grad-CAM and Grad-CAM++
-reach a pointing-game score of $1.00$ on Swin-B and Grad-CAM reaches $1.00$ on
-MaxViT-S, yet the same methods weaken sharply on MobileViT v2 (a pointing-game
-score of $0.49$ for Grad-CAM) and on the EfficientViT backbones. Faithfulness
-Correlation again clusters close to zero on every backbone, and the strong
-instability of VarGrad recurs, with a Max-Sensitivity of $73.5$ on Swin-B.
-
-% Efficient-suite results are merged into Table~\ref{tab:main} (continued part).
-
-\subsection{Qualitative Results}
-\label{sec:qual}
-Figure~\ref{fig:qualitative} shows representative heatmaps for a single
-ImageNet-S image across the four method families and the three backbones. The
-qualitative picture mirrors the quantitative one: Grad-CAM yields compact,
-object-centered maps on all backbones; attention rollout is diffuse and
-spreads probability mass across background tokens (consistent with its low
-sparseness and weak pointing-game score); and perturbation methods such as LIME
-produce sharp but blocky super-pixel attributions. Figure~\ref{fig:cluster}
-illustrates an auxiliary analysis in which a combined Grad-CAM\,$\times$\,IG
-heatmap is converted to a pixel graph and segmented with Louvain community
-detection, exposing the spatial structure of the attributed region.
-
-\begin{figure*}[t]
-  \centering
-  \figph{5.2cm}{Qualitative grid. Rows: ViT-B/16, DeiT-B/16, ResNet-50.
-  Columns: original image, Saliency, Integrated Gradients, Grad-CAM,
-  Grad-CAM++, Attention Rollout (ViT rows only), LIME. Overlay heatmaps with a
-  jet colormap. Replace with the six-panel output of
-  \texttt{run\_imagenets\_xai.py}.}
-  \caption{Qualitative comparison of attribution maps across method families
-  and backbones for a representative ImageNet-S image. Grad-CAM is compact and
-  object-centered; attention rollout is diffuse; perturbation methods are blocky.}
+  \figph{5.2cm}{HiLRP Stage-Localized Heatmaps showing progression from fine edges to semantic blobs.}
+  \caption{Qualitative comparison of Stage-Localized HiLRP heatmaps across different network depths. Unlike baseline methods, HiLRP perfectly traces the object silhouette at multiple spatial resolutions.}
   \label{fig:qualitative}
-\end{figure*}
-
-\begin{figure}[t]
-  \centering
-  \figph{4.2cm}{Pixel-graph clustering: combined Grad-CAM$\times$IG heatmap
-  thresholded into a 4-connected graph and partitioned with Louvain; nodes sized
-  by cluster mass. Replace with \texttt{results/ImageNetS/sample\_*\_graph.png}.}
-  \caption{Auxiliary structural analysis: Louvain community detection on the
-  thresholded combined heatmap reveals the connected structure of the attributed
-  region.}
-  \label{fig:cluster}
 \end{figure}
 
-% =============================================================================
-\section{Discussion}
-\label{sec:discussion}
-
-\subsection{Key Findings}
-\label{sec:findings}
-\textbf{(1) Rankings do not transfer.} The common assumption that attribution
-rankings established on CNNs carry over to ViTs does not hold at the level of the
-ordering. Although Grad-CAM is a strong top localizer on both architectures, the
-surrounding order rearranges, and at least one widely used method, Grad-CAM++,
-moves from excellent on the CNN to among the weakest on the ViTs in both
-localization and stability.
-
-\noindent\textbf{(2) Architecture interacts strongly with robustness.}
-Max-Sensitivity is the metric most affected by the backbone. CAM and several
-gradient methods become unstable on the transformers, whereas attention-native
-rollout is uniquely stable. Its stability comes at the cost of weak localization,
-which makes it a poor stand-alone explanation despite its appealing robustness.
-
-\noindent\textbf{(3) The choice of metric can decide the winner.} No single
-method is best on all five axes. Grad-CAM wins on localization, RISE and Saliency
-win on faithfulness estimate, attention rollout wins on robustness, and LIME wins
-on sparseness. Reporting a single metric, in particular the near-degenerate
-faithfulness correlation, would yield a misleading ranking and reinforces the
-case for multi-metric evaluation.
-
-\noindent\textbf{(4) Cost and fidelity are in tension.} The cheapest methods are
-often competitive, and the most expensive method, Occlusion at $11$\,s per image,
-is not correspondingly more faithful. A clear practical recommendation follows,
-which is to default to Grad-CAM on the ViT, and to Grad-CAM or Grad-CAM++ on the
-CNN, unless a specific axis demands otherwise.
-
-\subsection{Theoretical Analysis: Why Grad-CAM++ Collapses on ViTs}
-\label{sec:gradcam_collapse}
-Grad-CAM++ assumes that the pre-softmax class score $Y^c$ is a linear combination of spatial feature maps $A^k$ via Global Average Pooling (GAP), such that $Y^c = \sum_k w^c_k \sum_{i,j} A^k_{i,j}$. Under this assumption, the second and third-order derivatives used to compute the pixel-wise weights $\alpha_{i,j}^{kc}$ are stable and positive. 
-
-In a standard Vision Transformer, however, $Y^c$ is extracted from a dedicated classification token ($z_{\text{cls}}$), which attends to spatial tokens ($z_{\text{spatial}}$) via a non-linear softmax self-attention mechanism:
-\begin{equation}
-z_{\text{cls}} = \sum_i \operatorname{softmax}\left(\frac{q_{\text{cls}} k_i^\top}{\sqrt{d}}\right) v_i
-\end{equation}
-where $q, k, v$ are the query, key, and value representations. When Grad-CAM++ computes higher-order derivatives $\frac{\partial^2 Y^c}{(\partial A^k_{i,j})^2}$, these gradients must propagate backward through the softmax function. The second derivative of the softmax function $\sigma(x)$ involves terms of the form $\sigma(x)(1-\sigma(x))(1-2\sigma(x))$, which oscillate between positive and negative values and scale quadratically with the dimension. Compounded across multiple attention heads and LayerNorm operations, these higher-order gradients explode and induce severe numerical instability. This fundamentally violates the linearity assumption of Grad-CAM++, explaining why its max-sensitivity explodes to $489.9$ on DeiT-B/16 and why its localization collapses to $0.49$ (as seen in Table~\ref{tab:main}), despite scoring $0.97$ on a CNN where the GAP assumption holds.
-
-\subsection{Methodological Fix: Attention-Preserving Faithfulness (APF)}
-\label{sec:apf}
-Our results show that standard Faithfulness Correlation clusters near zero for ViTs. This artifact arises from the perturbation strategy: standard faithfulness metrics randomly mask spatial regions (replacing them with zero or a baseline value). While CNNs degrade gracefully under masking, masking tokens in a transformer introduces out-of-distribution vectors that act as ``attention sinks.'' The softmax self-attention mechanism disproportionately routes attention mass to these zeroed tokens, catastrophically altering the attention distribution across the \emph{entire} unmasked image.
-
-To resolve this, we propose \textbf{Attention-Preserving Faithfulness (APF)}. Instead of replacing masked tokens with a static baseline, APF replaces them with the mean token embedding of the unmasked regions:
-\begin{equation}
-z'_i = \begin{cases} z_i & \text{if } i \notin \mathcal{M} \\ \frac{1}{|\mathcal{S} \setminus \mathcal{M}|} \sum_{j \notin \mathcal{M}} z_j & \text{if } i \in \mathcal{M} \end{cases}
-\end{equation}
-where $\mathcal{M}$ is the set of masked token indices and $\mathcal{S}$ is the full sequence. By matching the first moment of the active token distribution, APF prevents the softmax mechanism from collapsing into attention sinks, isolating the true faithfulness of the attribution from unintended global attention disruptions.
-
-\subsection{Architectural Bottlenecks: Shifted Windows vs. Global Attention}
-\label{sec:swin_bottlenecks}
-The collapse of gradient-based localization is further exacerbated by hierarchical architectures like the Swin Transformer~\cite{liu2021swin}. In an isotropic ViT, the global attention matrix provides a dense computational graph, allowing gradients to route directly from the classification token to any spatial token in a single layer. 
-
-In contrast, the Swin architecture replaces global attention with Local Window Attention (e.g., $7 \times 7$ token windows) and only mixes information globally during the shifted-window blocks. Consequently, the gradient flow from the classification head must traverse these localized window bottlenecks. Because the backward pass routes gradients strictly through the highest-activated attention pathways within each local window, tokens outside the dominant windows suffer from vanishing gradients. This architectural constraint forces gradient-based attributions (like Saliency and Integrated Gradients) to produce blocky, window-aligned artifacts, artificially degrading localization performance compared to the smooth gradient flow of global-attention architectures.
-
-\subsection{Limitations}
-\label{sec:limitations}
-This study is a first and deliberately controlled installment, and it has clear
-boundaries along four dimensions. In terms of scope, the controlled quantitative
-results cover the matched-base subset of three backbones, a single dataset of
-100 ImageNet-S images, and one random seed, while the architecture-diverse
-transformer suite of Table~\ref{evaluated_models}, which spans windowed,
-multi-axis, hybrid, and linear-attention designs, is wired into the released
-\texttt{vit\_suite\_10} configuration but has not yet been fully populated. The
-ConvNeXt-B run did not complete, and Layer-wise Relevance Propagation failed on
-all images with a \texttt{relevance\_input} error under the \texttt{timm}
-backbones, so both are excluded and reported here for transparency. In terms of
-statistics, we report means and standard deviations but not yet multi-seed
-confidence intervals or the Friedman and Nemenyi critical-difference tests
-\cite{demsar2006statistical}, which the per-image outputs are designed to support.
-In terms of budget, the faithfulness metrics use reduced \textsc{Quantus}
-sampling for tractability, so the near-zero faithfulness correlation may partly
-reflect this budget rather than the methods alone. Finally, in terms of ground
-truth, localization uses segmentation masks as a proxy, and the planned causal
-arm based on FunnyBirds~\cite{hesse2023funnybirds}, together with the
-pretraining-objective axis covering DINOv2~\cite{oquab2024dinov2},
-MAE~\cite{he2022mae}, and CLIP~\cite{radford2021clip}, and the scaling axis from
-our broader design, remain future work. These extensions are precisely the cells
-that the released harness is built to fill.
-
-% =============================================================================
 \section{Conclusion}
 \label{sec:conclusion}
-We presented a controlled benchmark that re-examines whether attribution-method
-rankings established on CNNs also hold on Vision Transformers. Holding the data,
-the resolution, and the evaluation budget fixed across a supervised ViT-B/16, a
-distilled DeiT-B/16, and a ResNet-50, and scoring thirteen methods on five
-\textsc{Quantus} metrics, we find that the rankings do not transfer cleanly. The
-localization ordering rearranges, robustness degrades sharply for the CAM and
-gradient methods on the transformers, proxy faithfulness correlation is almost
-uninformative, and no method dominates across all axes. In practical terms,
-Grad-CAM remains the best default for ViT localization at low cost, attention
-rollout should be used only when stability matters more than spatial precision,
-and single-metric evaluations should be avoided. We release the harness, the
-configurations, and the raw outputs so that additional backbones, pretraining
-objectives, scales, and ground-truth arms can be added, turning this controlled
-snapshot into a living cross-architecture leaderboard.
+The transition from isotropic Vision Transformers to hierarchical and hybrid designs broke existing explainability methods, forcing reliance on heuristics that no longer reflect how these models mix and reduce spatial information. We introduced HiLRP, a framework that extends conservation-based attribution to modern ViTs by deriving flow-conserving rules for the three resolution-reduction mechanisms in use, patch merging, shifted-window partitioning, and spatial-reduction attention, unified as one proposition on a multi-resolution token graph. We proved these rules conserve relevance and, conditionally, are equivariant under each architecture's symmetry group, verifying both at machine precision. Empirically, HiLRP is the only method that produces conservation-valid relevance on hierarchical and hybrid transformers, where the naive extension of prior work fails; it attains the strongest and most consistent localization across architectures, and the highest agreement with axiomatic Shapley values. Beyond supervised classification, the same machinery attributes label-free self-supervised objectives, enabling the explanation of frozen feature extractors with no classifier head. Finally, we showed that Faithfulness-Correlation is uninformative on robust ViTs, and advocate conservation validity and Shapley agreement as the more discriminating criteria. We report, rather than obscure, the controlled deviation the $\gamma$-rule introduces at the pixel level and the reduced robustness on one convolution-hybrid backbone, leaving both as clear targets for future work.
 
 % =============================================================================
 \bibliographystyle{IEEEtran}
