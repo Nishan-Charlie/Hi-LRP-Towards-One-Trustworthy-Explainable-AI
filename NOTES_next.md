@@ -209,6 +209,28 @@ silently zeroed relevance sums (we measured 0.89 -> 0.98 pointing from our
 guard alone). THE LINEAGE CLAIM, sharpened: HiLRP = AttnLRP's rules where they
 exist, plus guarantees and guards where they do not.
 
+COMPLETE LINEAGE TABLE (naive legs done 2026-07-05, scripts/lineage_naive_legs.py,
+100 imgs, generous naive = canonizer + correct stats):
+
+model            | naive point | naive deep-cons | HiLRP point | HiLRP deep-cons
+vit_base (flat)  | 0.770 (=AttnLRP) | +0.15   | 0.770 (attnlrp mode) | +0.61
+swin_base        | 0.980       | +3.08 +-0.78    | 0.950       | +0.95
+pvt_v2_b2        | 0.800       | 0.00 (zeroed)   | 0.980       | +0.39
+efficientvit_b2  | 0.930       | 0.00 (zeroed)   | 0.960       | traceable
+mobilevitv2      | 0.950       | 0.00 (zeroed)   | 0.860       | +1.05 head
+
+THE DISCRIMINATOR IS DEEP CONSERVATION, not pointing. On every hierarchical/
+hybrid model the naive extension's relevance FAILS TO CONSERVE to the
+prediction: either 3x-inflated (Swin) or driven to EXACTLY ZERO at the
+input-adjacent cut (pvt/efficientvit/mobilevit, from unpatched scale-invariant
+norms). A zero-sum map still has an argmax, so it can "point" (naive mobilevit
+0.95 > HiLRP 0.86), but it violates the completeness property that is LRP's
+entire theoretical justification: the region contributions do not sum to the
+logit. HiLRP is the ONLY conservation-valid method on these architectures.
+HONEST FRAMING: superiority = conservation-validity + guards, NOT pointing (which
+is mixed and on a soft 0.97-center-prior metric). Never claim pointing wins on
+mobilevit. Artifact: paper/lineage_table.md (tracked; results/ is gitignored).
+
 ## 5e. hilrp quantus grid: CUDA error at img 35 (checkpointed, resumable)
 
 results/hilrp_grid/results.json has partial rows. Suspect VRAM accumulation
