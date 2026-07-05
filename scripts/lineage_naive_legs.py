@@ -39,7 +39,8 @@ from zennit.rules import Gamma
 
 N_IMAGES = 100
 
-MODELS = ["pvt_v2_b2", "efficientvit_b2", "mobilevitv2_100"]
+MODELS = ["swin_base_patch4_window7_224", "pvt_v2_b2", "efficientvit_b1",
+          "efficientvit_b2", "maxvit_small_tf_224", "mobilevitv2_100"]
 
 IMAGENET_MEAN = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
 IMAGENET_STD = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)

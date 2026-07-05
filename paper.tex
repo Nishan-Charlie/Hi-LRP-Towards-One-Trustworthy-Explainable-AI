@@ -308,6 +308,10 @@ HiLRP attains the highest cross-architecture mean Pointing score ($0.9375$) with
   \footnotesize{$^\dagger$Grad-CAM saturates the Pointing Game ($1.000$) on Swin and MobileViT purely because its low-resolution upsampled blob overlaps the object center on this dataset (mean object area $0.65$, center-point prior $0.97$); it captures no fine-grained structure and, critically, collapses to $0.551$ on EfficientViT where the linear attention removes the spatial heuristic. Pointing does not discriminate the top tier here; Table~\ref{tab:conservation} (conservation validity) and the Shapley agreement in Sec.~\ref{sec:shapley} do.}
 \end{table}
 
+\subsection{Why Grad-CAM Saturates the Pointing Game}
+\label{sec:gradcam-blob}
+Grad-CAM's perfect Pointing on Swin and MobileViT (Table~\ref{tab:localization}) is not evidence of precise localization; it is an artifact of the metric interacting with a low-resolution, center-biased map. Grad-CAM upsamples a $7{\times}7$ terminal feature map into a smooth blob whose peak, on a dataset of large centered objects, lands inside the object almost by construction. We make this quantitative. A content-free fixed center-Gaussian blob, which uses no model at all, already scores a Pointing of $1.00$ on both Swin and MobileViT, equal to Grad-CAM. Moreover, Grad-CAM's own maps correlate strongly with that center-Gaussian (Pearson $0.72$ on Swin, $0.63$ on MobileViT) and their center of mass sits within $11$--$21\%$ of the image center. HiLRP maps, by contrast, correlate only $0.14$--$0.25$ with the center blob: they follow object structure rather than reproducing the dataset's spatial prior. Grad-CAM thus wins the Pointing Game where the prior is strong and collapses where it is not (EfficientViT, $0.551$), which is precisely why we do not treat Pointing as the arbiter and instead rely on conservation validity and Shapley agreement.
+
 \subsection{Conservation Validity vs.\ the Naive Lineage}
 \label{sec:conservation-validity}
 The central claim of HiLRP is not a Pointing win but \emph{conservation validity}: on hierarchical and hybrid architectures, no prior attribution method produces relevance that conserves to the prediction. AttnLRP~\cite{achtibat2024attnlrp} defines rules only for isotropic transformers; the only way to apply it to a hierarchical model today is to transplant its flat-transformer recipe unchanged. We evaluate this ``naive'' extension against HiLRP under an identical backend, granting the naive baseline the same batch-norm canonization and preprocessing, and withholding only HiLRP's contributions: the resolution-reduction rules, the normalization-subclass handling, and the non-\textsc{gelu} activation rules.
@@ -391,6 +395,26 @@ Table~\ref{tab:rq2} reports the results over 30 images. The four objectives prod
     CLIP       & 0.982 & 0.37 & 0.39 \\
     \midrule
     \multicolumn{4}{l}{\footnotesize Mean pairwise map agreement (Spearman): $\mathbf{0.33}$ (vs.\ $1.0$ if objective-invariant)} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Selection of the $\gamma$ Parameter}
+\label{sec:gamma}
+The $\gamma$-rule on linear and convolutional layers is HiLRP's only free hyperparameter. As $\gamma\to0$ it recovers the pure $\epsilon$-rule, exact in conservation but noisier at the pixel level; larger $\gamma$ emphasizes positive evidence, denoising the map at the cost of a bias toward positive contributions. Table~\ref{tab:gamma} sweeps $\gamma$ and reports Pointing and the head-adjacent conservation ratio. Localization is insensitive to $\gamma$ on Swin and near-peak for $\gamma\le0.5$ on PVT, while on EfficientViT it degrades monotonically as $\gamma$ grows ($0.90\to0.80$). Conservation is stable across the range for the architectures whose transitions are LayerNorm-based. We therefore fix $\gamma=0.25$ for all models and all experiments: it sits at or within one image of the best Pointing on every backbone, avoids the pixel noise of the $\epsilon$ limit, and requires no per-model tuning. This single default, rather than a per-model search, is what we report throughout.
+
+\begin{table}[h]
+  \centering
+  \caption{Sensitivity to $\gamma$ (20 images): Pointing / head-adjacent conservation. $\gamma{=}0.25$ (bold) is at or near the best Pointing on every backbone and needs no per-model tuning.}
+  \label{tab:gamma}
+  \setlength{\tabcolsep}{5pt}
+  \begin{tabular}{l cccc}
+    \toprule
+    Backbone & $\gamma{=}0.1$ & $\bm{\gamma{=}0.25}$ & $\gamma{=}0.5$ & $\gamma{=}1.0$ \\
+    \midrule
+    Swin-B          & 0.95 & \textbf{0.95} & 0.95 & 0.95 \\
+    PVT-v2          & 1.00 & \textbf{1.00} & 1.00 & 0.95 \\
+    EfficientViT-B2 & 0.90 & \textbf{0.90} & 0.85 & 0.80 \\
     \bottomrule
   \end{tabular}
 \end{table}
