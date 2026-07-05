@@ -27,9 +27,16 @@ def _dispatch(model_name):
     if model_name.startswith("pvt"):
         from xai_bench.methods.hilrp.pvt_lxt import attribute_pvt
         return attribute_pvt
+    if model_name.startswith("maxvit") or model_name.startswith("maxxvit"):
+        from xai_bench.methods.hilrp.maxvit_lxt import attribute_maxvit
+        return attribute_maxvit
     if any(model_name.startswith(p) for p in ("vit", "deit", "beit")):
+        from functools import partial
         from xai_bench.methods.hilrp.vit_lxt import attribute_vit
-        return attribute_vit
+        # per-family rule (established by ablation): isotropic CLS-pooled ViTs
+        # localize through the attention path, so use the AttnLRP softmax rule;
+        # windowed/hierarchical models use CP (their own attributors default to it).
+        return partial(attribute_vit, attn_mode="attnlrp")
     raise ValueError(f"no HiLRP attributor for {model_name}")
 
 

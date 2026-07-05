@@ -96,7 +96,8 @@ def audit_norm_patches(model, verbose=True):
         # is a plain affine (no invariance issue, no patch needed)
         if isinstance(m, (nn.LayerNorm, nn.GroupNorm, nn.InstanceNorm2d)):
             fwd = type(m).forward.__name__
-            if fwd not in ("layer_norm_forward", "group_norm1_forward"):
+            if fwd not in ("layer_norm_forward", "group_norm1_forward",
+                           "ln2d_identity_forward"):
                 unpatched.append((name, type(m).__module__ + "." + type(m).__name__, fwd))
     if verbose and unpatched:
         print("WARNING: unpatched norm modules (class forward not an LRP rule):")

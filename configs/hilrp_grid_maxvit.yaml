@@ -1,0 +1,37 @@
+# HiLRP rows for the remaining benchmark models (dedicated run: class-level
+# patches). Completes the 10-model benchmark so HiLRP has a row against every
+# baseline on every architecture. Same protocol as hilrp_grid.yaml.
+
+models:
+  - "maxvit_small_tf_224"
+
+methods:
+  - "hilrp"
+
+metrics:
+  - "faithfulness_correlation"
+  - "apf"
+  - "faithfulness_estimate"
+  - "pointing_game"
+  - "max_sensitivity"
+  - "sparseness"
+
+metric_kwargs:
+  faithfulness_correlation:
+    { nr_runs: 20, subset_size: 224, return_aggregate: false }
+  apf:
+    { nr_runs: 20, subset_size: 224, return_aggregate: false }
+  faithfulness_estimate: { features_in_step: 448, return_aggregate: false }
+  max_sensitivity: { nr_samples: 3, lower_bound: 0.2 }
+
+dataset: "imagenets_cached"
+dataset_kwargs:
+  { cache_path: "data/ImageNetS/cache_validation_100.pt", num_samples: 50 }
+num_images: 50
+seeds: [0]
+device: "auto"
+input_size: 224
+output_dir: "results"
+run_name: "hilrp_grid_maxvit"
+save_saliency: false
+limit_methods_to_supported: true
