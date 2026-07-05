@@ -160,6 +160,25 @@ mechanism; (b) write the conditional theorem in LaTeX (reuse Lemma-1
 sum-exchange); (c) extend the consistency table with grad_cam + smoothgrad and
 more images.
 
+## 5c. SSL-scalar branch LANDED (2026-07-05): label-free attribution works
+
+vit_lxt.py (plain-ViT port, simplest of the family) + attribute_ssl_similarity:
+backward from cos(cls(x), cls(flip(x)).detach()) with the norm denominator
+DETACHED (cosine is scale-invariant; an in-graph norm zeroes relevance sums by
+the same invariance mechanism as an unpatched LayerNorm: this is now a design
+rule: every scalar head needs its own identity treatment for normalizers).
+
+Demo (scripts/ssl_scalar_demo.py, ViT-S/16 DINO vs supervised AugReg, 12 imgs):
+- label-free pointing 0.92 for BOTH pretrainings (no labels anywhere)
+- conservation to pixels differs by pretraining: supervised 0.91 +/- 0.04 vs
+  DINO 0.37 +/- 0.04 of the scalar: a mechanistic RQ2 observation (where the
+  view-invariance evidence is absorbed differs by objective)
+- map structure differs visibly: DINO traces object geometry, supervised shows
+  patch-grid artifacts. Figure: results/ssl_scalar/ssl_similarity_maps.png
+
+RQ2 scale-up next: more images, map-correlation metrics between pretrainings,
+MAE reconstruction scalar, DINOv2 (needs 518px or interpolated pos-embed).
+
 ## 6. Then (order per CLAUDE.md)
 
 - Rebuild conservation-trace measurement primitive (thread 4, blocks paper
