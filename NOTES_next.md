@@ -140,6 +140,26 @@ mediocre on SRA; gradient methods swing 0.62-0.92 by architecture. Headline:
 architecture-consistent reliability + the efficientvit win, not "beats CAM
 everywhere".
 
+## 5b. Equivariance thread STARTED (2026-07-05): theorem must be conditional
+
+First measurement (scripts/equivariance_test.py, swin_tiny, cyclic shifts,
+8 imgs) killed the naive theorem: even window-multiple cyclic shifts are NOT a
+symmetry of real Swin (forward drift 7e-2), because the SW-MSA masks anchor to
+the canvas. There is no exact input-space translation symmetry for masked Swin.
+
+The honest, provable statement is CONDITIONAL: if the forward commutes with a
+permutation of tokens/pixels, HiLRP commutes (Lemma 2 + weight sharing; the
+rules use no absolute-position quantities). Empirics then quantify partial
+symmetry transfer: at equal forward drift, HiLRP consistency ~0.90 vs saliency
+0.41-0.61, and HiLRP degrades exactly when the forward does (unaligned shift:
+drift 9.2e-2, rho 0.52). Attribution tracks the model, not the image.
+
+Next: (a) idealized cyclic-Swin (remove masks, cyclic window attention) where
+the premise holds exactly: verify rho -> 1.0 numerically, validating the
+mechanism; (b) write the conditional theorem in LaTeX (reuse Lemma-1
+sum-exchange); (c) extend the consistency table with grad_cam + smoothgrad and
+more images.
+
 ## 6. Then (order per CLAUDE.md)
 
 - Rebuild conservation-trace measurement primitive (thread 4, blocks paper
