@@ -25,15 +25,24 @@ from lxt.efficient.zennit_patches import monkey_patch_zennit
 from zennit.composites import LayerMapComposite
 from zennit.rules import Gamma
 
+from lxt.efficient.rules import divide_gradient
+
 from timm.models import vision_transformer as _vit_mod
 from timm.models.vision_transformer import Attention
 from timm.layers.norm import LayerNorm as TimmLayerNorm
 
 
 # ----------------------------------------------------------- attention patch
+# 'cp' (default): softmax attention detached, relevance through values only.
+# 'attnlrp': full AttnLRP semantics in Gradient x Input: the plain softmax vjp
+# IS the softmax Taylor rule (Prop 3.1), divide_gradient implements the uniform
+# bilinear rule (Eq. 7). Used for the lineage comparison against AttnLRP proper.
+ATTN_MODE = "cp"
+
+
 def cp_vit_attention_forward(self, x, attn_mask=None, is_causal=False):
-    """timm vision_transformer.Attention.forward (explicit path) with CP-LRP:
-    softmax attention detached, relevance flows through the value path."""
+    """timm vision_transformer.Attention.forward (explicit path) under LRP
+    rules; see ATTN_MODE above. Forward numerics identical to timm."""
     assert attn_mask is None and not is_causal, "classification path only"
     B, N, C = x.shape
     qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, self.head_dim).permute(2, 0, 3, 1, 4)
@@ -42,9 +51,14 @@ def cp_vit_attention_forward(self, x, attn_mask=None, is_causal=False):
 
     q = q * self.scale
     attn = q @ k.transpose(-2, -1)
+    if ATTN_MODE == "attnlrp":
+        attn = divide_gradient(attn, 2)       # uniform rule on q@k^T
     attn = attn.softmax(dim=-1)
     attn = self.attn_drop(attn)
-    x = attn.detach() @ v                     # CP-LRP: attention as constant weights
+    if ATTN_MODE == "cp":
+        x = attn.detach() @ v                 # CP-LRP: attention as constant weights
+    else:
+        x = divide_gradient(attn @ v, 2)      # uniform rule on attn@v; softmax vjp = Taylor
 
     x = x.transpose(1, 2).reshape(B, N, self.attn_dim)
     x = self.norm(x)
@@ -94,8 +108,10 @@ def _run_backward(model, x, scalar_fn, gamma, conv_gamma):
     return scalar.item(), aux, pixel_map
 
 
-def attribute_vit(model, x, target=None, gamma=0.25, conv_gamma=None):
+def attribute_vit(model, x, target=None, gamma=0.25, conv_gamma=None, attn_mode="cp"):
     """Class-logit attribution for a plain timm ViT."""
+    global ATTN_MODE
+    ATTN_MODE = attn_mode
     holder = {}
 
     def scalar_fn(mod, xin):
