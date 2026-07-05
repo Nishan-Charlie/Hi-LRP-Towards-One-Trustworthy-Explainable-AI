@@ -51,8 +51,16 @@ def get_hilrp(model_wrapper, model=None, gamma=0.25, **kwargs):
     attribute = _dispatch(model_wrapper.model_name)
 
     def method(inputs: torch.Tensor, target: int) -> torch.Tensor:
+        # quantus calls the explain_func hundreds of times per image
+        # (max_sensitivity samples, faithfulness perturbations). Each call opens
+        # a composite context and a backward graph; free the CUDA cache between
+        # calls or fragmentation eventually triggers "CUDA error: unknown error".
         x = inputs if adapter is None else adapter._adapt(inputs)
         res = attribute(inner, x, target=target, gamma=gamma)
-        return res["pixel_map"].unsqueeze(0).to(inputs.device)
+        out = res["pixel_map"].detach().unsqueeze(0).to(inputs.device)
+        inner.zero_grad(set_to_none=True)
+        if inputs.is_cuda:
+            torch.cuda.empty_cache()
+        return out
 
     return method
