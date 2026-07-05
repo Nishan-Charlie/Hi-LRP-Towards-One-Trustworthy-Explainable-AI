@@ -8,4 +8,4 @@ from . import captum_methods
 from . import cam_methods
 from . import attention_rollout
 from . import perturbation_methods
-# from . import composite_methods # Wait, I haven't written composite_methods.py yet!
+from . import hilrp_method   # NOTE: hilrp requires a DEDICATED run (class-level patches)
