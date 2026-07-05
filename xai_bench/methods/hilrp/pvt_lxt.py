@@ -34,6 +34,7 @@ from zennit.rules import Gamma
 
 from timm.models import pvt_v2 as _pvt_mod
 from timm.models.pvt_v2 import Attention
+from timm.layers.norm import LayerNorm as TimmLayerNorm
 
 
 # ----------------------------------------------------------- attention patch
@@ -76,8 +77,32 @@ def cp_pvt_attention_forward(self, x, feat_size):
 PVT_PATCH_MAP = {
     nn.GELU: partial(patch_method, non_linear_forward, keep_original=True),
     nn.LayerNorm: partial(patch_method, layer_norm_forward),
+    # CRITICAL: timm's PVT norms are timm.layers.norm.LayerNorm, a SUBCLASS whose
+    # own forward ignores the nn.LayerNorm class patch. Unpatched LN runs with the
+    # full gradient, and LayerNorm's scale/shift invariance forces per-token
+    # x . grad == 0 exactly: this silently zeroed every deep-cut relevance sum
+    # ("the conservation cliff") while leaving maps plausible. Patch the subclass.
+    TimmLayerNorm: partial(patch_method, layer_norm_forward),
     Attention: partial(patch_method, cp_pvt_attention_forward),
 }
+
+
+def audit_norm_patches(model, verbose=True):
+    """Guard against the class-subclass patch trap: list every normalization
+    module whose executing (class) forward is not an LRP-patched function."""
+    unpatched = []
+    for name, m in model.named_modules():
+        # input-statistic norms only: eval-mode BatchNorm uses running stats and
+        # is a plain affine (no invariance issue, no patch needed)
+        if isinstance(m, (nn.LayerNorm, nn.GroupNorm, nn.InstanceNorm2d)):
+            fwd = type(m).forward.__name__
+            if fwd not in ("layer_norm_forward", "group_norm1_forward"):
+                unpatched.append((name, type(m).__module__ + "." + type(m).__name__, fwd))
+    if verbose and unpatched:
+        print("WARNING: unpatched norm modules (class forward not an LRP rule):")
+        for n, t, f in unpatched:
+            print(f"  {n}: {t} (forward={f})")
+    return unpatched
 
 _PATCHED = False
 

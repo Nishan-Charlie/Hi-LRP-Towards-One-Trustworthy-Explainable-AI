@@ -81,10 +81,30 @@ zennit graph rewiring may orphan retained tensors). ALL deep-cut traces
 the measurement primitive is rebuilt. Trustworthy: head-adjacent cuts
 (swin 1.00, mobilevit 1.05, pvt 1.01) and the float64 toy (6.5e-9, no zennit).
 
-Next action (surgical, one session): minimal repro = stage3.norm + reshape +
-pool + Gamma-hooked Linear on real tensor values; bisect ops until the identity
-violation appears/vanishes; rebuild trace tooling on the surviving primitive
-(likely capture relevance inside hook backwards, not retain_grad).
+RESOLVED (2026-07-05, session 3): ROOT CAUSE = class-subclass patch trap.
+timm's PVT norms are timm.layers.norm.LayerNorm, a SUBCLASS whose own forward
+ignores the nn.LayerNorm class patch. Every norm in PVT ran UNPATCHED (full
+gradient). Unpatched LayerNorm is scale- and shift-invariant, which forces
+per-token x . grad == 0 EXACTLY: that is the entire "cliff". Both earlier
+conclusions were wrong: never a leak, never a measurement artifact; the graph
+simply was not executing the patched forward (the identity verified in
+isolation applied to the patched LN; the model ran the unpatched one, whose
+Jacobian differs). The elementwise identity-LN swap "changing nothing" is
+explained the same way: also a no-op on the subclass.
+
+Fix (pvt_lxt.py): TimmLayerNorm added to the patch map; audit_norm_patches()
+guard flags any input-statistic norm whose class forward is not an LRP rule.
+Audit across models: pvt 0 unpatched (after fix), mobilevitv2 0,
+efficientvit_b2 0, swin 0 (those three were never affected).
+
+Result: PVT traces are now smooth and monotone (stage3 1.01 -> stage2 0.94 ->
+stage1 0.63 -> stage0 0.51 -> embed 0.39 -> pixels 0.33: graceful bias/gamma
+absorption, no zeros, no flips); 10-img pointing probe 10/10. Full 100-img PVT
+leg re-running; update the Gate 3 PVT row when it lands.
+
+Still open from this thread: efficientvit's +11 stage-3 inflation (its norms
+audit clean, so different mechanism; suspect the LiteMLA CP detached
+normalizer). Re-measure with per-module hooks when it matters.
 
 ## 5. Gate 3 CLOSED (2026-07-05): full four-architecture table
 
