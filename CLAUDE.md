@@ -31,14 +31,32 @@ methods are output-level and expensive. HiLRP gives a principled conservation-va
 explanation path for this regime, even when it is not the top visual localizer on every
 single metric.
 
-Correct high-level claim:
-"HiLRP is the first conservation-valid relevance propagation framework for hierarchical
-and hybrid Vision Transformers, deriving unified flow-conserving rules for
-resolution-changing token operations and enabling stage-localized attribution."
+THE AIM (north star, user-stated 2026-07-06): "From the start this is for ALL ViTs, not
+one architecture. Many custom ViTs come every year for different domains, but there is no
+common trustable XAI for them." The paper must READ as this vision, not as a rules paper.
 
-Core value proposition: coverage + conservation + extensibility. Use the mixed benchmark
-results as evidence that no single heuristic XAI method is reliable across modern ViT
-families, and that architecture-aware conservation rules are needed.
+Paper is now THESIS-FIRST (reframed 2026-07-06, title/abstract/intro/contrib):
+Title: "One Trustable Explanation for Any Vision Transformer: Conservation-Valid
+Attribution via Attention Primitives."
+Two pillars carry everything:
+- TRUSTABLE = conservation (the map is a DECOMPOSITION of the prediction, not a heuristic;
+  verified to machine precision). We proved the alternatives are NOT trustable (naive
+  AttnLRP = zero-sum degenerate maps that still "point"; Grad-CAM = content-free center blob).
+- UNIVERSAL = the 4-primitive decomposition (linear / bilinear mix / normalization-gate /
+  reindexing). Any ViT, present or FUTURE, is a new arrangement of the same primitives,
+  covered by construction. Future-proofing is an explicit selling point: next year's
+  backbone = same 4 primitives, no new rule.
+The resolution-reduction rules (patch merge / shifted window / spatial reduction) are ONE
+INSTANCE of the framework, demoted from headline to supporting result.
+
+Correct high-level claim (updated):
+"HiLRP is the first attribution framework that propagates conservation-valid relevance
+through ANY attention mechanism and downsampling operation, so it gives one trustable
+explanation for the whole, growing space of custom Vision Transformers."
+
+Core value proposition: universal + trustable + future-proof. Use the 10-arch x 13-method
+benchmark as evidence that no prior method is both, and the 4-primitive coverage
+(attention_primitives.py + tests + CLIP multi-modal) as evidence that HiLRP is.
 
 Do not write:
 - "HiLRP beats all baselines on all metrics."
@@ -47,6 +65,8 @@ Do not write:
 - "MobileViT proves Grad-CAM collapse."
 
 Do write:
+- "One trustable explanation for any Vision Transformer, present or future."
+- "Any ViT is four conserving primitives; a new architecture is a new arrangement, covered by construction."
 - "HiLRP is conservation-valid where naive LRP/AttnLRP extensions fail."
 - "HiLRP is strongest where CAM assumptions break, especially EfficientViT and PVT."
 - "On models where CAM saturates soft pointing, HiLRP remains useful because it provides

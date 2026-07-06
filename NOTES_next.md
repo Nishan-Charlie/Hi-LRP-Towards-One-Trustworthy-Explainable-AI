@@ -11,13 +11,23 @@ See CLAUDE.md "Attention as FOUR conserving primitives". DONE: attention_primiti
 (toy fwd+lrp for self/cross/co/linear/channel/dilated) + tests/test_attention_coverage.py
 (6 tests, machine-precision conservation, all green; full hilrp suite 22/22). Commit e541594.
 
+PAPER REFRAMED THESIS-FIRST (2026-07-06, commit faad5c5): title "One Trustable
+Explanation for Any Vision Transformer: Conservation-Valid Attribution via Attention
+Primitives"; abstract+intro lead on the proliferation problem + trustable/universal
+pillars + future-proofing paragraph; resolution-reduction rules demoted to one
+instance; contribution 1 = universal framework. See CLAUDE.md "THE AIM".
+
 Next, in priority order (each = one *_lxt.py real-model port + a conservation row + a
 test, like the existing ports):
-1. CROSS / CO-ATTENTION port (HIGHEST value): unlocks encoder-decoder + multi-modal
-   (CLIP image-text, VQA/LXMERT, DETR). This is the Chefer ICCV'21 differentiator.
-   Real model to target: a timm/HF CLIP ViT (cross-modal similarity scalar reuses the
-   SSL-scalar machinery) or a DETR decoder. Relevance splits across two streams
-   (already proven in the toy: test_cross_attention_conserves_and_splits_streams).
+1. CROSS / CO-ATTENTION port: DONE for multi-modal via CLIP (`clip_lxt.py`,
+   `scripts/clip_demo.py`, figures/clip_multimodal.png, commit 7fb3d65). CLIP ViT-B/16
+   image tower (nn.MultiheadAttention CP + LN/GELU identity + Gamma), scalar =
+   cos(f_img(x), f_text(caption)) with text frozen + image cosine-denom detached.
+   Forward-equiv 1.9e-6; text-conditioned (correct caption > wrong on object energy,
+   5-7/8 imgs). STILL TODO for a stronger claim: a model with TRUE cross-attention
+   LAYERS (VQA/LXMERT co-attention or DETR decoder) to exercise cross_attention_lrp on
+   real weights; and a multi-OBJECT eval set (ImageNet-S is single-object so the
+   correct-vs-wrong-caption contrast is modest 0.51 vs 0.49). Add a CLIP figure to paper.
 2. CHANNEL / COORDINATE attention port: SE-Net / CoordAttn / conv-attention hybrids.
    The gate is detached, relevance flows through the feature (gate_lrp). Target: a
    timm model with SE blocks (e.g. seresnet, efficientnet) or a CoordAttn hybrid.
