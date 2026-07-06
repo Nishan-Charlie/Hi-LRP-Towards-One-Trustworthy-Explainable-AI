@@ -328,8 +328,8 @@ HiLRP attains the highest cross-architecture mean Pointing score ($0.9375$) with
 % mobilevit_lxt) with hilrp.viz.normalize_for_display; baselines via the bench.
 \begin{figure*}[t]
   \centering
-  \figph{6.6cm}{Qualitative comparison across architectures and methods. Rows: Swin-B, PVT-v2, EfficientViT-B2, MobileViT-v2. Columns: input, HiLRP (ours), Grad-CAM, Grad-CAM++, Integrated Gradients, SmoothGrad. HiLRP traces object structure at every architecture; Grad-CAM produces a coarse center blob that saturates pointing on Swin/MobileViT and degenerates to noise on the EfficientViT row where linear attention removes the terminal spatial map.}
-  \caption{Heatmaps of HiLRP versus representative baselines across four hierarchical/hybrid backbones. HiLRP (second column) follows fine object structure consistently, whereas Grad-CAM (third column) is a low-resolution center blob that collapses on EfficientViT. Maps use robust percentile display normalization.}
+  \includegraphics[width=\textwidth]{figures/qualitative_comparison.png}
+  \caption{Heatmaps of HiLRP versus representative baselines on the \emph{same} input across four backbones (rows: Swin-B, PVT-v2, EfficientViT-B2, MobileViT-v2). HiLRP (second column) traces fine object structure, the hut roof, door, and lattice, consistently at every architecture. Grad-CAM and Grad-CAM++ (columns 3--4) are low-resolution blobs that fragment on the EfficientViT row, where linear attention removes the terminal spatial feature map they depend on; Integrated Gradients and SmoothGrad (columns 5--6) are diffuse and noisy. Maps use robust percentile display normalization.}
   \label{fig:qualitative-comparison}
 \end{figure*}
 
