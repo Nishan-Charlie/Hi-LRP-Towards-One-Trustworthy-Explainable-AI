@@ -28,10 +28,23 @@ OUT = os.path.join("results", "scaled")
 os.makedirs(OUT, exist_ok=True)
 
 
-def load_cache():
-    caches = glob.glob(os.path.join("data", "ImageNetS", "cache_validation_*.pt"))
+DATASETS = {
+    "imagenets": os.path.join("data", "ImageNetS", "cache_validation_*.pt"),
+    "voc": os.path.join("data", "VOC", "cache_voc_*.pt"),
+}
+
+
+def load_cache(dataset="imagenets"):
+    caches = glob.glob(DATASETS[dataset])
     path = max(caches, key=lambda p: int(p.rsplit("_", 1)[-1].split(".")[0]))
     return torch.load(path, map_location="cpu", weights_only=False), path
+
+
+def npy_name(model_name, method, dataset):
+    """ImageNet-S keeps the legacy <model>_<method>.npy name; other datasets get
+    a <model>_<dataset>_<method>.npy name so results never clobber each other."""
+    tag = "" if dataset == "imagenets" else f"_{dataset}"
+    return os.path.join(OUT, f"{model_name}{tag}_{method}.npy")
 
 
 def pointing(pm, bboxes):
@@ -43,9 +56,9 @@ def pointing(pm, bboxes):
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-def run_gradcam(model_name, n):
+def run_gradcam(model_name, n, dataset="imagenets"):
     from xai_bench.registry import MODELS, METHODS
-    data, path = load_cache()
+    data, path = load_cache(dataset)
     n = min(n, len(data))
     mw = MODELS.get(model_name)(); mw.model.eval().to(DEVICE)
     gc = METHODS.get("grad_cam")(model_wrapper=mw, model=mw.model)
@@ -58,16 +71,16 @@ def run_gradcam(model_name, n):
         hits[i] = pointing(m, data[i]["metadata"]["bboxes"])
         if (i + 1) % 100 == 0:
             print(f"  gradcam {i+1}/{n}  running {hits[:i+1].mean():.3f}", flush=True)
-    np.save(os.path.join(OUT, f"{model_name}_gradcam.npy"), hits)
-    print(f"grad_cam {model_name}: {hits.mean():.3f} (n={n}, cache={path})")
+    np.save(npy_name(model_name, "gradcam", dataset), hits)
+    print(f"grad_cam {model_name} [{dataset}]: {hits.mean():.3f} (n={n}, cache={path})")
 
 
-def run_hilrp(model_name, n):
+def run_hilrp(model_name, n, dataset="imagenets"):
     import timm
     import torch.nn.functional as F
     from xai_bench.methods.hilrp_method import _dispatch
     attribute = _dispatch(model_name)
-    data, path = load_cache()
+    data, path = load_cache(dataset)
     n = min(n, len(data))
     model = timm.create_model(model_name, pretrained=True).eval().to(DEVICE)
     size = model.default_cfg.get("input_size", (3, 224, 224))[-1]
@@ -87,14 +100,14 @@ def run_hilrp(model_name, n):
         hits[i] = pointing(r["pixel_map"].numpy(), data[i]["metadata"]["bboxes"])
         if (i + 1) % 100 == 0:
             print(f"  hilrp {i+1}/{n}  running {hits[:i+1].mean():.3f}", flush=True)
-    np.save(os.path.join(OUT, f"{model_name}_hilrp.npy"), hits)
-    print(f"hilrp {model_name}: {hits.mean():.3f} (n={n})")
+    np.save(npy_name(model_name, "hilrp", dataset), hits)
+    print(f"hilrp {model_name} [{dataset}]: {hits.mean():.3f} (n={n})")
 
 
-def stats(model_name):
+def stats(model_name, dataset="imagenets"):
     from scipy.stats import binomtest
-    h = np.load(os.path.join(OUT, f"{model_name}_hilrp.npy"))
-    g = np.load(os.path.join(OUT, f"{model_name}_gradcam.npy"))
+    h = np.load(npy_name(model_name, "hilrp", dataset))
+    g = np.load(npy_name(model_name, "gradcam", dataset))
     n = min(len(h), len(g)); h, g = h[:n], g[:n]
 
     def ci(x):
@@ -107,7 +120,7 @@ def stats(model_name):
     b = int((h & ~g).sum())   # HiLRP hit, GradCAM miss
     c = int((~h & g).sum())   # GradCAM hit, HiLRP miss
     p = binomtest(min(b, c), b + c, 0.5).pvalue if (b + c) > 0 else 1.0
-    print(f"=== {model_name}  (n={n}) ===")
+    print(f"=== {model_name} [{dataset}]  (n={n}) ===")
     print(f"  HiLRP    {hm:.3f}  95% CI [{hlo:.3f}, {hhi:.3f}]")
     print(f"  Grad-CAM {gm:.3f}  95% CI [{glo:.3f}, {ghi:.3f}]")
     print(f"  paired McNemar: HiLRP-only={b}, GradCAM-only={c}, p={p:.2e}")
@@ -116,6 +129,7 @@ def stats(model_name):
 if __name__ == "__main__":
     mode = sys.argv[1]
     if mode == "stats":
-        stats(sys.argv[2])
+        stats(sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else "imagenets")
     else:
-        {"gradcam": run_gradcam, "hilrp": run_hilrp}[mode](sys.argv[2], int(sys.argv[3]))
+        dataset = sys.argv[4] if len(sys.argv) > 4 else "imagenets"
+        {"gradcam": run_gradcam, "hilrp": run_hilrp}[mode](sys.argv[2], int(sys.argv[3]), dataset)
