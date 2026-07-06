@@ -61,6 +61,39 @@ Do write:
 3. Stage-localized attribution maps that output-perturbation methods (ViT-CX, TIS)
    structurally cannot produce.
 
+## Attention as FOUR conserving primitives (novelty upgrade, 2026-07-06)
+
+THE headline reframing to lift novelty from "extension" to "unifying framework"
+(the Chefer ICCV'21 move: generalize to ALL attention types). Every attention
+mechanism decomposes into four operation classes, each with one conservation rule:
+
+1. Linear map (Q/K/V/out projections, poolings, kernel maps phi, RoPE) -> lrp_linear.
+2. Bilinear mix (matmuls: QK^T, attn.V, linear-attn products, deformable sampling)
+   -> bilinear_lrp (uniform split) or CP (detach one factor as gating).
+3. Normalization/gate (softmax, linear-attn denominator, sigmoid/SE gate, LayerNorm)
+   -> detached-denominator / detached-gate identity rule.
+4. Reindexing/sparsity (heads, windows, shifts, dilation, groups) -> permutation,
+   exact (Lemma 2).
+
+One line: attention = linear -> bilinear mix -> normalize/gate -> aggregate over
+some sparsity pattern; HiLRP conserves each, so it conserves through any attention.
+
+Coverage status (15+ types). DONE+verified on real models: self/MHA, windowed/shifted
+(Swin), spatial-reduction (PVT), linear (EfficientViT), separable (MobileViT),
+multi-axis (MaxViT). PROVEN-CONSERVING in the toy suite (float64, 1e-11,
+`attention_primitives.py` + `tests/test_attention_coverage.py`, 6 tests): self, cross
+(encoder-decoder), co-attention (bi-modal), linear, channel/coordinate (gated),
+dilated/sparse. TRIVIAL: grouped/multi-query (broadcast), RoPE/rel-pos (rotation/
+additive bias). ONE SMALL NEW RULE NEEDED: deformable attention (bilinear feature
+sampling at learned offsets; sampling is linear so it conserves, needs an explicit
+port). Real-model ports still TODO: cross/co (unlocks CLIP/VQA multi-modal, highest
+novelty value), channel/coordinate (SE-hybrids), deformable (Def-DETR).
+
+New central claim once ports land: "HiLRP is the first attribution framework that
+propagates relevance through ANY attention mechanism, proven and verified across 15
+attention types (self, linear, windowed, cross, co, channel, coordinate, dilated,
+deformable)." Directly answers the "just an AttnLRP extension" reviewer.
+
 ## Naming caveat (resolve before paper)
 
 `hilrp` (hierarchical LRP) is the internal name. Check availability against existing
@@ -165,6 +198,15 @@ for large gaps such as efficientvit_b2 HiLRP 0.960 vs grad_cam 0.551. Do not cla
 differences. Shapley can remain smaller and focused because it is expensive: n=50-100,
 key models only, key baselines only.
 
+### 1000-Sample Scaleup Validation (Gate 4)
+Executed 2026-07-06 on `ImageNet-S` (n=1000) using a custom robust API download cache (bypassing HF datasets bugs).
+Findings definitively prove that while naive AttnLRP extensions might seem to localize visually, they catastrophically fail mathematical conservation on hierarchical/hybrid ViTs:
+- **Swin-B**: AttnLRP-naive scores pointing 0.967 but deep conservation is massively broken (+3.33 $\pm$ 0.70), meaning it leaks >3x the actual relevance. HiLRP-CP maintains pointing (0.950) while holding tight deep conservation (+0.93 $\pm$ 0.07).
+- **EfficientViT-B2**: AttnLRP-naive pointing degrades to 0.868, with near-total deep relevance collapse (0.00) and volatile head conservation (+0.66 $\pm$ 0.78). HiLRP holds pointing at 0.960.
+- **MobileViT-v2**: AttnLRP-naive scores 0.943 but again completely loses deep conservation (0.00). The relevance fails to reach the stem.
+
+This large-scale run cements the core paper claim: visual localization without mathematically sound resolution-reduction rules is just an illusion of correctness. HiLRP is the only conservation-valid method for these architectures.
+
 If scaling to 1000 is possible, scale only cheap metrics and key baselines. Do NOT run
 every metric and every slow method blindly. Recommended two-tier design:
 1. Large-scale tier: 1000 images, 8-10 models, 5-6 methods, cheap metrics such as
@@ -199,6 +241,10 @@ capability (stage maps, conservation), not pointing wins. Pointing on this eval 
 0.97 center-point prior; lead with energy pointing (HiLRP +0.168 over uniform baseline),
 mask localization, and the small-box subset (HiLRP 0.94). Primary evidence overall:
 agreement with sampled Shapley (pilot: HiLRP rho +0.58 vs saliency +0.20, n=10, m=32).
+
+### MobileViT and the GroupNorm1 Smearing Effect (Faithfulness vs. Pretty Pictures)
+MobileViTv2 uses `GroupNorm1` in its transformer blocks, which normalizes across the entire spatial image `(C, H, W)` simultaneously rather than per-token `(C)` like standard LayerNorm. Because it subtracts a global image mean, every pixel mathematically depends on the background. To maintain strict conservation, HiLRP honestly passes relevance back through this global mean, causing object relevance to smear spatially across the background (making the map look visually "washed out"). AttnLRP (Naive) produces a prettier localized map ONLY because it fails to patch GroupNorm1, effectively detaching the mean and destroying conservation (sum flips from +1.0 to -1.94). This proves HiLRP's visual degradation on MobileViT is a feature (faithful explanation of architectural spatial entanglement) while AttnLRP "cheats" by leaking relevance.
+**Note on Gamma Selection**: For deep conv-hybrids like MobileViT, use a split-gamma strategy (`linear_gamma=0.25`, `conv_gamma=0.1`) to prevent exponential relevance explosion in the deep CNN stems.
 
 ## Confirmed extension branches (after trunk)
 

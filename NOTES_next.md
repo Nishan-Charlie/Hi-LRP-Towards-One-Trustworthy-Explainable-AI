@@ -3,6 +3,32 @@
 Delete items as they close. This is "what were we about to do", not durable state
 (durable state lives in CLAUDE.md).
 
+## NOVELTY UPGRADE: attention generalization (STARTED 2026-07-06)
+
+Reframe from "LRP for hierarchical ViTs" (extension, below CVPR novelty bar) to
+"relevance propagation through ANY attention" (unifying framework, at the bar).
+See CLAUDE.md "Attention as FOUR conserving primitives". DONE: attention_primitives.py
+(toy fwd+lrp for self/cross/co/linear/channel/dilated) + tests/test_attention_coverage.py
+(6 tests, machine-precision conservation, all green; full hilrp suite 22/22). Commit e541594.
+
+Next, in priority order (each = one *_lxt.py real-model port + a conservation row + a
+test, like the existing ports):
+1. CROSS / CO-ATTENTION port (HIGHEST value): unlocks encoder-decoder + multi-modal
+   (CLIP image-text, VQA/LXMERT, DETR). This is the Chefer ICCV'21 differentiator.
+   Real model to target: a timm/HF CLIP ViT (cross-modal similarity scalar reuses the
+   SSL-scalar machinery) or a DETR decoder. Relevance splits across two streams
+   (already proven in the toy: test_cross_attention_conserves_and_splits_streams).
+2. CHANNEL / COORDINATE attention port: SE-Net / CoordAttn / conv-attention hybrids.
+   The gate is detached, relevance flows through the feature (gate_lrp). Target: a
+   timm model with SE blocks (e.g. seresnet, efficientnet) or a CoordAttn hybrid.
+3. DILATED / sparse attention: nearly free (Lemma-2 sparsity). Verify on NAT
+   (neighborhood attention) or a LongNet-style dilated block.
+4. DEFORMABLE attention (the one genuinely new rule): bilinear feature sampling at
+   learned offsets. Target: Deformable DETR. Do last; proves even learned-offset
+   attention conserves.
+Also add an "attention coverage" table to the paper (type x primitive x done/proven/
+todo) and cite the 15-type span in the intro/contributions.
+
 ## !! BLOCKER for A* scaling (2026-07-06): cache is only 100 images
 
 `data/ImageNetS/cache_validation_100.pt` has 100 images. Lineage scripts
