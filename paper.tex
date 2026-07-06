@@ -431,8 +431,8 @@ Table~\ref{tab:rq2} reports the results over 30 images. The four objectives prod
 % (already generated at results/rq2_pretraining/rq2_maps.png)
 \begin{figure}[h]
   \centering
-  \figph{5.0cm}{View-invariance evidence under four pretraining objectives on the same ViT-B/16. Columns: input, supervised, DINO, MAE, CLIP. DINO traces object geometry, supervised is diffuse, MAE shows patch-grid texture, CLIP is sparse: the pretraining objective, not the architecture, shapes the explanation.}
-  \caption{Label-free HiLRP attribution of the same view-invariance scalar across four pretraining objectives (identical ViT-B/16). The maps differ structurally (mean agreement $0.33$), a difference only a label-free, objective-native attributor can expose.}
+  \includegraphics[width=\linewidth]{figures/rq2_maps.png}
+  \caption{Label-free HiLRP attribution of the same view-invariance scalar across four pretraining objectives (identical ViT-B/16). Columns: input, supervised, DINO, MAE, CLIP. DINO traces object geometry, supervised is diffuse, MAE shows patch-grid texture, and CLIP is sparse: the maps differ structurally (mean agreement $0.33$), a difference only a label-free, objective-native attributor can expose.}
   \label{fig:rq2-maps}
 \end{figure}
 
