@@ -40,18 +40,21 @@ def pointing(pm, bboxes):
     return any(b[0] * w <= px <= b[2] * w and b[1] * h <= py <= b[3] * h for b in bboxes)
 
 
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+
 def run_gradcam(model_name, n):
     from xai_bench.registry import MODELS, METHODS
     data, path = load_cache()
     n = min(n, len(data))
-    mw = MODELS.get(model_name)(); mw.model.eval()
+    mw = MODELS.get(model_name)(); mw.model.eval().to(DEVICE)
     gc = METHODS.get("grad_cam")(model_wrapper=mw, model=mw.model)
     hits = np.zeros(n, dtype=bool)
     for i in range(n):
-        x = data[i]["image"].unsqueeze(0)
+        x = data[i]["image"].unsqueeze(0).to(DEVICE)
         with torch.no_grad():
             t = int(mw(x).argmax())
-        m = gc(x, t); m = (m[0] if m.ndim == 3 else m).detach().numpy()
+        m = gc(x, t); m = (m[0] if m.ndim == 3 else m).detach().cpu().numpy()
         hits[i] = pointing(m, data[i]["metadata"]["bboxes"])
         if (i + 1) % 100 == 0:
             print(f"  gradcam {i+1}/{n}  running {hits[:i+1].mean():.3f}", flush=True)
@@ -66,7 +69,7 @@ def run_hilrp(model_name, n):
     attribute = _dispatch(model_name)
     data, path = load_cache()
     n = min(n, len(data))
-    model = timm.create_model(model_name, pretrained=True).eval()
+    model = timm.create_model(model_name, pretrained=True).eval().to(DEVICE)
     size = model.default_cfg.get("input_size", (3, 224, 224))[-1]
     cfg = model.pretrained_cfg
     mean = torch.tensor(cfg["mean"]).view(3, 1, 1); std = torch.tensor(cfg["std"]).view(3, 1, 1)
@@ -77,7 +80,7 @@ def run_hilrp(model_name, n):
         img = data[i]["image"]
         if need_raw:
             img = ((img * IS + IM).clamp(0, 1) - mean) / std
-        x = img.unsqueeze(0)
+        x = img.unsqueeze(0).to(DEVICE)
         if size != 224:
             x = F.interpolate(x, size=(size, size), mode="bilinear", align_corners=False)
         r = attribute(model, x, gamma=0.25)
