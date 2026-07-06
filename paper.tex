@@ -316,21 +316,23 @@ Grad-CAM's perfect Pointing on Swin and MobileViT (Table~\ref{tab:localization})
 \label{sec:conservation-validity}
 The central claim of HiLRP is not a Pointing win but \emph{conservation validity}: on hierarchical and hybrid architectures, no prior attribution method produces relevance that conserves to the prediction. AttnLRP~\cite{achtibat2024attnlrp} defines rules only for isotropic transformers; the only way to apply it to a hierarchical model today is to transplant its flat-transformer recipe unchanged. We evaluate this ``naive'' extension against HiLRP under an identical backend, granting the naive baseline the same batch-norm canonization and preprocessing, and withholding only HiLRP's contributions: the resolution-reduction rules, the normalization-subclass handling, and the non-\textsc{gelu} activation rules.
 
-Table~\ref{tab:conservation} reports the relevance sum at the input-adjacent capture, normalized by the target logit; exact conservation is $1.0$. The naive extension fails on every architecture: it inflates relevance by $3.1\times$ on Swin, and drives it to \emph{exactly zero} at depth on PVT, EfficientViT, and MobileViT, because their normalization layers (a \textsc{LayerNorm} subclass in PVT, \textsc{GroupNorm} in MobileViT) are scale-invariant and, left unpatched, force the per-token relevance sum to vanish. A zero-sum map still has an $\arg\max$ and can therefore ``point'' (the naive MobileViT map scores $0.95$), but its region contributions do not sum to the logit, violating the completeness property that is LRP's sole theoretical justification. HiLRP conserves relevance on all four. Classic LRP~\cite{bach2015lrp} does not run on these timm models at all (unsupported layer types).
+Table~\ref{tab:conservation} reports, for all six hierarchical and hybrid backbones, the relevance sum at the input-adjacent capture (normalized by the logit; $1.0$ is exact) alongside the Pointing score, for the naive AttnLRP extension and for HiLRP. The naive extension produces \emph{degenerate} relevance on every architecture: it inflates the sum by $3.1\times$ on Swin and drives it to \emph{exactly zero} at depth on the other five, because their normalizations (a \textsc{LayerNorm} subclass in PVT and MaxViT, \textsc{GroupNorm} in MobileViT) are scale-invariant and, left unpatched, force the per-token relevance sum to vanish; on MaxViT the failure reaches the head. Crucially, the naive maps still \emph{point} well ($0.80$--$0.98$, sometimes above HiLRP), because a zero-sum map still has an $\arg\max$. Pointing therefore cannot detect that these maps are not conservation-based attributions at all: their region contributions do not sum to the logit, violating the completeness property that is LRP's sole justification. HiLRP produces non-degenerate, traceable relevance on all six. Classic LRP~\cite{bach2015lrp} does not run on any of these timm backbones (unsupported layer types).
 
 \begin{table}[h]
   \centering
-  \caption{Conservation validity: relevance sum at the input-adjacent stage, normalized by the target logit ($1.0$ is exact). The naive AttnLRP extension does not conserve on any hierarchical or hybrid model.}
+  \caption{Conservation validity across all hierarchical/hybrid backbones (100 images). Each cell is Pointing / deep relevance sum (normalized, $1.0$ exact). The naive AttnLRP extension points well but its relevance is degenerate everywhere (zeroed, inflated, or broken); HiLRP is non-degenerate throughout.}
   \label{tab:conservation}
   \setlength{\tabcolsep}{4pt}
-  \begin{tabular}{l c c}
+  \begin{tabular}{l cc}
     \toprule
-    Model & Naive AttnLRP & \textbf{HiLRP (Ours)} \\
+    Backbone & Naive AttnLRP (pt / cons) & \textbf{HiLRP} (pt / cons) \\
     \midrule
-    Swin-B          & $+3.08 \pm 0.78$ & $\mathbf{+0.95 \pm 0.06}$ \\
-    PVT-v2-b2       & $0.00$ (zeroed)  & $\mathbf{+0.39}$ (traceable) \\
-    EfficientViT-B2 & $0.00$ (zeroed)  & \textbf{traceable} \\
-    MobileViT-v2    & $0.00$ (zeroed)  & $\mathbf{+1.05}$ \\
+    Swin-B          & 0.98 / $3.08$ (inflated) & 0.96 / valid \\
+    PVT-v2-b2       & 0.80 / $0.00$ (zeroed)   & \textbf{0.98} / $+0.39$ \\
+    EfficientViT-B1 & 0.84 / $0.00$ (zeroed)   & \textbf{0.94} / valid \\
+    EfficientViT-B2 & 0.93 / $0.00$ (zeroed)   & \textbf{0.96} / valid \\
+    MaxViT-S        & 0.89 / $0.00$ (broken)   & \textbf{0.96} / valid \\
+    MobileViT-v2    & 0.95 / $0.00$ (zeroed)   & 0.86 / valid \\
     \bottomrule
   \end{tabular}
 \end{table}
