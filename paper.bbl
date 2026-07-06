@@ -7,7 +7,8 @@
 \providecommand{\BIBentrySTDinterwordspacing}{\spaceskip=0pt\relax}
 \providecommand{\BIBentryALTinterwordstretchfactor}{4}
 \providecommand{\BIBentryALTinterwordspacing}{\spaceskip=\fontdimen2\font plus
-\BIBentryALTinterwordstretchfactor\fontdimen3\font minus \fontdimen4\font\relax}
+\BIBentryALTinterwordstretchfactor\fontdimen3\font minus
+  \fontdimen4\font\relax}
 \providecommand{\BIBforeignlanguage}[2]{{%
 \expandafter\ifx\csname l@#1\endcsname\relax
 \typeout{** WARNING: IEEEtran.bst: No hyphenation pattern has been}%
@@ -21,123 +22,176 @@
 \BIBdecl
 
 \bibitem{dosovitskiy2021vit}
-A.~Dosovitskiy, L.~Beyer, A.~Kolesnikov, D.~Weissenborn, X.~Zhai, T.~Unterthiner, M.~Dehghani, M.~Minderer, G.~Heigold, S.~Gelly, J.~Uszkoreit, and N.~Houlsby, ``An image is worth 16x16 words: Transformers for image recognition at scale,'' in \emph{International Conference on Learning Representations (ICLR)}, 2021.
-
-\bibitem{touvron2021deit}
-H.~Touvron, M.~Cord, M.~Douze, F.~Massa, A.~Sablayrolles, and H.~J{\'e}gou, ``Training data-efficient image transformers \& distillation through attention,'' in \emph{International Conference on Machine Learning (ICML)}, 2021.
-
-\bibitem{oquab2024dinov2}
-M.~Oquab, T.~Darcet, T.~Moutakanni \emph{et~al.}, ``Dinov2: Learning robust visual features without supervision,'' \emph{Transactions on Machine Learning Research (TMLR)}, 2024.
-
-\bibitem{sundararajan2017ig}
-M.~Sundararajan, A.~Taly, and Q.~Yan, ``Axiomatic attribution for deep networks,'' in \emph{International Conference on Machine Learning (ICML)}, 2017.
-
-\bibitem{selvaraju2017gradcam}
-R.~R. Selvaraju, M.~Cogswell, A.~Das, R.~Vedantam, D.~Parikh, and D.~Batra, ``Grad-cam: Visual explanations from deep networks via gradient-based localization,'' in \emph{IEEE International Conference on Computer Vision (ICCV)}, 2017.
-
-\bibitem{petsiuk2018rise}
-V.~Petsiuk, A.~Das, and K.~Saenko, ``Rise: Randomized input sampling for explanation of black-box models,'' in \emph{British Machine Vision Conference (BMVC)}, 2018.
-
-\bibitem{ribeiro2016lime}
-M.~T. Ribeiro, S.~Singh, and C.~Guestrin, ````why should i trust you?'': Explaining the predictions of any classifier,'' in \emph{ACM SIGKDD International Conference on Knowledge Discovery and Data Mining (KDD)}, 2016.
-
-\bibitem{brandt2023precise}
-R.~Brandt, D.~Raatjens, and G.~Gaydadjiev, ``Precise benchmarking of explainable ai attribution methods,'' 2023.
-
-\bibitem{raghu2021vit}
-M.~Raghu, T.~Unterthiner, S.~Kornblith, C.~Zhang, and A.~Dosovitskiy, ``Do vision transformers see like convolutional neural networks?'' in \emph{Advances in Neural Information Processing Systems (NeurIPS)}, vol.~34, 2021, pp. 12\,116--12\,128.
-
-\bibitem{abnar2020rollout}
-S.~Abnar and W.~Zuidema, ``Quantifying attention flow in transformers,'' in \emph{Annual Meeting of the Association for Computational Linguistics (ACL)}, 2020.
-
-\bibitem{chefer2021transformer}
-H.~Chefer, S.~Gur, and L.~Wolf, ``Transformer interpretability beyond attention visualization,'' in \emph{IEEE Conference on Computer Vision and Pattern Recognition (CVPR)}, 2021.
-
-\bibitem{wu2024faithfulness}
-J.~Wu, W.~Kang, H.~Tang, Y.~Hong, and Y.~Yan, ``On the faithfulness of vision transformer explanations,'' in \emph{IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, 2024.
-
-\bibitem{hesse2023funnybirds}
-R.~Hesse, S.~Schaub-Meyer, and S.~Roth, ``Funnybirds: A synthetic vision dataset for a part-based analysis of explainable ai,'' in \emph{IEEE International Conference on Computer Vision (ICCV)}, 2023.
-
-\bibitem{arras2022clevrxai}
-L.~Arras, A.~Osman, and W.~Samek, ``Clevr-xai: A benchmark dataset for the ground truth evaluation of neural network explanations,'' \emph{Information Fusion}, vol.~81, pp. 14--40, 2022.
-
-\bibitem{hedstrom2023quantus}
-A.~Hedstr{\"o}m, L.~Weber, D.~Krakowczyk, D.~Bareeva, F.~Motzkus, W.~Samek, S.~Lapuschkin, and M.~M.-C. H{\"o}hne, ``Quantus: An explainable ai toolkit for responsible evaluation of neural network explanations and beyond,'' \emph{Journal of Machine Learning Research (JMLR)}, vol.~24, 2023.
-
-\bibitem{rong2022road}
-Y.~Rong, T.~Leemann, V.~Borisov, G.~Kasneci, and E.~Kasneci, ``A consistent and efficient evaluation strategy for attribution methods,'' in \emph{International Conference on Machine Learning (ICML)}, 2022.
-
-\bibitem{nauta2023anecdotal}
-M.~Nauta, J.~Trienes, S.~Pathak, E.~Nguyen, M.~Peters, Y.~Schmitt, J.~Schl{\"o}tterer, M.~van Keulen, and C.~Seifert, ``From anecdotal evidence to quantitative evaluation methods: A systematic review on evaluating explainable ai,'' \emph{ACM Computing Surveys}, vol.~55, no. 13s, pp. 1--42, 2023.
-
-\bibitem{bodria2023benchmarking}
-F.~Bodria, F.~Giannotti, R.~Guidotti, F.~Naretto, D.~Pedreschi, and S.~Rinzivillo, ``Benchmarking and survey of explanation methods for black box models,'' \emph{Data Mining and Knowledge Discovery}, vol.~37, no.~5, pp. 1719--1778, 2023.
-
-\bibitem{rao2022attribution}
-S.~Rao, M.~B{\"o}hle, and B.~Schiele, ``Towards better understanding attribution methods,'' in \emph{IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, 2022.
-
-\bibitem{simonyan2014saliency}
-K.~Simonyan, A.~Vedaldi, and A.~Zisserman, ``Deep inside convolutional networks: Visualising image classification models and saliency maps,'' in \emph{ICLR Workshop}, 2014.
-
-\bibitem{shrikumar2017deeplift}
-A.~Shrikumar, P.~Greenside, and A.~Kundaje, ``Learning important features through propagating activation differences,'' in \emph{International Conference on Machine Learning (ICML)}, 2017.
-
-\bibitem{smilkov2017smoothgrad}
-D.~Smilkov, N.~Thorat, B.~Kim, F.~Vi{\'e}gas, and M.~Wattenberg, ``Smoothgrad: Removing noise by adding noise,'' \emph{arXiv preprint arXiv:1706.03825}, 2017.
-
-\bibitem{chattopadhay2018gradcampp}
-A.~Chattopadhay, A.~Sarkar, P.~Howlader, and V.~N. Balasubramanian, ``Grad-cam++: Generalized gradient-based visual explanations for deep convolutional networks,'' in \emph{IEEE Winter Conference on Applications of Computer Vision (WACV)}, 2018.
-
-\bibitem{bach2015lrp}
-S.~Bach, A.~Binder, G.~Montavon, F.~Klauschen, K.-R. M{\"u}ller, and W.~Samek, ``On pixel-wise explanations for non-linear classifier decisions by layer-wise relevance propagation,'' \emph{PLoS ONE}, vol.~10, no.~7, 2015.
-
-\bibitem{zeiler2014occlusion}
-M.~D. Zeiler and R.~Fergus, ``Visualizing and understanding convolutional networks,'' in \emph{European Conference on Computer Vision (ECCV)}, 2014.
-
-\bibitem{lundberg2017shap}
-S.~M. Lundberg and S.-I. Lee, ``A unified approach to interpreting model predictions,'' in \emph{Advances in Neural Information Processing Systems (NeurIPS)}, 2017.
-
-\bibitem{bhatt2020faithfulness}
-U.~Bhatt, A.~Weller, and J.~M.~F. Moura, ``Evaluating and aggregating feature-based model explanations,'' in \emph{International Joint Conference on Artificial Intelligence (IJCAI)}, 2020.
-
-\bibitem{alvarez2018robustness}
-D.~Alvarez-Melis and T.~S. Jaakkola, ``Towards robust interpretability with self-explaining neural networks,'' in \emph{Advances in Neural Information Processing Systems (NeurIPS)}, 2018.
-
-\bibitem{zhang2018pointing}
-J.~Zhang, S.~A. Bargal, Z.~Lin, X.~Shen, J.~Brandt, and S.~Sclaroff, ``Top-down neural attention by excitation backprop,'' \emph{International Journal of Computer Vision (IJCV)}, vol. 126, no.~10, pp. 1084--1102, 2018.
-
-\bibitem{yeh2019sensitivity}
-C.-K. Yeh, C.-Y. Hsieh, A.~S. Suggala, D.~I. Inouye, and P.~Ravikumar, ``On the (in)fidelity and sensitivity of explanations,'' in \emph{Advances in Neural Information Processing Systems (NeurIPS)}, 2019.
-
-\bibitem{chalasani2020sparseness}
-P.~Chalasani, J.~Chen, A.~R. Chowdhury, X.~Wu, and S.~Jha, ``Concise explanations of neural networks using adversarial training,'' in \emph{International Conference on Machine Learning (ICML)}, 2020.
-
-\bibitem{adebayo2018sanity}
-J.~Adebayo, J.~Gilmer, M.~Muelly, I.~Goodfellow, M.~Hardt, and B.~Kim, ``Sanity checks for saliency maps,'' in \emph{Advances in Neural Information Processing Systems (NeurIPS)}, 2018.
-
-\bibitem{gao2022imagenets}
-S.~Gao, Z.-Y. Li, M.-H. Yang, M.-M. Cheng, J.~Han, and P.~Torr, ``Large-scale unsupervised semantic segmentation,'' \emph{IEEE Transactions on Pattern Analysis and Machine Intelligence (TPAMI)}, 2022.
-
-\bibitem{russakovsky2015imagenet}
-O.~Russakovsky, J.~Deng, H.~Su, J.~Krause, S.~Satheesh, S.~Ma, Z.~Huang, A.~Karpathy, A.~Khosla, M.~Bernstein, A.~C. Berg, and L.~Fei-Fei, ``Imagenet large scale visual recognition challenge,'' \emph{International Journal of Computer Vision (IJCV)}, vol. 115, no.~3, pp. 211--252, 2015.
-
-\bibitem{kokhlikyan2020captum}
-N.~Kokhlikyan, V.~Miglani, M.~Martin, E.~Wang, B.~Alsallakh, J.~Reynolds, A.~Melnikov, N.~Kliushkina, C.~Araya, S.~Yan, and O.~Reblitz-Richardson, ``Captum: A unified and generic model interpretability library for pytorch,'' \emph{arXiv preprint arXiv:2009.07896}, 2020.
-
-\bibitem{gildenblat2021pytorchgradcam}
-J.~Gildenblat and contributors, ``Pytorch library for cam methods,'' \url{https://github.com/jacobgil/pytorch-grad-cam}, 2021.
-
-\bibitem{demsar2006statistical}
-J.~Dem{\v{s}}ar, ``Statistical comparisons of classifiers over multiple data sets,'' \emph{Journal of Machine Learning Research (JMLR)}, vol.~7, pp. 1--30, 2006.
+A.~Dosovitskiy, L.~Beyer, A.~Kolesnikov, D.~Weissenborn, X.~Zhai,
+  T.~Unterthiner, M.~Dehghani, M.~Minderer, G.~Heigold, S.~Gelly, J.~Uszkoreit,
+  and N.~Houlsby, ``An image is worth 16x16 words: Transformers for image
+  recognition at scale,'' in \emph{International Conference on Learning
+  Representations (ICLR)}, 2021.
 
 \bibitem{liu2021swin}
-Z.~Liu, Y.~Lin, Y.~Cao, H.~Hu, Y.~Wei, Z.~Zhang, S.~Lin, and B.~Guo, ``Swin transformer: Hierarchical vision transformer using shifted windows,'' in \emph{IEEE/CVF International Conference on Computer Vision (ICCV)}, 2021.
+Z.~Liu, Y.~Lin, Y.~Cao, H.~Hu, Y.~Wei, Z.~Zhang, S.~Lin, and B.~Guo, ``Swin
+  transformer: Hierarchical vision transformer using shifted windows,'' in
+  \emph{IEEE/CVF International Conference on Computer Vision (ICCV)}, 2021.
 
-\bibitem{he2022mae}
-K.~He, X.~Chen, S.~Xie, Y.~Li, P.~Doll{\'a}r, and R.~Girshick, ``Masked autoencoders are scalable vision learners,'' in \emph{IEEE Conference on Computer Vision and Pattern Recognition (CVPR)}, 2022.
+\bibitem{wang2021pvt}
+W.~Wang, E.~Xie, X.~Li, D.-P. Fan, K.~Song, D.~Liang, T.~Lu, P.~Luo, and
+  L.~Shao, ``Pyramid vision transformer: A versatile backbone for dense
+  prediction without convolutions,'' in \emph{Proceedings of the IEEE/CVF
+  International Conference on Computer Vision (ICCV)}, 2021.
 
-\bibitem{radford2021clip}
-A.~Radford, J.~W. Kim, C.~Hallacy, A.~Ramesh, G.~Goh, S.~Agarwal \emph{et~al.}, ``Learning transferable visual models from natural language supervision,'' in \emph{International Conference on Machine Learning (ICML)}, 2021.
+\bibitem{cai2023efficientvit}
+H.~Cai, J.~Li, M.~Hu, C.~Gan, and S.~Han, ``Efficientvit: Lightweight
+  multi-scale attention for high-resolution dense prediction,'' in
+  \emph{IEEE/CVF International Conference on Computer Vision (ICCV)}, 2023.
+
+\bibitem{bach2015lrp}
+S.~Bach, A.~Binder, G.~Montavon, F.~Klauschen, K.-R. M{\"u}ller, and W.~Samek,
+  ``On pixel-wise explanations for non-linear classifier decisions by
+  layer-wise relevance propagation,'' \emph{PLoS ONE}, vol.~10, no.~7, 2015.
+
+\bibitem{chefer2021transformer}
+H.~Chefer, S.~Gur, and L.~Wolf, ``Transformer interpretability beyond attention
+  visualization,'' in \emph{IEEE Conference on Computer Vision and Pattern
+  Recognition (CVPR)}, 2021.
+
+\bibitem{achtibat2024attnlrp}
+R.~Achtibat, S.~M.~V. Hatefi, M.~Dreyer, A.~Jain, T.~Wiegand, S.~Lapuschkin,
+  and W.~Samek, ``{AttnLRP}: Attention-aware layer-wise relevance propagation
+  for transformers,'' in \emph{Proceedings of the 41st International Conference
+  on Machine Learning (ICML)}, 2024.
+
+\bibitem{simonyan2014saliency}
+K.~Simonyan, A.~Vedaldi, and A.~Zisserman, ``Deep inside convolutional
+  networks: Visualising image classification models and saliency maps,'' in
+  \emph{ICLR Workshop}, 2014.
+
+\bibitem{sundararajan2017ig}
+M.~Sundararajan, A.~Taly, and Q.~Yan, ``Axiomatic attribution for deep
+  networks,'' in \emph{International Conference on Machine Learning (ICML)},
+  2017.
+
+\bibitem{shrikumar2017deeplift}
+A.~Shrikumar, P.~Greenside, and A.~Kundaje, ``Learning important features
+  through propagating activation differences,'' in \emph{International
+  Conference on Machine Learning (ICML)}, 2017.
+
+\bibitem{smilkov2017smoothgrad}
+D.~Smilkov, N.~Thorat, B.~Kim, F.~Vi{\'e}gas, and M.~Wattenberg, ``Smoothgrad:
+  Removing noise by adding noise,'' \emph{arXiv preprint arXiv:1706.03825},
+  2017.
+
+\bibitem{selvaraju2017gradcam}
+R.~R. Selvaraju, M.~Cogswell, A.~Das, R.~Vedantam, D.~Parikh, and D.~Batra,
+  ``Grad-cam: Visual explanations from deep networks via gradient-based
+  localization,'' in \emph{IEEE International Conference on Computer Vision
+  (ICCV)}, 2017.
+
+\bibitem{chattopadhay2018gradcampp}
+A.~Chattopadhay, A.~Sarkar, P.~Howlader, and V.~N. Balasubramanian,
+  ``Grad-cam++: Generalized gradient-based visual explanations for deep
+  convolutional networks,'' in \emph{IEEE Winter Conference on Applications of
+  Computer Vision (WACV)}, 2018.
+
+\bibitem{abnar2020rollout}
+S.~Abnar and W.~Zuidema, ``Quantifying attention flow in transformers,'' in
+  \emph{Annual Meeting of the Association for Computational Linguistics (ACL)},
+  2020.
+
+\bibitem{zeiler2014occlusion}
+M.~D. Zeiler and R.~Fergus, ``Visualizing and understanding convolutional
+  networks,'' in \emph{European Conference on Computer Vision (ECCV)}, 2014.
+
+\bibitem{petsiuk2018rise}
+V.~Petsiuk, A.~Das, and K.~Saenko, ``Rise: Randomized input sampling for
+  explanation of black-box models,'' in \emph{British Machine Vision Conference
+  (BMVC)}, 2018.
+
+\bibitem{ribeiro2016lime}
+M.~T. Ribeiro, S.~Singh, and C.~Guestrin, ````why should i trust you?'':
+  Explaining the predictions of any classifier,'' in \emph{ACM SIGKDD
+  International Conference on Knowledge Discovery and Data Mining (KDD)}, 2016.
+
+\bibitem{lundberg2017shap}
+S.~M. Lundberg and S.-I. Lee, ``A unified approach to interpreting model
+  predictions,'' in \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, 2017.
+
+\bibitem{bhatt2020faithfulness}
+U.~Bhatt, A.~Weller, and J.~M.~F. Moura, ``Evaluating and aggregating
+  feature-based model explanations,'' in \emph{International Joint Conference
+  on Artificial Intelligence (IJCAI)}, 2020.
+
+\bibitem{alvarez2018robustness}
+D.~Alvarez-Melis and T.~S. Jaakkola, ``Towards robust interpretability with
+  self-explaining neural networks,'' in \emph{Advances in Neural Information
+  Processing Systems (NeurIPS)}, 2018.
+
+\bibitem{rong2022road}
+Y.~Rong, T.~Leemann, V.~Borisov, G.~Kasneci, and E.~Kasneci, ``A consistent and
+  efficient evaluation strategy for attribution methods,'' in
+  \emph{International Conference on Machine Learning (ICML)}, 2022.
+
+\bibitem{zhang2018pointing}
+J.~Zhang, S.~A. Bargal, Z.~Lin, X.~Shen, J.~Brandt, and S.~Sclaroff, ``Top-down
+  neural attention by excitation backprop,'' \emph{International Journal of
+  Computer Vision (IJCV)}, vol. 126, no.~10, pp. 1084--1102, 2018.
+
+\bibitem{yeh2019sensitivity}
+C.-K. Yeh, C.-Y. Hsieh, A.~S. Suggala, D.~I. Inouye, and P.~Ravikumar, ``On the
+  (in)fidelity and sensitivity of explanations,'' in \emph{Advances in Neural
+  Information Processing Systems (NeurIPS)}, 2019.
+
+\bibitem{chalasani2020sparseness}
+P.~Chalasani, J.~Chen, A.~R. Chowdhury, X.~Wu, and S.~Jha, ``Concise
+  explanations of neural networks using adversarial training,'' in
+  \emph{International Conference on Machine Learning (ICML)}, 2020.
+
+\bibitem{adebayo2018sanity}
+J.~Adebayo, J.~Gilmer, M.~Muelly, I.~Goodfellow, M.~Hardt, and B.~Kim, ``Sanity
+  checks for saliency maps,'' in \emph{Advances in Neural Information
+  Processing Systems (NeurIPS)}, 2018.
+
+\bibitem{nauta2023anecdotal}
+M.~Nauta, J.~Trienes, S.~Pathak, E.~Nguyen, M.~Peters, Y.~Schmitt,
+  J.~Schl{\"o}tterer, M.~van Keulen, and C.~Seifert, ``From anecdotal evidence
+  to quantitative evaluation methods: A systematic review on evaluating
+  explainable ai,'' \emph{ACM Computing Surveys}, vol.~55, no. 13s, pp. 1--42,
+  2023.
+
+\bibitem{bodria2023benchmarking}
+F.~Bodria, F.~Giannotti, R.~Guidotti, F.~Naretto, D.~Pedreschi, and
+  S.~Rinzivillo, ``Benchmarking and survey of explanation methods for black box
+  models,'' \emph{Data Mining and Knowledge Discovery}, vol.~37, no.~5, pp.
+  1719--1778, 2023.
+
+\bibitem{hedstrom2023quantus}
+A.~Hedstr{\"o}m, L.~Weber, D.~Krakowczyk, D.~Bareeva, F.~Motzkus, W.~Samek,
+  S.~Lapuschkin, and M.~M.-C. H{\"o}hne, ``Quantus: An explainable ai toolkit
+  for responsible evaluation of neural network explanations and beyond,''
+  \emph{Journal of Machine Learning Research (JMLR)}, vol.~24, 2023.
+
+\bibitem{brandt2023precise}
+R.~Brandt, D.~Raatjens, and G.~Gaydadjiev, ``Precise benchmarking of
+  explainable ai attribution methods,'' 2023.
+
+\bibitem{hesse2023funnybirds}
+R.~Hesse, S.~Schaub-Meyer, and S.~Roth, ``Funnybirds: A synthetic vision
+  dataset for a part-based analysis of explainable ai,'' in \emph{IEEE
+  International Conference on Computer Vision (ICCV)}, 2023.
+
+\bibitem{arras2022clevrxai}
+L.~Arras, A.~Osman, and W.~Samek, ``Clevr-xai: A benchmark dataset for the
+  ground truth evaluation of neural network explanations,'' \emph{Information
+  Fusion}, vol.~81, pp. 14--40, 2022.
+
+\bibitem{rao2022attribution}
+S.~Rao, M.~B{\"o}hle, and B.~Schiele, ``Towards better understanding
+  attribution methods,'' in \emph{IEEE/CVF Conference on Computer Vision and
+  Pattern Recognition (CVPR)}, 2022.
+
+\bibitem{wu2024faithfulness}
+J.~Wu, W.~Kang, H.~Tang, Y.~Hong, and Y.~Yan, ``On the faithfulness of vision
+  transformer explanations,'' in \emph{IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition (CVPR)}, 2024.
 
 \end{thebibliography}

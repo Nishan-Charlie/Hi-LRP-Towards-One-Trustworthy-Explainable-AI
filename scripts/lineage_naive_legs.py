@@ -136,17 +136,25 @@ def main():
 
     print("AttnLRP-naive legs (generic LXT recipe, generous: canonizer + correct stats)")
     for name in MODELS:
-        model = timm.create_model(name, pretrained=True).eval()
+        model = timm.create_model(name, pretrained=True).eval().cuda()
         hits, deep, head = 0, [], []
+        hit_array = np.zeros(N_IMAGES, dtype=bool)
         for idx in range(N_IMAGES):
-            x = adapt_input(data[idx]["image"], model).unsqueeze(0)
+            x = adapt_input(data[idx]["image"], model).unsqueeze(0).cuda()
             pm, sums = attribute_naive(model, x)
-            hits += pointing(pm.numpy(), data[idx]["metadata"]["bboxes"])
+            hit_bool = pointing(pm.numpy(), data[idx]["metadata"]["bboxes"])
+            hits += hit_bool
+            hit_array[idx] = hit_bool
             deep.append(sums.get("deep", np.nan))
             head.append(sums.get("head_adjacent", np.nan))
         print(f"  {name:22s} pointing {hits}/{N_IMAGES} = {hits / N_IMAGES:.3f}   "
               f"cons deep {np.nanmean(deep):+.2f} +- {np.nanstd(deep):.2f}   "
               f"head {np.nanmean(head):+.2f} +- {np.nanstd(head):.2f}")
+        
+        # Save hit array
+        OUT = os.path.join("results", "hilrp_lineage")
+        os.makedirs(OUT, exist_ok=True)
+        np.save(os.path.join(OUT, f"hits_{name}_attnlrp_naive.npy"), hit_array)
 
     print("\nHiLRP reference (same protocol, gate3):")
     print("  pvt_v2_b2              0.980   cons smooth monotone (deep ~+0.39, head +1.01)")

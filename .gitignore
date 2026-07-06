@@ -5,3 +5,13 @@
 __pycache__/
 *.pyc
 results/
+data/
+scratch/
+archive/
+*.csv
+*.pdf
+*.pt
+*.bat
+
+checkpoints/
+out.txt

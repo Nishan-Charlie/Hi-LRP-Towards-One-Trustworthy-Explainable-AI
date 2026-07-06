@@ -1,21 +1,0 @@
-2026-06-21 19:33:05.203551: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
-Loaded 2 cached ImageNet-S samples from data/ImageNetS/cache_validation_100.pt
-Loading model: vit_base_patch16_224
-  Setting up method: saliency
-    Evaluating saliency:   0%|          | 0/2 [00:00<?, ?it/s]C:\Users\nisha\miniconda3\Lib\site-packages\captum\_utils\gradient.py:57: UserWarning: Input Tensor 0 did not already require gradients, required_grads has been set automatically.
-  warnings.warn(
-    Evaluating saliency:  50%|#####     | 1/2 [00:04<00:04,  4.41s/it]    Evaluating saliency: 100%|##########| 2/2 [00:08<00:00,  3.98s/it]    Evaluating saliency: 100%|##########| 2/2 [00:08<00:00,  4.05s/it]
-  Setting up method: grad_cam
-    Evaluating grad_cam:   0%|          | 0/2 [00:00<?, ?it/s]    Evaluating grad_cam:  50%|#####     | 1/2 [00:03<00:03,  3.82s/it]    Evaluating grad_cam: 100%|##########| 2/2 [00:07<00:00,  3.62s/it]    Evaluating grad_cam: 100%|##########| 2/2 [00:07<00:00,  3.65s/it]
-  Setting up method: integrated_gradients
-    Evaluating integrated_gradients:   0%|          | 0/2 [00:00<?, ?it/s]    Evaluating integrated_gradients:  50%|#####     | 1/2 [00:05<00:05,  5.83s/it]    Evaluating integrated_gradients: 100%|##########| 2/2 [00:11<00:00,  5.79s/it]    Evaluating integrated_gradients: 100%|##########| 2/2 [00:11<00:00,  5.79s/it]
-  Setting up method: lime
-    Evaluating lime:   0%|          | 0/2 [00:00<?, ?it/s]    Evaluating lime:  50%|#####     | 1/2 [00:07<00:07,  7.78s/it]    Evaluating lime: 100%|##########| 2/2 [00:16<00:00,  8.35s/it]    Evaluating lime: 100%|##########| 2/2 [00:16<00:00,  8.27s/it]
-  Setting up method: occlusion
-    Evaluating occlusion:   0%|          | 0/2 [00:00<?, ?it/s]    Evaluating occlusion:  50%|#####     | 1/2 [00:27<00:27, 27.61s/it]    Evaluating occlusion: 100%|##########| 2/2 [00:54<00:00, 27.17s/it]    Evaluating occlusion: 100%|##########| 2/2 [00:54<00:00, 27.24s/it]
-  Setting up method: rise
-    Evaluating rise:   0%|          | 0/2 [00:00<?, ?it/s]    Evaluating rise:  50%|#####     | 1/2 [00:13<00:13, 13.45s/it]    Evaluating rise: 100%|##########| 2/2 [00:27<00:00, 13.64s/it]    Evaluating rise: 100%|##########| 2/2 [00:27<00:00, 13.61s/it]
-Finished model: vit_base_patch16_224. Writing CSV...
-  CSV updated: 12 rows -> results\smoke_5metrics_v2\results.csv
-  CSV updated: 12 rows -> results\smoke_5metrics_v2\results.csv
-Run complete. Results saved to results\smoke_5metrics_v2

@@ -3,20 +3,9 @@
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
 \citation{dosovitskiy2021vit}
-\citation{touvron2021deit}
-\citation{oquab2024dinov2}
-\citation{sundararajan2017ig}
-\citation{selvaraju2017gradcam}
-\citation{petsiuk2018rise,ribeiro2016lime}
-\citation{brandt2023precise}
-\citation{raghu2021vit}
-\citation{abnar2020rollout,chefer2021transformer}
-\citation{wu2024faithfulness}
-\citation{brandt2023precise,hesse2023funnybirds,arras2022clevrxai}
-\citation{hedstrom2023quantus,rong2022road}
-\citation{nauta2023anecdotal,bodria2023benchmarking}
-\citation{hedstrom2023quantus}
-\citation{rao2022attribution}
+\citation{liu2021swin,wang2021pvt,cai2023efficientvit}
+\citation{bach2015lrp}
+\citation{chefer2021transformer,achtibat2024attnlrp}
 \def\@LN@column{1}
 \@writefile{toc}{\contentsline {section}{\numberline {I}Introduction}{1}{section.1}\protected@file@percent }
 \newlabel{sec:introduction}{{I}{1}{Introduction}{section.1}{}}
@@ -47,159 +36,133 @@
 \citation{hedstrom2023quantus}
 \citation{rong2022road}
 \citation{wu2024faithfulness}
-\citation{gao2022imagenets}
-\citation{russakovsky2015imagenet}
 \def\@LN@column{1}
 \@writefile{toc}{\contentsline {section}{\numberline {II}Related Works}{2}{section.2}\protected@file@percent }
 \newlabel{sec:related}{{II}{2}{Related Works}{section.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-A}}Attribution Methods}{2}{subsection.2.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-B}}Evaluating Explanations}{2}{subsection.2.2}\protected@file@percent }
+\def\@LN@column{2}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-C}}Ground-Truth and Cross-Architecture Benchmarks}{2}{subsection.2.3}\protected@file@percent }
-\def\@LN@column{2}
-\@writefile{toc}{\contentsline {section}{\numberline {III}Proposed Benchmark Framework}{2}{section.3}\protected@file@percent }
-\newlabel{sec:framework}{{III}{2}{Proposed Benchmark Framework}{section.3}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-A}}Datasets}{2}{subsection.3.1}\protected@file@percent }
-\newlabel{sec:dataset}{{\mbox  {III-A}}{2}{Datasets}{subsection.3.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-B}}Model Architectures}{2}{subsection.3.2}\protected@file@percent }
-\citation{simonyan2014saliency}
-\citation{sundararajan2017ig}
-\citation{shrikumar2017deeplift}
-\citation{smilkov2017smoothgrad}
-\citation{smilkov2017smoothgrad}
-\citation{lundberg2017shap}
-\citation{selvaraju2017gradcam}
-\citation{chattopadhay2018gradcampp}
-\citation{abnar2020rollout}
-\citation{chefer2021transformer}
-\citation{zeiler2014occlusion}
-\citation{petsiuk2018rise}
-\citation{ribeiro2016lime}
-\citation{bach2015lrp}
-\@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces Evaluated model groups used for cross-architecture attribution analysis. The models are grouped according to their visual representation design and their role in the benchmark.}}{3}{table.caption.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {III}Methodology: Hierarchical LRP (HiLRP)}{2}{section.3}\protected@file@percent }
+\newlabel{sec:methodology}{{III}{2}{Methodology: Hierarchical LRP (HiLRP)}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-A}}A Unifying View of Resolution Reduction}{2}{subsection.3.1}\protected@file@percent }
+\newlabel{sec:unifying}{{\mbox  {III-A}}{2}{A Unifying View of Resolution Reduction}{subsection.3.1}{}}
+\newlabel{eq:unifying}{{1}{2}{A Unifying View of Resolution Reduction}{equation.1}{}}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-B}}Attention as Four Conserving Primitives}{3}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:primitives}{{\mbox  {III-B}}{3}{Attention as Four Conserving Primitives}{subsection.3.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces Attention coverage. Every mechanism reduces to the four primitives; HiLRP conserves through each. ``Model'' = realized on a pretrained network; ``Proved'' = conservation verified to $10^{-11}$ in the float64 reference.}}{3}{table.caption.1}\protected@file@percent }
 \providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
-\newlabel{evaluated_models}{{I}{3}{Evaluated model groups used for cross-architecture attribution analysis. The models are grouped according to their visual representation design and their role in the benchmark}{table.caption.1}{}}
-\def\@LN@column{1}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-C}}Attribution Methods}{3}{subsection.3.3}\protected@file@percent }
+\newlabel{tab:attn-coverage}{{I}{3}{Attention coverage. Every mechanism reduces to the four primitives; HiLRP conserves through each. ``Model'' = realized on a pretrained network; ``Proved'' = conservation verified to $10^{-11}$ in the float64 reference}{table.caption.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-C}}Conservation-Preserving Attention (CP-LRP)}{3}{subsection.3.3}\protected@file@percent }
 \def\@LN@column{2}
-\@writefile{lot}{\contentsline {table}{\numberline {II}{\ignorespaces Attribution methods evaluated in the benchmark. The methods are grouped by explanation family, and the ViT and CNN columns indicate the architectures for which complete results were obtained.}}{3}{table.caption.2}\protected@file@percent }
-\newlabel{attribution_methods}{{II}{3}{Attribution methods evaluated in the benchmark. The methods are grouped by explanation family, and the ViT and CNN columns indicate the architectures for which complete results were obtained}{table.caption.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-D}}Evaluation Metrics}{3}{subsection.3.4}\protected@file@percent }
-\citation{kokhlikyan2020captum}
-\citation{gildenblat2021pytorchgradcam}
-\citation{demsar2006statistical}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-D}}LRP for Patch Merging (Swin, PVT)}{3}{subsection.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-E}}LRP for Spatial Reduction (EfficientViT)}{3}{subsection.3.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-F}}Theoretical Guarantees}{3}{subsection.3.6}\protected@file@percent }
+\newlabel{sec:guarantees}{{\mbox  {III-F}}{3}{Theoretical Guarantees}{subsection.3.6}{}}
+\newlabel{lem:conservation}{{1}{3}{Conservation by sum exchange}{lemma.1}{}}
+\citation{achtibat2024attnlrp}
+\citation{hedstrom2023quantus}
 \def\@LN@column{1}
-\newlabel{fc}{{1}{4}{Evaluation Metrics}{equation.1}{}}
-\newlabel{fe}{{2}{4}{Evaluation Metrics}{equation.2}{}}
-\newlabel{pg}{{3}{4}{Evaluation Metrics}{equation.3}{}}
-\newlabel{ms}{{4}{4}{Evaluation Metrics}{equation.4}{}}
-\newlabel{sp}{{5}{4}{Evaluation Metrics}{equation.5}{}}
+\newlabel{thm:equivariance}{{1}{4}{Conditional equivariance}{theorem.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-G}}Label-Free Attribution of Self-Supervised Objectives}{4}{subsection.3.7}\protected@file@percent }
+\newlabel{sec:ssl}{{\mbox  {III-G}}{4}{Label-Free Attribution of Self-Supervised Objectives}{subsection.3.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-H}}Implementation}{4}{subsection.3.8}\protected@file@percent }
+\newlabel{sec:implementation}{{\mbox  {III-H}}{4}{Implementation}{subsection.3.8}{}}
 \def\@LN@column{2}
-\@writefile{lot}{\contentsline {table}{\numberline {III}{\ignorespaces Evaluation metrics used in the benchmark. The direction column indicates the preferred direction of each metric: \(\uparrow \) means higher values are preferred, \(\downarrow \) means lower values are preferred, and \(=\) means the metric is interpreted descriptively.}}{4}{table.caption.3}\protected@file@percent }
-\newlabel{metrics}{{III}{4}{Evaluation metrics used in the benchmark. The direction column indicates the preferred direction of each metric: \(\uparrow \) means higher values are preferred, \(\downarrow \) means lower values are preferred, and \(=\) means the metric is interpreted descriptively}{table.caption.3}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {IV}{\ignorespaces Fixed experimental budget. Identical across all model$\times $method cells.}}{4}{table.caption.4}\protected@file@percent }
-\newlabel{tab:setup}{{IV}{4}{Fixed experimental budget. Identical across all model$\times $method cells}{table.caption.4}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {IV}Experimental Setup}{4}{section.4}\protected@file@percent }
 \newlabel{sec:setup}{{IV}{4}{Experimental Setup}{section.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-A}}Metrics and the Faithfulness Fallacy}{4}{subsection.4.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {V}Results}{4}{section.5}\protected@file@percent }
 \newlabel{sec:results}{{V}{4}{Results}{section.5}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-A}}Quantitative Results}{4}{subsection.5.1}\protected@file@percent }
-\newlabel{sec:quant}{{\mbox  {V-A}}{4}{Quantitative Results}{subsection.5.1}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {V}{\ignorespaces Main quantitative results on the ImageNet-S evaluation set (mean over images). FC, FE, and PG use higher is better ($\uparrow $), MS uses lower is better ($\downarrow $), and SP is descriptive (\,=\,). Within each backbone the best value per metric is in \textbf  {bold}. Attention-native methods apply only to the isotropic ViT-B/16 and DeiT-B/16 backbones. The table continues in the following part with the efficient and hierarchical backbones.}}{5}{table.caption.5}\protected@file@percent }
-\newlabel{tab:main}{{V}{5}{Main quantitative results on the ImageNet-S evaluation set (mean over images). FC, FE, and PG use higher is better (\up ), MS uses lower is better (\down ), and SP is descriptive (\,=\,). Within each backbone the best value per metric is in \best {bold}. Attention-native methods apply only to the isotropic ViT-B/16 and DeiT-B/16 backbones. The table continues in the following part with the efficient and hierarchical backbones}{table.caption.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-A}}The Benchmark: No XAI Method Survives Architectural Diversity}{4}{subsection.5.1}\protected@file@percent }
+\newlabel{sec:baseline-landscape}{{\mbox  {V-A}}{4}{The Benchmark: No XAI Method Survives Architectural Diversity}{subsection.5.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {II}{\ignorespaces \textbf  {The Benchmark.} Pointing Game for 14 attribution methods across ten architectures. HiLRP (ours) is the only method defined and consistent across all ViT families. \textemdash = not applicable / does not run.}}{5}{table.caption.2}\protected@file@percent }
+\newlabel{tab:bigbench}{{II}{5}{\textbf {The Benchmark.} Pointing Game for 14 attribution methods across ten architectures. HiLRP (ours) is the only method defined and consistent across all ViT families. \nd = not applicable / does not run}{table.caption.2}{}}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {V-A}1}Localization does not transfer cleanly}{5}{subsubsection.5.1.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {V-A}2}Robustness varies over three orders of magnitude}{5}{subsubsection.5.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-B}}Localization on Hierarchical and Hybrid ViTs}{5}{subsection.5.2}\protected@file@percent }
+\newlabel{sec:localization}{{\mbox  {V-B}}{5}{Localization on Hierarchical and Hybrid ViTs}{subsection.5.2}{}}
 \def\@LN@column{2}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {V-A}3}Proxy faithfulness correlation is almost uninformative}{5}{subsubsection.5.1.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {III}{\ignorespaces Pointing Game Localization Scores on Hierarchical Architectures.}}{5}{table.caption.3}\protected@file@percent }
+\newlabel{tab:localization}{{III}{5}{Pointing Game Localization Scores on Hierarchical Architectures}{table.caption.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-C}}Why Grad-CAM Saturates the Pointing Game}{5}{subsection.5.3}\protected@file@percent }
+\newlabel{sec:gradcam-blob}{{\mbox  {V-C}}{5}{Why Grad-CAM Saturates the Pointing Game}{subsection.5.3}{}}
+\citation{achtibat2024attnlrp}
+\citation{bach2015lrp}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces \textbf  {Qualitative comparison of attribution maps.} Heatmaps of HiLRP versus representative baselines across four backbones. HiLRP traces fine object structure consistently, whereas baseline methods often produce low-resolution blobs or diffuse noise.}}{6}{figure.caption.4}\protected@file@percent }
+\newlabel{fig:qualitative-comparison}{{1}{6}{\textbf {Qualitative comparison of attribution maps.} Heatmaps of HiLRP versus representative baselines across four backbones. HiLRP traces fine object structure consistently, whereas baseline methods often produce low-resolution blobs or diffuse noise}{figure.caption.4}{}}
 \def\@LN@column{1}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Localization (pointing game) by method and backbone. CNN scores are saturated; ViT scores spread out, and several methods rank-flip relative to the CNN.}}{6}{figure.caption.8}\protected@file@percent }
-\newlabel{fig:pointing}{{1}{6}{Localization (pointing game) by method and backbone. CNN scores are saturated; ViT scores spread out, and several methods rank-flip relative to the CNN}{figure.caption.8}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {V-A}4}Complexity trade-off}{6}{subsubsection.5.1.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {V-A}5}Cost and fidelity trade-off}{6}{subsubsection.5.1.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-B}}Efficient and Hierarchical Transformer Results}{6}{subsection.5.2}\protected@file@percent }
-\newlabel{sec:effvit}{{\mbox  {V-B}}{6}{Efficient and Hierarchical Transformer Results}{subsection.5.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-D}}Conservation Validity vs.\ the Naive Lineage}{6}{subsection.5.4}\protected@file@percent }
+\newlabel{sec:conservation-validity}{{\mbox  {V-D}}{6}{Conservation Validity vs.\ the Naive Lineage}{subsection.5.4}{}}
 \def\@LN@column{2}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Robustness (max-sensitivity, lower is better, log scale). Robustness spans three orders of magnitude and degrades most for CAM/gradient methods on ViTs.}}{6}{figure.caption.9}\protected@file@percent }
-\newlabel{fig:robust}{{2}{6}{Robustness (max-sensitivity, lower is better, log scale). Robustness spans three orders of magnitude and degrades most for CAM/gradient methods on ViTs}{figure.caption.9}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Cost and fidelity frontier on ViT-B/16. Grad-CAM occupies the cheap and well-localized corner, whereas perturbation methods buy only marginal fidelity at a large compute cost.}}{6}{figure.caption.10}\protected@file@percent }
-\newlabel{fig:pareto}{{3}{6}{Cost and fidelity frontier on ViT-B/16. Grad-CAM occupies the cheap and well-localized corner, whereas perturbation methods buy only marginal fidelity at a large compute cost}{figure.caption.10}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-C}}Qualitative Results}{6}{subsection.5.3}\protected@file@percent }
-\newlabel{sec:qual}{{\mbox  {V-C}}{6}{Qualitative Results}{subsection.5.3}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {VI}Discussion}{6}{section.6}\protected@file@percent }
-\newlabel{sec:discussion}{{VI}{6}{Discussion}{section.6}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-A}}Key Findings}{6}{subsection.6.1}\protected@file@percent }
-\newlabel{sec:findings}{{\mbox  {VI-A}}{6}{Key Findings}{subsection.6.1}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Qualitative comparison of attribution maps across method families and backbones for a representative ImageNet-S image. Grad-CAM is compact and object-centered; attention rollout is diffuse; perturbation methods are blocky.}}{7}{figure.caption.11}\protected@file@percent }
-\newlabel{fig:qualitative}{{4}{7}{Qualitative comparison of attribution maps across method families and backbones for a representative ImageNet-S image. Grad-CAM is compact and object-centered; attention rollout is diffuse; perturbation methods are blocky}{figure.caption.11}{}}
 \def\@LN@column{1}
-\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Auxiliary structural analysis: Louvain community detection on the thresholded combined heatmap reveals the connected structure of the attributed region.}}{7}{figure.caption.12}\protected@file@percent }
-\newlabel{fig:cluster}{{5}{7}{Auxiliary structural analysis: Louvain community detection on the thresholded combined heatmap reveals the connected structure of the attributed region}{figure.caption.12}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {IV}{\ignorespaces \textbf  {Conservation validity.} Pointing / deep relevance sum across hierarchical and hybrid backbones. The naive AttnLRP extension points well but its relevance is degenerate everywhere; HiLRP remains valid throughout.}}{7}{table.caption.5}\protected@file@percent }
+\newlabel{tab:conservation}{{IV}{7}{\textbf {Conservation validity.} Pointing / deep relevance sum across hierarchical and hybrid backbones. The naive AttnLRP extension points well but its relevance is degenerate everywhere; HiLRP remains valid throughout}{table.caption.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-E}}Segment-Shapley Agreement}{7}{subsection.5.5}\protected@file@percent }
+\newlabel{sec:shapley}{{\mbox  {V-E}}{7}{Segment-Shapley Agreement}{subsection.5.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {V}{\ignorespaces \textbf  {Shapley Agreement.} Spearman agreement with sampled Shapley values over image segments. Higher is better.}}{7}{table.caption.6}\protected@file@percent }
+\newlabel{tab:shapley}{{V}{7}{\textbf {Shapley Agreement.} Spearman agreement with sampled Shapley values over image segments. Higher is better}{table.caption.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-F}}Qualitative Results: Stage-Localized Relevance}{7}{subsection.5.6}\protected@file@percent }
+\newlabel{sec:qualitative}{{\mbox  {V-F}}{7}{Qualitative Results: Stage-Localized Relevance}{subsection.5.6}{}}
 \def\@LN@column{2}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-B}}Theoretical Analysis: Why Grad-CAM++ Collapses on ViTs}{7}{subsection.6.2}\protected@file@percent }
-\newlabel{sec:gradcam_collapse}{{\mbox  {VI-B}}{7}{Theoretical Analysis: Why Grad-CAM++ Collapses on ViTs}{subsection.6.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-C}}Methodological Fix: Attention-Preserving Faithfulness (APF)}{7}{subsection.6.3}\protected@file@percent }
-\newlabel{sec:apf}{{\mbox  {VI-C}}{7}{Methodological Fix: Attention-Preserving Faithfulness (APF)}{subsection.6.3}{}}
-\citation{liu2021swin}
-\citation{demsar2006statistical}
-\citation{hesse2023funnybirds}
-\citation{oquab2024dinov2}
-\citation{he2022mae}
-\citation{radford2021clip}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces \textbf  {Stage-Localized Heatmaps.} Qualitative comparison of HiLRP heatmaps across different network depths. HiLRP perfectly traces the object silhouette at multiple spatial resolutions.}}{7}{figure.caption.7}\protected@file@percent }
+\newlabel{fig:qualitative}{{2}{7}{\textbf {Stage-Localized Heatmaps.} Qualitative comparison of HiLRP heatmaps across different network depths. HiLRP perfectly traces the object silhouette at multiple spatial resolutions}{figure.caption.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-G}}RQ2: Pretraining Objective Determines Explanation Structure}{7}{subsection.5.7}\protected@file@percent }
+\newlabel{sec:rq2}{{\mbox  {V-G}}{7}{RQ2: Pretraining Objective Determines Explanation Structure}{subsection.5.7}{}}
+\def\@LN@column{1}
+\@writefile{lot}{\contentsline {table}{\numberline {VI}{\ignorespaces \textbf  {RQ2: Pretraining Objectives.} Attributing one common label-free scalar on a fixed ViT-B/16 across four pretraining objectives. Label-free Pointing uses no labels; pixel-relevance is the fraction of the scalar reaching the input.}}{8}{table.caption.8}\protected@file@percent }
+\newlabel{tab:rq2}{{VI}{8}{\textbf {RQ2: Pretraining Objectives.} Attributing one common label-free scalar on a fixed ViT-B/16 across four pretraining objectives. Label-free Pointing uses no labels; pixel-relevance is the fraction of the scalar reaching the input}{table.caption.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces \textbf  {Label-free attribution.} HiLRP attribution of the same view-invariance scalar across four pretraining objectives on an identical ViT-B/16. The maps differ structurally across objectives.}}{8}{figure.caption.9}\protected@file@percent }
+\newlabel{fig:rq2-maps}{{3}{8}{\textbf {Label-free attribution.} HiLRP attribution of the same view-invariance scalar across four pretraining objectives on an identical ViT-B/16. The maps differ structurally across objectives}{figure.caption.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-H}}Cross-Attention and Multi-Modal Attribution}{8}{subsection.5.8}\protected@file@percent }
+\newlabel{sec:multimodal}{{\mbox  {V-H}}{8}{Cross-Attention and Multi-Modal Attribution}{subsection.5.8}{}}
+\def\@LN@column{2}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-I}}Selection of the $\gamma $ Parameter}{8}{subsection.5.9}\protected@file@percent }
+\newlabel{sec:gamma}{{\mbox  {V-I}}{8}{Selection of the $\gamma $ Parameter}{subsection.5.9}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {VII}{\ignorespaces \textbf  {Sensitivity to $\gamma $.} Pointing and head-adjacent conservation across different values of $\gamma $. $\gamma {=}0.25$ provides stable performance across backbones.}}{8}{table.caption.10}\protected@file@percent }
+\newlabel{tab:gamma}{{VII}{8}{\textbf {Sensitivity to $\gamma $.} Pointing and head-adjacent conservation across different values of $\gamma $. $\gamma {=}0.25$ provides stable performance across backbones}{table.caption.10}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {VI}Limitations}{8}{section.6}\protected@file@percent }
+\newlabel{sec:limitations}{{VI}{8}{Limitations}{section.6}{}}
 \bibstyle{IEEEtran}
 \bibdata{refs}
 \bibcite{dosovitskiy2021vit}{1}
-\bibcite{touvron2021deit}{2}
-\bibcite{oquab2024dinov2}{3}
-\bibcite{sundararajan2017ig}{4}
-\bibcite{selvaraju2017gradcam}{5}
-\bibcite{petsiuk2018rise}{6}
-\bibcite{ribeiro2016lime}{7}
-\bibcite{brandt2023precise}{8}
-\bibcite{raghu2021vit}{9}
+\bibcite{liu2021swin}{2}
+\bibcite{wang2021pvt}{3}
+\bibcite{cai2023efficientvit}{4}
+\bibcite{bach2015lrp}{5}
+\bibcite{chefer2021transformer}{6}
+\bibcite{achtibat2024attnlrp}{7}
+\bibcite{simonyan2014saliency}{8}
+\bibcite{sundararajan2017ig}{9}
+\bibcite{shrikumar2017deeplift}{10}
+\bibcite{smilkov2017smoothgrad}{11}
+\bibcite{selvaraju2017gradcam}{12}
+\bibcite{chattopadhay2018gradcampp}{13}
+\bibcite{abnar2020rollout}{14}
+\bibcite{zeiler2014occlusion}{15}
+\bibcite{petsiuk2018rise}{16}
+\bibcite{ribeiro2016lime}{17}
+\bibcite{lundberg2017shap}{18}
+\bibcite{bhatt2020faithfulness}{19}
+\bibcite{alvarez2018robustness}{20}
+\bibcite{rong2022road}{21}
+\bibcite{zhang2018pointing}{22}
+\bibcite{yeh2019sensitivity}{23}
+\bibcite{chalasani2020sparseness}{24}
+\bibcite{adebayo2018sanity}{25}
+\bibcite{nauta2023anecdotal}{26}
+\bibcite{bodria2023benchmarking}{27}
+\bibcite{hedstrom2023quantus}{28}
+\bibcite{brandt2023precise}{29}
+\bibcite{hesse2023funnybirds}{30}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-D}}Architectural Bottlenecks: Shifted Windows vs. Global Attention}{8}{subsection.6.4}\protected@file@percent }
-\newlabel{sec:swin_bottlenecks}{{\mbox  {VI-D}}{8}{Architectural Bottlenecks: Shifted Windows vs. Global Attention}{subsection.6.4}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-E}}Limitations}{8}{subsection.6.5}\protected@file@percent }
-\newlabel{sec:limitations}{{\mbox  {VI-E}}{8}{Limitations}{subsection.6.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusion}{9}{section.7}\protected@file@percent }
+\newlabel{sec:conclusion}{{VII}{9}{Conclusion}{section.7}{}}
+\@writefile{toc}{\contentsline {section}{References}{9}{section*.11}\protected@file@percent }
 \def\@LN@column{2}
-\@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusion}{8}{section.7}\protected@file@percent }
-\newlabel{sec:conclusion}{{VII}{8}{Conclusion}{section.7}{}}
-\@writefile{toc}{\contentsline {section}{References}{8}{section*.13}\protected@file@percent }
-\bibcite{abnar2020rollout}{10}
-\bibcite{chefer2021transformer}{11}
-\bibcite{wu2024faithfulness}{12}
-\bibcite{hesse2023funnybirds}{13}
-\bibcite{arras2022clevrxai}{14}
-\bibcite{hedstrom2023quantus}{15}
-\bibcite{rong2022road}{16}
-\bibcite{nauta2023anecdotal}{17}
-\bibcite{bodria2023benchmarking}{18}
-\bibcite{rao2022attribution}{19}
-\bibcite{simonyan2014saliency}{20}
-\bibcite{shrikumar2017deeplift}{21}
-\bibcite{smilkov2017smoothgrad}{22}
-\bibcite{chattopadhay2018gradcampp}{23}
-\bibcite{bach2015lrp}{24}
-\bibcite{zeiler2014occlusion}{25}
-\bibcite{lundberg2017shap}{26}
-\bibcite{bhatt2020faithfulness}{27}
-\bibcite{alvarez2018robustness}{28}
-\bibcite{zhang2018pointing}{29}
-\bibcite{yeh2019sensitivity}{30}
-\bibcite{chalasani2020sparseness}{31}
-\bibcite{adebayo2018sanity}{32}
-\bibcite{gao2022imagenets}{33}
-\bibcite{russakovsky2015imagenet}{34}
-\bibcite{kokhlikyan2020captum}{35}
-\bibcite{gildenblat2021pytorchgradcam}{36}
-\bibcite{demsar2006statistical}{37}
-\bibcite{liu2021swin}{38}
-\bibcite{he2022mae}{39}
-\bibcite{radford2021clip}{40}
+\bibcite{arras2022clevrxai}{31}
+\bibcite{rao2022attribution}{32}
+\bibcite{wu2024faithfulness}{33}
 \def\@LN@column{1}
 \def\@LN@column{2}
-\@writefile{lot}{\contentsline {table}{\numberline {V}{\ignorespaces (Continued.) Main quantitative results for the efficient and hierarchical transformer backbones. Attention-native methods are not applicable to these architectures and are omitted. Blank cells correspond to method and backbone combinations that are still being computed.}}{10}{table.caption.6}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {VI}{\ignorespaces Mean computational cost per explanation (ms), averaged over backbones and the 100-image set. Perturbation methods dominate the budget.}}{11}{table.caption.7}\protected@file@percent }
-\newlabel{tab:cost}{{VI}{11}{Mean computational cost per explanation (ms), averaged over backbones and the 100-image set. Perturbation methods dominate the budget}{table.caption.7}{}}
-\def\@LN@column{2}
-\gdef \@abspage@last{11}
+\gdef \@abspage@last{10}

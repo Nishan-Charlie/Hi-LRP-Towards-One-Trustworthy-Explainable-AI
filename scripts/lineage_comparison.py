@@ -64,15 +64,24 @@ def run_leg(tag, attributor, model, data, **kw):
     the head-adjacent capture (last entry) is enforced by the head hook and
     stays ~1 for everyone."""
     hits, cons_deep, cons_head = 0, [], []
+    hit_array = np.zeros(N_IMAGES, dtype=bool)
     for idx in range(N_IMAGES):
-        x = data[idx]["image"].unsqueeze(0)
+        x = data[idx]["image"].unsqueeze(0).cuda()
         res = attributor(model, x, **kw)
-        hits += pointing(res["pixel_map"].numpy(), data[idx]["metadata"]["bboxes"])
+        hit_bool = pointing(res["pixel_map"].numpy(), data[idx]["metadata"]["bboxes"])
+        hits += hit_bool
+        hit_array[idx] = hit_bool
         cons_deep.append(res["stage_sums"][0][1])
         cons_head.append(res["stage_sums"][-1][1])
     print(f"  {tag:32s} pointing {hits}/{N_IMAGES} = {hits / N_IMAGES:.3f}   "
           f"cons deep {np.mean(cons_deep):+.2f} +- {np.std(cons_deep):.2f}   "
           f"head {np.mean(cons_head):+.2f}")
+    
+    # Save the hit array
+    safe_tag = tag.replace(" ", "_").replace("(", "").replace(")", "").replace("-", "_").lower()
+    model_name = getattr(model, "default_cfg", {}).get("architecture", "unknown_model")
+    np.save(os.path.join(OUT, f"hits_{model_name}_{safe_tag}.npy"), hit_array)
+    
     return hits / N_IMAGES
 
 
@@ -83,7 +92,7 @@ def main():
     print("=== Leg A: vit_base_patch16_224 (AttnLRP's home turf) ===")
     from xai_bench.methods.hilrp.vit_lxt import attribute_vit, ensure_patched as vit_patch
     vit_patch()
-    vit = timm.create_model("vit_base_patch16_224", pretrained=True).eval()
+    vit = timm.create_model("vit_base_patch16_224", pretrained=True).eval().cuda()
     run_leg("HiLRP-CP (ours)", attribute_vit, vit, data, attn_mode="cp")
     run_leg("AttnLRP (inherited rules)", attribute_vit, vit, data, attn_mode="attnlrp")
     print("  bench baselines (100 imgs, same protocol family):")
@@ -96,7 +105,7 @@ def main():
     print("\n=== Leg B: swin_base_patch4_window7_224 (hierarchical, our turf) ===")
     from xai_bench.methods.hilrp.swin_lxt import attribute_swin, ensure_patched as swin_patch
     swin_patch()
-    swin = timm.create_model("swin_base_patch4_window7_224", pretrained=True).eval()
+    swin = timm.create_model("swin_base_patch4_window7_224", pretrained=True).eval().cuda()
     run_leg("HiLRP (ours)", attribute_swin, swin, data)
 
     # AttnLRP-naive: LN/GELU identity patches and the Gamma composite stay

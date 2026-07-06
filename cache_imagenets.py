@@ -11,6 +11,15 @@ Usage:  python cache_imagenets.py --num 100 --split validation
 import argparse
 import os
 import time
+import ssl
+import certifi
+
+def _custom_create_default_context(*args, **kwargs):
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    ctx.load_verify_locations(cafile=certifi.where())
+    return ctx
+
+ssl.create_default_context = _custom_create_default_context
 
 import numpy as np
 import torch
@@ -48,7 +57,7 @@ def build(num_samples, split, out_path, max_retries=8):
     while len(records) < num_samples and attempt < max_retries:
         attempt += 1
         try:
-            print(f"[attempt {attempt}] streaming {split}, have {len(records)}/{num_samples}...")
+            print(f"[attempt {attempt}] loading {split}, have {len(records)}/{num_samples}...")
             ds = load_dataset("braceletboy/imagenet-s", split=split, streaming=True)
             for i, item in enumerate(ds):
                 if i < len(records):
