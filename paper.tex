@@ -191,6 +191,37 @@ T(\mathcal{N}) = W\,\phi\!\left(\mathrm{concat}(x^{(1)},\dots,x^{(n)})\right),
 \end{equation}
 where $\mathrm{concat}$ is a coordinate embedding (one input coordinate per output coordinate) and $\phi$ is a conservation-preserving normalization (identity or LayerNorm). This is the object HiLRP propagates through: a single rule for Eq.~\eqref{eq:unifying} yields patch merging, strided patch embedding, and spatial reduction as corollaries, which is what makes the framework architecture-agnostic rather than a collection of per-model patches. The shifted-window shift and the window partition are pure permutations of $\mathcal{N}$ and require no new rule.
 
+\subsection{Attention as Four Conserving Primitives}
+\label{sec:primitives}
+The same collapse applies to attention itself, which is what makes HiLRP universal rather than a set of per-architecture rules. Every attention mechanism, however exotic, is a composition of four operation classes, and each admits a single relevance rule that conserves: (i) \emph{linear maps} (the Q/K/V/output projections, poolings, kernel feature maps, rotary embeddings), propagated by the $\epsilon$/$\gamma$ rule; (ii) \emph{bilinear mixing} (the matmuls $QK^\top$ and $\mathrm{attn}{\cdot}V$, linear-attention products, deformable sampling), propagated by a uniform split or, in the conservation-preserving variant, by treating one factor as fixed gating; (iii) \emph{normalization and gating} (softmax, the linear-attention denominator, squeeze-excite or sigmoid gates, LayerNorm), propagated by the detached-denominator identity rule; and (iv) \emph{reindexing} (head splitting, windowing, shifting, dilation, grouping), which are permutations and conserve exactly (Lemma~\ref{lem:conservation}). In short, attention is a linear map, then a bilinear mix, then a normalization or gate, then aggregation, over some sparsity pattern, and HiLRP conserves through each.
+
+The consequence is coverage by construction: a new attention design is a new arrangement of the same four primitives and inherits a conservation-valid rule with no new derivation. Table~\ref{tab:attn-coverage} lists the span, from self-attention to linear, windowed, spatial-reduction, multi-axis, cross, co-, channel, coordinate, and dilated attention. We verify conservation for each composite type at machine precision ($10^{-11}$, float64) in a double-precision reference implementation, and realize six of them on pretrained models (Sec.~\ref{sec:results}), including multi-modal cross-modal attribution on CLIP.
+
+\begin{table}[h]
+  \centering
+  \caption{Attention coverage. Every mechanism reduces to the four primitives; HiLRP conserves through each. ``Model'' = realized on a pretrained network; ``Proved'' = conservation verified to $10^{-11}$ in the float64 reference.}
+  \label{tab:attn-coverage}
+  \setlength{\tabcolsep}{4pt}
+  \footnotesize
+  \begin{tabular}{l l c}
+    \toprule
+    Attention (example) & Reduces to & Status \\
+    \midrule
+    Self / multi-head (ViT) & linear, bilinear, softmax, heads & Model \\
+    Windowed / shifted (Swin) & \;\; + window/shift perm. & Model \\
+    Spatial-reduction (PVT) & \;\; + strided conv on K/V & Model \\
+    Linear (EfficientViT) & kernel maps, bilinear, det.\ denom. & Model \\
+    Separable (MobileViT) & context gate, value path & Model \\
+    Multi-axis (MaxViT) & \;\; + grid permutation & Model \\
+    Cross / co- (CLIP, VQA) & two streams, bilinear, softmax & Model+Proved \\
+    Channel / coordinate (SE) & pool, linear, gate, multiply & Proved \\
+    Dilated / sparse (NAT) & dilated gather, softmax attn & Proved \\
+    Grouped-query, RoPE & broadcast / rotation (linear) & Primitive \\
+    Deformable (Def-DETR) & bilinear sampling at offsets & 1 rule (future) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
 \subsection{Conservation-Preserving Attention (CP-LRP)}
 AttnLRP propagates relevance through the softmax with a Taylor expansion of the attention matrix. This sharpens maps on isotropic ViTs but does not conserve: in our ablation its layer-wise conservation is $0.29$, so the result is a contrast-enhanced heuristic rather than a decomposition of the logit. HiLRP uses the conservation-preserving (CP) rule, which treats the attention weights as a fixed gating and routes relevance through the value path only, preserving relevance mass ($0.82$). The choice is a single flag: on isotropic \textsc{cls}-pooled ViTs, where localization lives in the attention path, the Taylor rule is used instead (Sec.~\ref{sec:implementation}).
 
@@ -434,6 +465,10 @@ Table~\ref{tab:rq2} reports the results over 30 images. The four objectives prod
   \caption{\textbf{Label-free attribution.} HiLRP attribution of the same view-invariance scalar across four pretraining objectives on an identical ViT-B/16. The maps differ structurally across objectives.}
   \label{fig:rq2-maps}
 \end{figure}
+
+\subsection{Multi-Modal Attribution}
+\label{sec:multimodal}
+The scalar being explained need not even come from a single modality. On CLIP (ViT-B/16), we attribute the image-text alignment $s=\cos(f_{\text{img}}(x), f_{\text{text}}(c))$ with the text embedding of a caption $c$ frozen, so HiLRP answers what image evidence supports a textual description. The patched image tower is forward-equivalent to the original ($10^{-6}$), and the attribution is text-conditioned: a caption matching the image concentrates more positive relevance on the object than a mismatched caption on 5--7 of 8 images (mean in-object energy $0.51$ vs.\ $0.49$; the margin is limited by the single-object nature of the evaluation set). This exercises the cross-modal scalar and the multi-head attention primitive on a pretrained multi-modal model with no new rule, extending conservation-based attribution beyond the single-model, single-label setting of prior transformer LRP.
 
 \subsection{Selection of the $\gamma$ Parameter}
 \label{sec:gamma}
