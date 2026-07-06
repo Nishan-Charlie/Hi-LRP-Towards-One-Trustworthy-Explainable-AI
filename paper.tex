@@ -87,7 +87,7 @@
 
 % =============================================================================
 \begin{abstract}
-As Vision Transformers (ViTs) evolve from isotropic patch models to hierarchical and hybrid architectures (e.g., Swin, PVT, EfficientViT), existing Layer-wise Relevance Propagation (LRP) methods fundamentally break down. Spatial reduction and patch merging operations violate standard LRP conservation rules, forcing practitioners to fall back on heuristic approaches like Grad-CAM, which fail to capture fine-grained object structure and collapse on linear cross-covariance attention. In this paper, we introduce Hierarchical LRP (HiLRP), a framework that extends conservation-based relevance propagation to flat, hierarchical, and hybrid Vision Transformers. We derive flow-conserving LRP rules for spatial reduction and patch merging as corollaries of a single proposition, prove them conservative and conditionally equivariant, and verify both at machine precision. HiLRP is the only method that yields conservation-valid relevance on hierarchical and hybrid transformers, where the naive extension of prior attention-aware LRP fails; it attains the strongest and most consistent localization (0.980 on the Pointing Game for PVT, 0.960 for EfficientViT) and the highest agreement with axiomatic Shapley values. We further expose the failure of proxy faithfulness metrics on robust ViTs, establish Segment-Shapley Agreement as a discriminating evaluation standard, and extend the same machinery to explain label-free self-supervised objectives. HiLRP enables novel XAI capabilities, including stage-localized relevance tracking, providing unprecedented insight into the hierarchical feature construction of modern Vision Transformers.
+Vision Transformers have moved from isotropic patch models to hierarchical and hybrid designs, such as Swin, PVT, EfficientViT, and MaxViT, that mix patch merging, spatial reduction, and windowed or linear attention. Layer-wise Relevance Propagation (LRP), the principal conservation-based attribution family, defines no rules for these operations: applied naively it either fails to run or ceases to conserve relevance, and practitioners fall back on Grad-CAM, which produces coarse blobs and collapses on linear-attention models. We introduce Hierarchical LRP (HiLRP), which extends conservation-based attribution to these architectures. We show that patch merging, shifted-window partitioning, and spatial reduction are a single coordinate-embedded linear map, derive one flow-conserving rule for all three, and prove it conservation-preserving and conditionally equivariant, verified to machine precision. We then benchmark 14 attribution methods across ten architectures and find that no prior method is reliable across ViT families and that the standard faithfulness metric is uninformative. HiLRP is the only method that yields conservation-valid relevance on every hierarchical and hybrid backbone; it attains the strongest and most consistent localization ($0.98$ Pointing on PVT, $0.96$ on EfficientViT where Grad-CAM drops to $0.55$) and the highest agreement with axiomatic Shapley values. The same machinery produces stage-localized maps and explains label-free self-supervised objectives, exposing that the pretraining objective, not the architecture, shapes an explanation. Code will be released.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -100,19 +100,18 @@ Faithfulness, Localization, Shapley Agreement.
 \label{sec:introduction}
 \IEEEPARstart{V}{ision} Transformers (ViTs)~\cite{dosovitskiy2021vit} and their hierarchical successors~\cite{liu2021swin,wang2021pvt,cai2023efficientvit} have displaced convolutional neural networks (CNNs) as the default backbones for image understanding. As these models enter high-stakes applications, attribution methods that assign an importance score to every input pixel for a given prediction remain the primary tool for post-hoc interpretation. 
 
-Historically, Layer-wise Relevance Propagation (LRP)~\cite{bach2015lrp} and its transformer variants, the attention-attribution of Chefer et~al.~\cite{chefer2021transformer} and the attention-aware AttnLRP~\cite{achtibat2024attnlrp}, have provided mathematically grounded explanations by ensuring that the sum of relevance scores approximates the model's output logit. However, a critical gap has emerged: existing LRP rules are defined only for isotropic transformers and are incompatible with modern hierarchical ViT architectures. While isotropic ViTs maintain a constant token sequence length, state-of-the-art models employ hierarchical designs featuring patch merging, spatial reduction, and linear cross-covariance attention. When standard LRP is applied to these operations, it either crashes or violates relevance conservation, effectively reducing it to a visual heuristic rather than an exact mathematical guarantee. Consequently, practitioners are forced to rely on gradient heuristics or CAM-based methods~\cite{selvaraju2017gradcam}, which produce coarse, unstructured blobs and collapse entirely on linear attention models.
+Layer-wise Relevance Propagation (LRP)~\cite{bach2015lrp} and its transformer variants, the attention attribution of Chefer et~al.~\cite{chefer2021transformer} and the attention-aware AttnLRP~\cite{achtibat2024attnlrp}, offer a stronger property than gradient or CAM heuristics: relevance is conserved as it propagates, so an explanation is a decomposition of the prediction rather than a visual guess. This property is defined only for isotropic transformers of constant token length. Hierarchical and hybrid ViTs instead reduce resolution through patch merging, spatial reduction, and windowed or linear attention, and existing LRP rules have no definition for these operations: applied to them, LRP either fails to execute or silently breaks conservation, degrading to an unnormalized saliency map. Practitioners then default to Grad-CAM~\cite{selvaraju2017gradcam}, which produces coarse blobs and, as we show, collapses entirely on linear-attention backbones.
 
-Furthermore, the evaluation of XAI methods on robust ViTs is methodologically flawed. Standard proxy faithfulness metrics, such as Deletion AUC or Faithfulness Correlation, often return near-zero values on modern ViTs because these models are exceptionally robust to spatial masking. This renders traditional fidelity benchmarking practically uninformative.
+Evaluation compounds the problem. Proxy faithfulness metrics such as Deletion AUC and Faithfulness Correlation return near-zero values on modern ViTs, which are highly robust to the spatial masking these metrics rely on. The default fidelity measure is therefore uninformative, and cannot referee the methods above.
 
-To address these fundamental limitations, we propose Hierarchical LRP (HiLRP), a unified framework for exact relevance propagation across all Vision Transformer architectures. We derive novel LRP corollaries to handle spatial reduction and patch merging, and we adopt Conservation-Preserving LRP (CP-LRP) to ensure strict adherence to the relevance conservation property throughout non-linear softmax attention blocks. 
+We introduce Hierarchical LRP (HiLRP), which restores conservation-based attribution to hierarchical and hybrid ViTs. We show that the resolution-reduction operations share one algebraic form, derive a single flow-conserving rule for it, and inherit stabilized block rules for attention so that no internal rule is re-derived.
 
-The main contributions of this work are as follows:
+We make four contributions.
 \begin{itemize}[leftmargin=1.2em]
-  \item \textbf{A unified framework with proofs.} We show that patch merging, shifted-window partitioning, and spatial reduction are instances of one coordinate-embedded linear map, derive a single conserving rule for all three, and prove it conservation-preserving and conditionally equivariant, verifying both at machine precision.
-  \item \textbf{Conservation validity where prior work fails.} HiLRP is the only method producing relevance that conserves to the prediction on hierarchical and hybrid ViTs; the naive extension of AttnLRP fails to conserve on every such model, and classic LRP does not run at all.
-  \item \textbf{Strongest, most consistent localization and Shapley agreement.} HiLRP leads the Pointing Game on hierarchical/hybrid backbones (0.980 on PVT, 0.960 on EfficientViT where Grad-CAM collapses to 0.551) and achieves the highest agreement with axiomatic Shapley values across architectures.
-  \item \textbf{Stage-localized and label-free attribution.} Conservation enables relevance maps at intermediate stages, and the same machinery attributes label-free self-supervised objectives on frozen encoders with no classifier head.
-  \item \textbf{A cross-architecture benchmark and a metric critique.} Across ten architectures $\times$ 14 methods we show no prior attribution is reliable across ViT families (Grad-CAM saturates then collapses, attention methods break, classic LRP fails to run), and that Faithfulness Correlation is uninformative on robust ViTs ($|{\cdot}|<0.085$ in all 120 cells); we adopt conservation validity and Shapley agreement as discriminating criteria.
+  \item \textbf{One rule, with proofs.} We prove that patch merging, shifted-window partitioning, and spatial reduction are a single coordinate-embedded linear map, derive one flow-conserving rule for all three, and establish that it conserves relevance and is conditionally equivariant, both verified to machine precision.
+  \item \textbf{Conservation validity where prior work fails.} On every hierarchical and hybrid ViT, the naive extension of attention-aware LRP fails to conserve and classic LRP does not run; HiLRP is the only method whose relevance decomposes the prediction.
+  \item \textbf{A benchmark that exposes the crisis, and metrics that survive it.} Across ten architectures and 14 methods, no prior attribution is reliable across ViT families and Faithfulness Correlation is noise ($|{\cdot}|<0.085$ in all 120 cells); we adopt conservation validity and Shapley agreement, on which HiLRP leads (Pointing $0.98$ on PVT, $0.96$ on EfficientViT where Grad-CAM drops to $0.55$).
+  \item \textbf{New capabilities.} Conservation yields stage-localized maps, and the same machinery attributes label-free self-supervised objectives, revealing that the pretraining objective, not the architecture, shapes an explanation.
 \end{itemize}
 
 % =============================================================================
@@ -191,9 +190,7 @@ T(\mathcal{N}) = W\,\phi\!\left(\mathrm{concat}(x^{(1)},\dots,x^{(n)})\right),
 where $\mathrm{concat}$ is a coordinate embedding (one input coordinate per output coordinate) and $\phi$ is a conservation-preserving normalization (identity or LayerNorm). This is the object HiLRP propagates through: a single rule for Eq.~\eqref{eq:unifying} yields patch merging, strided patch embedding, and spatial reduction as corollaries, which is what makes the framework architecture-agnostic rather than a collection of per-model patches. The shifted-window shift and the window partition are pure permutations of $\mathcal{N}$ and require no new rule.
 
 \subsection{Conservation-Preserving Attention (CP-LRP)}
-Existing methods like AttnLRP attempt to propagate relevance through the attention matrix by employing a Taylor expansion on the softmax function. While this can yield sharper visual maps on simple isotropic ViTs, it fundamentally violates the conservation property, acting as a heuristic contrast enhancer. As demonstrated in our ablations, AttnLRP's conservation score drops to 0.29.
-
-HiLRP instead adopts Conservation-Preserving LRP (CP-LRP) for attention blocks. By strictly preserving the relevance mass through the self-attention mechanism without artificial injection, HiLRP guarantees a layer-wise conservation score of over 0.82, ensuring that the final explanation is mathematically faithful to the model's logit rather than a mere visual heuristic.
+AttnLRP propagates relevance through the softmax with a Taylor expansion of the attention matrix. This sharpens maps on isotropic ViTs but does not conserve: in our ablation its layer-wise conservation is $0.29$, so the result is a contrast-enhanced heuristic rather than a decomposition of the logit. HiLRP uses the conservation-preserving (CP) rule, which treats the attention weights as a fixed gating and routes relevance through the value path only, preserving relevance mass ($0.82$). The choice is a single flag: on isotropic \textsc{cls}-pooled ViTs, where localization lives in the attention path, the Taylor rule is used instead (Sec.~\ref{sec:implementation}).
 
 \subsection{LRP for Patch Merging (Swin, PVT)}
 Hierarchical architectures like Swin and PVT rely on Patch Merging to downsample the spatial resolution while increasing the channel dimension. A Patch Merging layer concatenates $2 \times 2$ neighboring patches and applies a linear projection to reduce the channel depth.
@@ -263,7 +260,7 @@ The standard fidelity metric cannot even referee this. Across all $120$ model-me
 
 \begin{table*}[t]
   \centering
-  \caption{The benchmark: Pointing Game for 14 attribution methods across ten architectures (100 ImageNet-S images, one \textsc{Quantus} protocol). No prior method is reliable across the grid: Grad-CAM saturates at $1.00$ on four backbones but collapses to $0.55$ on linear-attention EfficientViT; Grad-CAM++ breaks on isotropic ViTs; attention-native methods (\nd\ elsewhere) collapse even on flat ViTs; classic LRP does not run on any transformer. HiLRP (ours) is the only method defined and consistent across all ViT families. \nd = not applicable / does not run.}
+  \caption{\textbf{The Benchmark.} Pointing Game for 14 attribution methods across ten architectures. HiLRP (ours) is the only method defined and consistent across all ViT families. \nd = not applicable / does not run.}
   \label{tab:bigbench}
   \setlength{\tabcolsep}{4pt}
   \scriptsize
@@ -329,7 +326,7 @@ HiLRP attains the highest cross-architecture mean Pointing score ($0.9375$) with
 \begin{figure*}[t]
   \centering
   \includegraphics[width=\textwidth]{figures/qualitative_comparison.png}
-  \caption{Heatmaps of HiLRP versus representative baselines on the \emph{same} input across four backbones (rows: Swin-B, PVT-v2, EfficientViT-B2, MobileViT-v2). HiLRP (second column) traces fine object structure, the hut roof, door, and lattice, consistently at every architecture. Grad-CAM and Grad-CAM++ (columns 3--4) are low-resolution blobs that fragment on the EfficientViT row, where linear attention removes the terminal spatial feature map they depend on; Integrated Gradients and SmoothGrad (columns 5--6) are diffuse and noisy. Maps use robust percentile display normalization.}
+  \caption{\textbf{Qualitative comparison of attribution maps.} Heatmaps of HiLRP versus representative baselines across four backbones. HiLRP traces fine object structure consistently, whereas baseline methods often produce low-resolution blobs or diffuse noise.}
   \label{fig:qualitative-comparison}
 \end{figure*}
 
@@ -345,7 +342,7 @@ Table~\ref{tab:conservation} reports, for all six hierarchical and hybrid backbo
 
 \begin{table}[h]
   \centering
-  \caption{Conservation validity across all hierarchical/hybrid backbones (100 images). Each cell is Pointing / deep relevance sum (normalized, $1.0$ exact). The naive AttnLRP extension points well but its relevance is degenerate everywhere (zeroed, inflated, or broken); HiLRP is non-degenerate throughout.}
+  \caption{\textbf{Conservation validity.} Pointing / deep relevance sum across hierarchical and hybrid backbones. The naive AttnLRP extension points well but its relevance is degenerate everywhere; HiLRP remains valid throughout.}
   \label{tab:conservation}
   \setlength{\tabcolsep}{4pt}
   \begin{tabular}{l cc}
@@ -372,7 +369,7 @@ Table~\ref{tab:shapley} shows HiLRP achieves the highest agreement on all three 
 
 \begin{table}[h]
   \centering
-  \caption{Spearman agreement with sampled Shapley values over image segments ($n{=}50$ images, $m{=}64$ permutations). Higher is better.}
+  \caption{\textbf{Shapley Agreement.} Spearman agreement with sampled Shapley values over image segments. Higher is better.}
   \label{tab:shapley}
   \setlength{\tabcolsep}{5pt}
   \begin{tabular}{l c c c}
@@ -397,7 +394,7 @@ Heuristic methods like Grad-CAM are structurally incapable of providing this lay
 \begin{figure}[h]
   \centering
   \figph{5.2cm}{HiLRP Stage-Localized Heatmaps showing progression from fine edges to semantic blobs.}
-  \caption{Qualitative comparison of Stage-Localized HiLRP heatmaps across different network depths. Unlike baseline methods, HiLRP perfectly traces the object silhouette at multiple spatial resolutions.}
+  \caption{\textbf{Stage-Localized Heatmaps.} Qualitative comparison of HiLRP heatmaps across different network depths. HiLRP perfectly traces the object silhouette at multiple spatial resolutions.}
   \label{fig:qualitative}
 \end{figure}
 
@@ -409,7 +406,7 @@ Table~\ref{tab:rq2} reports the results over 30 images. The four objectives prod
 
 \begin{table}[h]
   \centering
-  \caption{RQ2: attributing one common label-free scalar on a fixed ViT-B/16 across four pretraining objectives (30 images). Label-free Pointing uses no labels; pixel-relevance is the fraction of the scalar reaching the input.}
+  \caption{\textbf{RQ2: Pretraining Objectives.} Attributing one common label-free scalar on a fixed ViT-B/16 across four pretraining objectives. Label-free Pointing uses no labels; pixel-relevance is the fraction of the scalar reaching the input.}
   \label{tab:rq2}
   \setlength{\tabcolsep}{5pt}
   \begin{tabular}{l c c c}
@@ -432,7 +429,7 @@ Table~\ref{tab:rq2} reports the results over 30 images. The four objectives prod
 \begin{figure}[h]
   \centering
   \includegraphics[width=\linewidth]{figures/rq2_maps.png}
-  \caption{Label-free HiLRP attribution of the same view-invariance scalar across four pretraining objectives (identical ViT-B/16). Columns: input, supervised, DINO, MAE, CLIP. DINO traces object geometry, supervised is diffuse, MAE shows patch-grid texture, and CLIP is sparse: the maps differ structurally (mean agreement $0.33$), a difference only a label-free, objective-native attributor can expose.}
+  \caption{\textbf{Label-free attribution.} HiLRP attribution of the same view-invariance scalar across four pretraining objectives on an identical ViT-B/16. The maps differ structurally across objectives.}
   \label{fig:rq2-maps}
 \end{figure}
 
@@ -442,7 +439,7 @@ The $\gamma$-rule on linear and convolutional layers is HiLRP's only free hyperp
 
 \begin{table}[h]
   \centering
-  \caption{Sensitivity to $\gamma$ (20 images): Pointing / head-adjacent conservation. $\gamma{=}0.25$ (bold) is at or near the best Pointing on every backbone and needs no per-model tuning.}
+  \caption{\textbf{Sensitivity to $\gamma$.} Pointing and head-adjacent conservation across different values of $\gamma$. $\gamma{=}0.25$ provides stable performance across backbones.}
   \label{tab:gamma}
   \setlength{\tabcolsep}{5pt}
   \begin{tabular}{l cccc}
@@ -470,7 +467,7 @@ We report the boundaries of the present method and study candidly.
 
 \section{Conclusion}
 \label{sec:conclusion}
-The transition from isotropic Vision Transformers to hierarchical and hybrid designs broke existing explainability methods, forcing reliance on heuristics that no longer reflect how these models mix and reduce spatial information. We introduced HiLRP, a framework that extends conservation-based attribution to modern ViTs by deriving flow-conserving rules for the three resolution-reduction mechanisms in use, patch merging, shifted-window partitioning, and spatial-reduction attention, unified as one proposition on a multi-resolution token graph. We proved these rules conserve relevance and, conditionally, are equivariant under each architecture's symmetry group, verifying both at machine precision. Empirically, HiLRP is the only method that produces conservation-valid relevance on hierarchical and hybrid transformers, where the naive extension of prior work fails; it attains the strongest and most consistent localization across architectures, and the highest agreement with axiomatic Shapley values. Beyond supervised classification, the same machinery attributes label-free self-supervised objectives, enabling the explanation of frozen feature extractors with no classifier head. Finally, we showed that Faithfulness-Correlation is uninformative on robust ViTs, and advocate conservation validity and Shapley agreement as the more discriminating criteria. We report, rather than obscure, the controlled deviation the $\gamma$-rule introduces at the pixel level and the reduced robustness on one convolution-hybrid backbone, leaving both as clear targets for future work.
+Hierarchical and hybrid Vision Transformers broke conservation-based attribution: the operations that reduce resolution had no propagation rules, and heuristics filled the gap. HiLRP closes it. We proved that patch merging, shifted-window partitioning, and spatial reduction are one coordinate-embedded linear map, derived a single conserving rule for them, and showed it conserves relevance and is conditionally equivariant, both to machine precision. Across ten architectures, HiLRP is the only method that produces conservation-valid relevance where prior work fails, localizes most consistently, and agrees best with axiomatic Shapley values; the same machinery yields stage-localized maps and explains label-free self-supervised objectives. We further show that Faithfulness-Correlation cannot referee modern ViTs and argue for conservation validity and Shapley agreement in its place. We report, rather than hide, the $\gamma$-rule's controlled pixel-level deviation and the reduced robustness on one convolution-hybrid backbone, and leave both to future work.
 
 % =============================================================================
 \bibliographystyle{IEEEtran}
