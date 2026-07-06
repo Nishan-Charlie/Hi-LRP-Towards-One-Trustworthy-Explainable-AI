@@ -467,8 +467,10 @@ Table~\ref{tab:rq2} reports the results over 30 images. The four objectives prod
   \label{fig:rq2-maps}
 \end{figure}
 
-\subsection{Multi-Modal Attribution}
+\subsection{Cross-Attention and Multi-Modal Attribution}
 \label{sec:multimodal}
+Cross-attention, where queries from one stream attend to keys and values from another, is the mechanism prior transformer LRP handles least, yet it is a direct instance of the bilinear and softmax primitives with two input streams. CrossViT realizes it inside a classification ViT: the class token of each token-scale branch attends to the other branch's tokens through six cross-attention blocks. HiLRP applies the same CP rule to the branch self-attention and the cross-attention, is forward-equivalent to the original model ($10^{-6}$), and attains a Pointing score of $0.980$, matching the best backbone in Table~\ref{tab:localization} on a ViT that no attention-native or CAM method handles.
+
 The scalar being explained need not even come from a single modality. On CLIP (ViT-B/16), we attribute the image-text alignment $s=\cos(f_{\text{img}}(x), f_{\text{text}}(c))$ with the text embedding of a caption $c$ frozen, so HiLRP answers what image evidence supports a textual description. The patched image tower is forward-equivalent to the original ($10^{-6}$), and the attribution is text-conditioned: a caption matching the image concentrates more positive relevance on the object than a mismatched caption on 5--7 of 8 images (mean in-object energy $0.51$ vs.\ $0.49$; the margin is limited by the single-object nature of the evaluation set). This exercises the cross-modal scalar and the multi-head attention primitive on a pretrained multi-modal model with no new rule, extending conservation-based attribution beyond the single-model, single-label setting of prior transformer LRP.
 
 \subsection{Selection of the $\gamma$ Parameter}
