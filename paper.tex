@@ -112,7 +112,7 @@ The main contributions of this work are as follows:
   \item \textbf{Conservation validity where prior work fails.} HiLRP is the only method producing relevance that conserves to the prediction on hierarchical and hybrid ViTs; the naive extension of AttnLRP fails to conserve on every such model, and classic LRP does not run at all.
   \item \textbf{Strongest, most consistent localization and Shapley agreement.} HiLRP leads the Pointing Game on hierarchical/hybrid backbones (0.980 on PVT, 0.960 on EfficientViT where Grad-CAM collapses to 0.551) and achieves the highest agreement with axiomatic Shapley values across architectures.
   \item \textbf{Stage-localized and label-free attribution.} Conservation enables relevance maps at intermediate stages, and the same machinery attributes label-free self-supervised objectives on frozen encoders with no classifier head.
-  \item \textbf{A critique of faithfulness metrics.} On a controlled four-backbone study we show Faithfulness Correlation is uninformative on robust ViTs, and adopt conservation validity and Shapley agreement as discriminating criteria.
+  \item \textbf{A cross-architecture benchmark and a metric critique.} Across ten architectures $\times$ 14 methods we show no prior attribution is reliable across ViT families (Grad-CAM saturates then collapses, attention methods break, classic LRP fails to run), and that Faithfulness Correlation is uninformative on robust ViTs ($|{\cdot}|<0.085$ in all 120 cells); we adopt conservation validity and Shapley agreement as discriminating criteria.
 \end{itemize}
 
 % =============================================================================
@@ -253,34 +253,42 @@ To resolve this, we adopt two primary evaluation metrics:
 \section{Results}
 \label{sec:results}
 
-\subsection{The Baseline Landscape: Why a New Method Is Needed}
+\subsection{The Benchmark: No XAI Method Survives Architectural Diversity}
 \label{sec:baseline-landscape}
-We first establish, on a controlled four-backbone study of matched scale (two isotropic ViTs, ViT-B and DeiT-B; two CNNs, ResNet-50 and ConvNeXt-B), that the existing toolbox is already strained before any hierarchical architecture is introduced. All methods are run under a single \textsc{Quantus} protocol on 100 ImageNet-S images. Table~\ref{tab:baseline} reports Pointing Game and Faithfulness Correlation.
+Custom ViT-style backbones are proliferating: each new design mixes CNN stems, windowed, linear, or multi-axis attention, patch merging, spatial reduction, and various normalizations, and each mixture quietly invalidates a different attribution assumption. To measure the consequence, we benchmark 14 attribution methods spanning all four families across ten architectures, two CNNs (ResNet-50, ConvNeXt-B), two isotropic ViTs (ViT-B, DeiT-B), and six hierarchical or hybrid ViTs (Swin, PVT, MobileViT, EfficientViT-B1/B2, MaxViT), under one \textsc{Quantus} protocol on 100 ImageNet-S images with per-model preprocessing. Table~\ref{tab:bigbench} reports the Pointing Game across the full grid.
 
-Three facts motivate HiLRP. First, \emph{attention-native attribution collapses on ViTs}: Attention Rollout scores $0.64$ on ViT-B and only $0.48$ on DeiT-B, below every gradient baseline, and produces diffuse maps (sparseness $0.11$--$0.13$); it has no CNN counterpart at all. Second, \emph{Grad-CAM is strong here} (ViT $0.93$, DeiT $0.90$, ResNet $0.98$, ConvNeXt $1.00$), which is precisely why it is the default; Sec.~\ref{sec:localization} shows this strength does not survive the move to linear-attention hybrids. Third, \emph{Faithfulness Correlation is uninformative}: across all $4{\times}6$ cells in Table~\ref{tab:baseline} its magnitude never exceeds $0.05$, i.e.\ pure noise, for every method including the strong localizers. Finally, classic LRP~\cite{bach2015lrp} does not run on any of the timm transformer backbones (unsupported layer types), producing no rows. The existing landscape thus offers no method that is simultaneously conservation-based, architecture-general, and measurable by a discriminating metric, which is the gap HiLRP fills.
+No method is reliable across the grid, and the failures are architecture-specific. \emph{Grad-CAM saturates and collapses:} it scores a perfect $1.00$ on ConvNeXt, Swin, MobileViT, and MaxViT, yet falls to $0.55$ on EfficientViT-B2, whose linear cross-covariance attention removes the terminal spatial feature map CAM depends on. \emph{Grad-CAM++ additionally breaks on isotropic ViTs} ($0.49$ on ViT-B). \emph{Attention-native methods exist only for flat ViTs and collapse there:} Attention Rollout scores $0.48$ on DeiT, below every gradient baseline, and has no counterpart on any hierarchical or CNN backbone. Gradient and perturbation methods swing by $0.2$--$0.4$ across architectures with no stable winner. \emph{Classic LRP does not run at all} on any timm transformer (unsupported layer types).
 
-\begin{table}[h]
+The standard fidelity metric cannot even referee this. Across all $120$ model-method cells, Faithfulness Correlation has mean $+0.004$ and magnitude never exceeding $0.085$; the \emph{best} value any method achieves on any single backbone is $0.078$. Because modern ViTs are highly robust to the spatial masking the metric relies on, removing high-attribution regions barely moves the logit, collapsing the score to noise for every method, good localizers included. Localization is thus architecture-dependent and metric-dependent, and the field's default fidelity measure is uninformative. This is the gap HiLRP fills: a single conservation-based method that is defined and valid on every one of these architectures (last row), evaluated by criteria that actually discriminate (Secs.~\ref{sec:conservation-validity},~\ref{sec:shapley}).
+
+\begin{table*}[t]
   \centering
-  \caption{Cross-architecture baseline study (100 images). Pointing Game (higher better) and Faithfulness Correlation (FC). Attention methods have no CNN counterpart (\nd). FC never exceeds $0.05$ in magnitude for any method, confirming it cannot discriminate on robust backbones.}
-  \label{tab:baseline}
-  \setlength{\tabcolsep}{3.5pt}
-  \footnotesize
-  \begin{tabular}{l cccc c}
+  \caption{The benchmark: Pointing Game for 14 attribution methods across ten architectures (100 ImageNet-S images, one \textsc{Quantus} protocol). No prior method is reliable across the grid: Grad-CAM saturates at $1.00$ on four backbones but collapses to $0.55$ on linear-attention EfficientViT; Grad-CAM++ breaks on isotropic ViTs; attention-native methods (\nd\ elsewhere) collapse even on flat ViTs; classic LRP does not run on any transformer. HiLRP (ours) is the only method defined and consistent across all ViT families. \nd = not applicable / does not run.}
+  \label{tab:bigbench}
+  \setlength{\tabcolsep}{4pt}
+  \scriptsize
+  \begin{tabular}{l cc cc cccccc}
     \toprule
-    & \multicolumn{4}{c}{Pointing Game $\uparrow$} & FC \\
-    \cmidrule(lr){2-5}
-    Method & ViT-B & DeiT-B & RN-50 & ConvX & (all) \\
+    & \multicolumn{2}{c}{CNN} & \multicolumn{2}{c}{isotropic ViT} & \multicolumn{6}{c}{hierarchical / hybrid ViT} \\
+    \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-11}
+    Method & RN-50 & ConvX & ViT-B & DeiT-B & Swin & PVT & MobV & EffV-B1 & EffV-B2 & MaxV \\
     \midrule
-    Grad-CAM            & 0.927 & 0.900 & 0.980 & 1.000 & $\pm{<}.02$ \\
-    Attention Rollout   & 0.640 & 0.480 & \nd   & \nd   & $\pm{<}.03$ \\
-    Chefer (attn-grad)  & 0.740 & 0.860 & \nd   & \nd   & $\pm{<}.01$ \\
-    Integrated Grads    & 0.640 & 0.580 & 0.920 & 0.760 & $\pm{<}.03$ \\
-    Saliency            & 0.650 & 0.540 & 0.820 & 0.730 & $\pm{<}.04$ \\
-    Occlusion           & 0.760 & 0.700 & 0.950 & 0.920 & $\pm{<}.05$ \\
-    Classic LRP         & \multicolumn{4}{c}{does not run on timm transformers} & \nd \\
+    Grad-CAM          & 0.98 & 1.00 & 0.93 & 0.90 & \textbf{1.00} & 0.84 & \textbf{1.00} & 0.70 & \textbf{0.55} & \textbf{1.00} \\
+    Grad-CAM++        & 0.97 & 0.95 & \textbf{0.49} & 0.62 & 1.00 & 0.88 & 1.00 & \textbf{0.44} & 0.56 & 0.80 \\
+    Attention Rollout & \nd & \nd & 0.64 & \textbf{0.48} & \nd & \nd & \nd & \nd & \nd & \nd \\
+    Attention-grad    & \nd & \nd & 0.74 & 0.86 & \nd & \nd & \nd & \nd & \nd & \nd \\
+    Saliency          & 0.82 & 0.73 & 0.65 & 0.54 & 0.62 & 0.62 & 0.90 & 0.86 & 0.66 & 0.58 \\
+    Integrated Grad   & 0.92 & 0.76 & 0.64 & 0.58 & 0.66 & 0.64 & 0.90 & 0.90 & 0.90 & 0.62 \\
+    SmoothGrad        & 0.97 & 0.89 & 0.85 & 0.90 & 0.79 & 0.92 & 0.92 & 0.92 & 0.92 & 0.70 \\
+    Occlusion         & 0.95 & 0.92 & 0.76 & 0.70 & 0.78 & 0.78 & 0.92 & 0.96 & 0.88 & 0.66 \\
+    RISE              & 0.82 & 0.69 & 0.73 & 0.71 & 0.68 & 0.68 & 0.90 & 0.92 & 0.78 & 0.70 \\
+    LIME              & 0.94 & 0.84 & 0.87 & 0.89 & 0.86 & 0.86 & 0.90 & 0.80 & 0.90 & 0.80 \\
+    Classic LRP       & \multicolumn{10}{c}{\emph{unsupported layers: produces no attribution on any timm transformer}} \\
+    \midrule
+    \textbf{HiLRP (ours)} & \nd & \nd & 0.78 & 0.84 & 0.96 & \textbf{0.98} & 0.86 & 0.94 & \textbf{0.96} & 0.96 \\
     \bottomrule
   \end{tabular}
-\end{table}
+\end{table*}
 
 \subsection{Localization on Hierarchical and Hybrid ViTs}
 \label{sec:localization}
