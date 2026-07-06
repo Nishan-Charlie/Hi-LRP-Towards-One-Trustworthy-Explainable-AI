@@ -39,7 +39,17 @@ test, like the existing ports):
 Also add an "attention coverage" table to the paper (type x primitive x done/proven/
 todo) and cite the 15-type span in the intro/contributions.
 
-## !! BLOCKER for A* scaling (2026-07-06): cache is only 100 images
+## SCALE-UP UNBLOCKED (2026-07-06): 1000-image cache now exists
+
+`data/ImageNetS/cache_validation_1000.pt` = 1000 imgs, all with bboxes, 161
+classes (validated). Build the cache with BASE conda python (mri-diffuser's
+datasets/aiohttp is broken): `C:\Users\nisha\miniconda3\python.exe cache_imagenets.py`.
+All eval scripts auto-pick the largest cache. Stale cache_validation_500.pt (only
+100 imgs) deleted. SCALED EVAL RUNNING: scripts/scaled_eval.py, HiLRP vs Grad-CAM
+per-image hits at n=1000 on efficientvit_b2 (the win leg) -> bootstrap 95% CIs +
+paired McNemar. Next: pvt leg, fold CI+p into paper Table 1 / conservation-validity.
+
+## (resolved) old BLOCKER for A* scaling: cache was only 100 images
 
 `data/ImageNetS/cache_validation_100.pt` has 100 images. Lineage scripts
 (`lineage_comparison.py`, `lineage_naive_legs.py`) are now set to N_IMAGES=1000
