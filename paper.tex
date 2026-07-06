@@ -213,7 +213,8 @@ The consequence is coverage by construction: a new attention design is a new arr
     Linear (EfficientViT) & kernel maps, bilinear, det.\ denom. & Model \\
     Separable (MobileViT) & context gate, value path & Model \\
     Multi-axis (MaxViT) & \;\; + grid permutation & Model \\
-    Cross / co- (CLIP, VQA) & two streams, bilinear, softmax & Model+Proved \\
+    Cross-attention (CrossViT) & two streams, bilinear, softmax & Model \\
+    Cross-modal (CLIP) & two streams, bilinear, softmax & Model \\
     Channel / coordinate (SE) & pool, linear, gate, multiply & Proved \\
     Dilated / sparse (NAT) & dilated gather, softmax attn & Proved \\
     Grouped-query, RoPE & broadcast / rotation (linear) & Primitive \\
