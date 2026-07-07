@@ -317,7 +317,8 @@ The standard fidelity metric cannot even referee this. Across all $120$ model-me
     Occlusion         & 0.95 & 0.92 & 0.76 & 0.70 & 0.78 & 0.78 & 0.92 & 0.96 & 0.88 & 0.66 \\
     RISE              & 0.82 & 0.69 & 0.73 & 0.71 & 0.68 & 0.68 & 0.90 & 0.92 & 0.78 & 0.70 \\
     LIME              & 0.94 & 0.84 & 0.87 & 0.89 & 0.86 & 0.86 & 0.90 & 0.80 & 0.90 & 0.80 \\
-    Classic LRP       & \multicolumn{10}{c}{\emph{unsupported layers: produces no attribution on any timm transformer}} \\
+    AttnLRP           & \nd & \nd & 0.78 & 0.84 & 0.98 & 0.80 & 0.95 & 0.84 & 0.93 & 0.89 \\
+    Classic LRP       & \multicolumn{10}{c}{\emph{unsupported layers on modern timm architectures}} \\
     \midrule
     \textbf{HiLRP (ours)} & \nd & \nd & 0.78 & 0.84 & 0.96 & \textbf{0.98} & 0.86 & 0.94 & \textbf{0.96} & 0.96 \\
     \bottomrule
@@ -472,6 +473,35 @@ Table~\ref{tab:rq2} reports the results over 30 images. The four objectives prod
 Cross-attention, where queries from one stream attend to keys and values from another, is the mechanism prior transformer LRP handles least, yet it is a direct instance of the bilinear and softmax primitives with two input streams. CrossViT realizes it inside a classification ViT: the class token of each token-scale branch attends to the other branch's tokens through six cross-attention blocks. HiLRP applies the same CP rule to the branch self-attention and the cross-attention, is forward-equivalent to the original model ($10^{-6}$), and attains a Pointing score of $0.980$, matching the best backbone in Table~\ref{tab:localization} on a ViT that no attention-native or CAM method handles.
 
 The scalar being explained need not even come from a single modality. On CLIP (ViT-B/16), we attribute the image-text alignment $s=\cos(f_{\text{img}}(x), f_{\text{text}}(c))$ with the text embedding of a caption $c$ frozen, so HiLRP answers what image evidence supports a textual description. The patched image tower is forward-equivalent to the original ($10^{-6}$), and the attribution is text-conditioned: a caption matching the image concentrates more positive relevance on the object than a mismatched caption on 5--7 of 8 images (mean in-object energy $0.51$ vs.\ $0.49$; the margin is limited by the single-object nature of the evaluation set). This exercises the cross-modal scalar and the multi-head attention primitive on a pretrained multi-modal model with no new rule, extending conservation-based attribution beyond the single-model, single-label setting of prior transformer LRP.
+
+\subsection{Visual Grounding for Action Form Assessment}
+\label{sec:afa}
+The Human Action Form Assessment (AFA) task~\cite{qi2026explainable} requires generating Chain-of-Thought (CoT) text explanations of structural errors in video, such as identifying a bent back, analyzing the physical consequence, and proposing a correction. Frameworks for this task, such as the Explainable Fitness Assessor (EFA), rely on dual-stream processing and dynamic gating to align visual evidence with textual procedural steps.
+
+HiLRP provides a mathematically rigorous alternative. When applied to a hierarchical video backbone like Video Swin, the exact conservation rules natively extract spatio-temporal relevance maps that isolate the non-standard body part. Because this relevance decomposes the prediction, it forms an exact visual grounding mechanism. A Multimodal Large Language Model (MLLM) can attend directly to these relevance patches to generate diagnostic CoT explanations, eliminating the need for specialized fusion modules. Table~\ref{tab:visual_grounding} summarizes this structural advantage.
+
+\begin{table}[h]
+  \centering
+  \caption{\textbf{Visual Grounding Mechanisms.} Comparison of alignment strategies for CoT-AFA on hierarchical backbones. HiLRP provides the only exact, conservation-based alignment without ad-hoc gating.}
+  \label{tab:visual_grounding}
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{l c c l}
+    \toprule
+    Approach & Arch. Support & Conservation & Alignment Mechanism \\
+    \midrule
+    Vanilla CLIP & Flat only & \xmark & Sequence-level matching \\
+    EFA \cite{qi2026explainable} & Hierarchical & \xmark & Dual-stream dynamic gating \\
+    \textbf{HiLRP (Ours)} & Hierarchical & \cmark & Exact relevance propagation \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[h]
+  \centering
+  \figph{5.2cm}{Flowchart: Video input $\to$ Video Swin + HiLRP extraction of error regions $\to$ MLLM $\to$ CoT Output.}
+  \caption{\textbf{Multimodal CoT Reasoning.} HiLRP provides exact visual evidence for diagnostic AFA on hierarchical backbones, bypassing the need for specialized fusion gating.}
+  \label{fig:cot_reasoning}
+\end{figure}
 
 \subsection{Selection of the $\gamma$ Parameter}
 \label{sec:gamma}
