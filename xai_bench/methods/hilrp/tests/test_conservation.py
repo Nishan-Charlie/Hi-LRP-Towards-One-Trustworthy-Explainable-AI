@@ -213,3 +213,20 @@ def test_naive_block_rules_are_unstable_with_bias_documented():
     logits, cache = model.forward(px)
     _, diag = model.explain(logits, cache, eps=1e-9)
     assert diag["relerr"] > 1.0                        # not our rules' fault; inherit LXT
+
+
+# ------------------------------------------------ deformable attention sampling
+def test_deformable_sampling_rule_conserves():
+    """Deformable attention bilinear sampling rule conserves exactly via autograd.
+    It treats the sampling grid as fixed routing weights for a linear map."""
+    from xai_bench.methods.hilrp.hierarchical import deformable_sample_forward, deformable_sample_lrp
+    torch.manual_seed(6)
+    B, C, H, W = 2, 3, 4, 4
+    x = torch.rand(B, C, H, W) + 1.0  # strictly positive to keep relerr denominator stable
+    grid = torch.rand(B, 3, 3, 2) * 2 - 1.0  # normalized coordinates in [-1, 1]
+    
+    y = deformable_sample_forward(x, grid)
+    R_y = torch.rand_like(y)
+    
+    R_x = deformable_sample_lrp(R_y, x, grid, eps=0.0)
+    assert relerr(R_x, R_y) < 1e-13

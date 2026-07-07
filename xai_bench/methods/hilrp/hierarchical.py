@@ -118,3 +118,41 @@ def make_attn_mask(H, W, ws, shift):
     mw = window_partition(img.unsqueeze(-1), ws).squeeze(-1)      # [nW, ws*ws]
     attn_mask = mw.unsqueeze(1) - mw.unsqueeze(2)
     return attn_mask.masked_fill(attn_mask != 0, -100.0).masked_fill(attn_mask == 0, 0.0)
+
+
+# ----------------------------------------------------- deformable attention (bilinear sampling)
+def deformable_sample_forward(x, grid):
+    """Deformable attention bilinear sampling forward (e.g., Def-DETR or DAT).
+    
+    Args:
+        x: [B, C, H, W] source values.
+        grid: [B, H_out, W_out, 2] sampling grid with normalized coordinates in [-1, 1].
+        
+    Returns:
+        Sampled features [B, C, H_out, W_out].
+    """
+    return torch.nn.functional.grid_sample(x, grid, mode='bilinear', padding_mode='zeros', align_corners=False)
+
+
+def deformable_sample_lrp(R_y, x, grid, eps=DEFAULT_EPS):
+    """Backward relevance for deformable (bilinear) sampling.
+    
+    Treats the sampling as a fixed-grid linear map (since bilinear interpolation
+    is a linear combination of source pixels). Relevance propagates from the
+    interpolated output back to the discrete grid points using the standard
+    epsilon rule, maintaining perfect conservation.
+    """
+    # Track gradient on x to capture the linear mapping (W^T)
+    x_track = x.detach().requires_grad_(True)
+    y = deformable_sample_forward(x_track, grid)
+    
+    # Epsilon stabilizer: z_i = y_i + eps * sign(y_i)
+    z = y + eps * torch.sign(y)
+    
+    # s = R_y / z
+    s = R_y / z
+    
+    # We want R_x = x * W^T s. Since y = W x, the gradient of sum(y * s) w.r.t x is exactly W^T s.
+    R_a = torch.autograd.grad(outputs=y, inputs=x_track, grad_outputs=s, retain_graph=False)[0]
+    
+    return R_a * x
