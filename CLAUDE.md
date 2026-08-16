@@ -101,13 +101,14 @@ some sparsity pattern; HiLRP conserves each, so it conserves through any attenti
 Coverage status (15+ types). DONE+verified on real models: self/MHA, windowed/shifted
 (Swin), spatial-reduction (PVT), linear (EfficientViT), separable (MobileViT),
 multi-axis (MaxViT). PROVEN-CONSERVING in the toy suite (float64, 1e-11,
-`attention_primitives.py` + `tests/test_attention_coverage.py`, 6 tests): self, cross
+`attention_primitives.py` + `tests/test_attention_coverage.py`, 7 tests): self, cross
 (encoder-decoder), co-attention (bi-modal), linear, channel/coordinate (gated),
-dilated/sparse. TRIVIAL: grouped/multi-query (broadcast), RoPE/rel-pos (rotation/
-additive bias). ONE SMALL NEW RULE NEEDED: deformable attention (bilinear feature
-sampling at learned offsets; sampling is linear so it conserves, needs an explicit
-port). Real-model ports still TODO: cross/co (unlocks CLIP/VQA multi-modal, highest
-novelty value), channel/coordinate (SE-hybrids), deformable (Def-DETR).
+dilated/sparse, and deformable (bilinear sampling at learned offsets = detached
+row-stochastic mixing M, out = M@V; verified 2026-07-11). TRIVIAL: grouped/multi-query
+(broadcast), RoPE/rel-pos (rotation/additive bias). Every taxonomy row now has a real
+status (paper tab:attn-coverage: 8 Model, 3 Proved, 1 Primitive, no placeholders).
+Real-model ports still TODO: cross/co (unlocks CLIP/VQA multi-modal, highest
+novelty value), channel/coordinate (SE-hybrids), deformable (Def-DETR real model).
 
 New central claim once ports land: "HiLRP is the first attribution framework that
 propagates relevance through ANY attention mechanism, proven and verified across 15
@@ -343,8 +344,17 @@ Improve HiLRP where it is actually weak, not by chasing every metric:
 4. Optional visualization variants: smoothing or TTA map averaging may be offered only as
    clearly labeled post-hoc visualization. Always report the conservation cost. Never
    fold these into the core method.
-5. Per-family attention mode: flat CLS ViTs use AttnLRP mode; windowed/hierarchical/
-   hybrid models use CP mode. Present this as a design rule, not an ad hoc fix.
+5. Per-family attention mode (REVISED 2026-07-19 after measuring the cost): CP-LRP is
+   the conserving default for ALL families, including flat CLS ViTs. Earlier plan was
+   "flat ViTs use AttnLRP mode"; A/B on ViT-B (scripts/diagnose_vit_mobilevit.py, n=50)
+   shows AttnLRP mode does raise Pointing (0.70 -> 0.90) but wrecks pixel conservation
+   (|cons-1| 0.39 -> 0.85), i.e. it "points without conserving", the exact failure the
+   paper criticizes. So attnlrp stays a LABELED non-conserving diagnostic (attribute_vit
+   attn_mode='attnlrp'), never the default or the reported HiLRP number. The flat-ViT
+   0.70 is the honest conserving number (above the 0.61 prior); the CP-vs-AttnLRP ViT
+   gap is now EVIDENCE for the conservation-validity argument, not a mode to switch on.
+   MobileViT GroupNorm1 mean-detach was also tested and REJECTED (Pointing 0.88 -> 0.82,
+   no conservation gain); keep the mean live. See [[vit-conservation-attribution-method]].
 
 ## Competitive positioning (related work + baselines)
 
@@ -403,18 +413,38 @@ gamma-rule and Gate 2/3 matter.
 
 ## RQ2 (executed 2026-07-06, the "so what" that lifts toward A*)
 
-Pretraining objective as a determinant of explainability. EXECUTED (`scripts/rq2_pretraining.py`,
-paper sec:rq2): fixed ViT-B/16, 4 pretrainings (supervised/DINO/MAE/CLIP), one common
-label-free scalar cos(cls(x), cls(flip(x))). n=30 result: cross-objective map agreement 0.33
-(vs 1.0 if objective irrelevant), so the objective, not the architecture, shapes the
-explanation. DINO localizes best (label-free pointing 0.97, recovering its known object
-emergence with NO labels), MAE routes ~0 relevance to pixels (0.07, reconstruction objective).
+Pretraining objective as a determinant of explainability. EXECUTED (`scripts/hilrp/rq2_pretraining.py`,
+paper sec:rq2): frozen ViT-B, 6 pretrainings (supervised/DINO/DINOv2/DINOv2-reg4/MAE/CLIP;
+DINOv2 variants are ViT-B/14 at img_size=224), one common label-free scalar
+cos(cls(x), cls(flip(x))). n=30 result (2026-07-18, first-30 of the 1000-img cache):
+cross-objective map agreement 0.36 (vs 1.0 if objective irrelevant), so the objective, not
+the architecture, shapes the explanation. DINO FAMILY localizes best (DINO, DINOv2,
+DINOv2-reg4 all label-free pointing 0.97, object emergence replicates across generations
+with NO labels); DINOv2 routes only ~half of DINO's relevance mass to pixels (0.27 vs
+0.51); the 4 register tokens change the map mildly (0.50 agreement between DINOv2
+variants). MAE routes ~0 relevance to pixels (0.07, reconstruction objective).
 The method enables this by explaining each model IN ITS OWN OBJECTIVE instead of a linear probe.
 Scale-up for A*: n>=100, significance test on the agreement, a second architecture (ViT-S),
 optionally a MAE-reconstruction scalar.
 
-## Repo structure target
+## Repo structure (cleaned 2026-08-16, root is now deliverables only)
 
 - `xai_bench/methods/hilrp/` : the method as a proper package.
-- `tests/` : pytest conservation suite, thresholds tied to dtype (see CI ceilings above).
+- `xai_bench/methods/hilrp/tests/` : THE pytest conservation suite (24 tests,
+  thresholds tied to dtype, see CI ceilings above). The old root `tests/` held
+  ad-hoc debug scripts and is gone (moved to `archive/dev/adhoc_tests/`).
 - Gate scripts promoted from scratch, not ephemeral.
+- Split layout (2026-07-15): `scripts/bench/` + `figures/bench/` for benchmark
+  infra/tables/figures; `scripts/hilrp/` + `figures/hilrp/` for method gates,
+  lineage, RQ2, and method-paper figures. Scripts assume CWD = repo root.
+- `scripts/data/` : `cache_imagenets.py`, `cache_voc.py` (moved off the root).
+- `benchmark_results/all_results_sofar.csv` : TRACKED single source of truth for
+  the benchmark tables/figures. `benchmark_figures.py` and `benchmark_diagrams.py`
+  read it via their `RESULTS_CSV` constant; `results/` stays gitignored.
+- `docs/assets/` : web-optimized README figures, rebuilt by
+  `python scripts/make_readme_assets.py` from `figures/`. Never hand-edit.
+- `notebooks/`, `docs/RESEARCH_PLAN.md`, `configs/dev/` : moved off the root.
+- `archive/` (gitignored) holds superseded one-off scripts; `archive/dev/` is the
+  landing zone for root clutter, nothing there is load-bearing.
+- Root now holds only: README, LICENSE, CITATION.cff, pyproject, requirements,
+  CLAUDE.md, NOTES_next.md, AGENTS.md.

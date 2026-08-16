@@ -60,7 +60,7 @@ def cp_vit_attention_forward(self, x, attn_mask=None, is_causal=False):
     else:
         x = divide_gradient(attn @ v, 2)      # uniform rule on attn@v; softmax vjp = Taylor
 
-    x = x.transpose(1, 2).reshape(B, N, self.attn_dim)
+    x = x.transpose(1, 2).reshape(B, N, self.num_heads * self.head_dim)
     x = self.norm(x)
     x = self.proj(x)
     x = self.proj_drop(x)

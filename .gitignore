@@ -1,17 +1,62 @@
-# Secrets — never commit
+# ── Secrets ─────────────────────────────────────────────────────────────
 .env
 
-# Python
+# ── Python ──────────────────────────────────────────────────────────────
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+build/
+dist/
+
+# ── Run outputs and local caches (regenerable) ──────────────────────────
 results/
 data/
+checkpoints/
 scratch/
 archive/
-*.csv
-*.pdf
-*.pt
-*.bat
-
-checkpoints/
 out.txt
+*.log
+
+# ── Large binaries ──────────────────────────────────────────────────────
+*.pt
+*.pth
+*.npy
+*.mp4
+images/videos/
+
+# ── LaTeX build artifacts (keep .tex, .bib, .pdf) ───────────────────────
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.out
+*.spl
+*.abs
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+
+# ── Editor / OS / tooling ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.$*.drawio.bkp
+.$*.drawio.dtmp
+.claude/settings.local.json
+
+# ── Compiled manuscripts (regenerable from .tex) ────────────────────────
+paper/
+
+# ── Exception: vector figures are tracked, they are paper/README assets ─
+!figures/**/*.pdf
+!figures/**/*.tex
+!figures/**/*.xml
+
+AGENTS.md
+CLAUDE.md
+NOTES_next.md
+
+images/

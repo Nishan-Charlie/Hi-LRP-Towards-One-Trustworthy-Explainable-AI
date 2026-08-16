@@ -1,0 +1,40 @@
+# APF vs standard Faithfulness Correlation (FC) ablation.
+# Paired: FC and APF are computed on the SAME images/methods/models so the
+# only difference is the masking baseline (zero/OOD vs retained-signal mean).
+# Model choice tests the attention-sink mechanism: softmax backbones (ViT-B,
+# Swin-B) should shift more under APF than linear-attention (EfficientViT) or
+# the convolutional control (ResNet-50).
+models:
+  - "vit_base_patch16_224"          # isotropic global softmax attention
+  - "swin_base_patch4_window7_224"  # windowed softmax attention
+  - "efficientvit_b2"               # linear attention (no softmax bottleneck)
+  - "resnet50"                      # CNN control (no attention)
+
+methods:
+  - "saliency"
+  - "input_x_gradient"
+  - "smoothgrad"
+  - "vargrad"
+  - "grad_cam"
+
+metrics:
+  - "faithfulness_correlation"
+  - "apf"
+
+metric_kwargs:
+  faithfulness_correlation:
+    { nr_runs: 20, subset_size: 224, return_aggregate: false }
+  apf:
+    { nr_runs: 20, subset_size: 224, return_aggregate: false }
+
+dataset: "imagenets_cached"
+dataset_kwargs:
+  { cache_path: "data/ImageNetS/cache_validation_1000.pt", num_samples: 200 }
+num_images: 200
+seeds: [0]
+device: "auto"
+input_size: 224
+output_dir: "results"
+run_name: "apf_ablation"
+save_saliency: false
+limit_methods_to_supported: true

@@ -23,6 +23,7 @@ from xai_bench.methods.hilrp.attention_primitives import (
     linear_attention, linear_attention_lrp,
     channel_attention, channel_attention_lrp,
     dilated_attention, dilated_attention_lrp,
+    deformable_attention, deformable_attention_lrp,
 )
 
 TOL = 1e-11   # float64, bias-free, eps=0
@@ -109,4 +110,19 @@ def test_dilated_sparse_attention_conserves():
     out, cache = dilated_attention(x, *W, dilation=3)
     R_out = out.clone()
     R_x = dilated_attention_lrp(cache, W, R_out)
+    assert relerr(R_x.sum(), R_out.sum()) < TOL
+
+
+def test_deformable_attention_conserves():
+    torch.manual_seed(8)
+    N, C, K = 16, 24, 3
+    x = torch.randn(N, C)
+    Wv, Wo = _weights(C, n=2, seed=8)
+    Woff = torch.randn(K, C) * C ** -0.5      # offset generator
+    Wattn = torch.randn(K, C) * C ** -0.5     # sampling-weight generator
+    out, cache = deformable_attention(x, Wv, Wo, Woff, Wattn)
+    # M is row-stochastic (bilinear sample weights x attention weights sum to 1)
+    assert relerr(cache["M"].sum(-1).mean(), 1.0) < TOL
+    R_out = out.clone()
+    R_x = deformable_attention_lrp(cache, (Wv, Wo), R_out)
     assert relerr(R_x.sum(), R_out.sum()) < TOL

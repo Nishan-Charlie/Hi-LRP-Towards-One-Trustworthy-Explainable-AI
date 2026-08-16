@@ -1,0 +1,38 @@
+# AttnLRP baseline rows, flat ViT (true published recipe: LXT efficient,
+# ATTN_MODE='attnlrp'). DEDICATED RUN, separate process from attnlrp_grid_hier
+# (see attnlrp_method.py docstring). Protocol identical to hilrp_grid.yaml
+# except n=100.
+
+models:
+  - "vit_base_patch16_224"
+
+methods:
+  - "attnlrp"
+
+metrics:
+  - "faithfulness_correlation"
+  - "apf"
+  - "faithfulness_estimate"
+  - "pointing_game"
+  - "max_sensitivity"
+  - "sparseness"
+
+metric_kwargs:
+  faithfulness_correlation:
+    { nr_runs: 20, subset_size: 224, return_aggregate: false }
+  apf:
+    { nr_runs: 20, subset_size: 224, return_aggregate: false }
+  faithfulness_estimate: { features_in_step: 448, return_aggregate: false }
+  max_sensitivity: { nr_samples: 3, lower_bound: 0.2 }
+
+dataset: "imagenets_cached"
+dataset_kwargs:
+  { cache_path: "data/ImageNetS/cache_validation_1000.pt", num_samples: 100 }
+num_images: 100
+seeds: [0]
+device: "auto"
+input_size: 224
+output_dir: "results"
+run_name: "attnlrp_grid_vit"
+save_saliency: false
+limit_methods_to_supported: true

@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use this software or its results, please cite the paper below."
+title: "HiLRP: conservation-valid attribution for hierarchical and hybrid Vision Transformers"
+abstract: >-
+  A conservation-valid attribution framework for hierarchical and hybrid vision
+  transformers, formulated as relevance flow on a multi-resolution token graph,
+  together with a controlled cross-architecture benchmark of 14 attribution
+  methods over 10 backbones.
+type: software
+authors:
+  - family-names: Sathiyamohan
+    given-names: Nishankar
+    affiliation: "Department of Computer Engineering, University of Peradeniya"
+    email: e17230@eng.pdn.ac.lk
+keywords:
+  - explainable-ai
+  - vision-transformer
+  - layer-wise-relevance-propagation
+  - attribution
+  - benchmark
+license: MIT
+preferred-citation:
+  type: article
+  title: >-
+    Toward One Trustworthy Explanation for Any Vision Transformer:
+    Conservation-Valid Attribution via Attention Primitives
+  authors:
+    - family-names: Sathiyamohan
+      given-names: Nishankar
+  year: 2026
+  journal: "Under review"

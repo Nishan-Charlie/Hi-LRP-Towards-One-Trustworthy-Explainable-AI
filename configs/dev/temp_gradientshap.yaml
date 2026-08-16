@@ -1,0 +1,25 @@
+models:
+  - "maxvit_small_tf_224"
+  - "mobilevitv2_100"
+  - "efficientvit_b1"
+  - "efficientvit_b2"
+methods:
+  - "gradient_shap"
+metrics:
+  - "faithfulness_correlation"
+  - "faithfulness_estimate"
+  - "pointing_game"
+  - "max_sensitivity"
+  - "sparseness"
+dataset: "imagenets_cached"
+dataset_kwargs:
+  cache_path: "data/ImageNetS/cache_validation_1000.pt"
+  num_samples: 50
+num_images: 50
+seeds: [0]
+device: "auto"
+input_size: 224
+output_dir: "results/gradient_shap_fill"
+run_name: "quant_gradshap"
+save_saliency: false
+limit_methods_to_supported: true

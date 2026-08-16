@@ -66,11 +66,11 @@ class ImageNetSDataset(Dataset):
 class ImageNetSCached(Dataset):
     """Reads pre-materialised ImageNet-S samples from a local .pt cache so a long
     benchmark run never depends on (flaky) HuggingFace streaming and is fully
-    restart-safe. Build the cache with `cache_imagenets.py`."""
+    restart-safe. Build the cache with `scripts/data/cache_imagenets.py`."""
     def __init__(self, cache_path: str, num_samples: Optional[int] = None):
         if not os.path.exists(cache_path):
             raise FileNotFoundError(
-                f"Cache not found: {cache_path}. Build it first with cache_imagenets.py"
+                f"Cache not found: {cache_path}. Build it first with scripts/data/cache_imagenets.py"
             )
         self.records = torch.load(cache_path, weights_only=False)
         if num_samples is not None:

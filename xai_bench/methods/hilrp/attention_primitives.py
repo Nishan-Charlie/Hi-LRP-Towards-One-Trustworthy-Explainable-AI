@@ -161,3 +161,49 @@ def dilated_attention_lrp(cache, W, R_out, eps=0.0):
     R_sub = self_attention_lrp(cache["sub_cache"], W, R_out[idx], eps=eps)
     R_x[idx] = R_sub                           # attended subset: through attention
     return R_x
+
+
+# ------------------------------------------------ deformable attention (sampling)
+def _bilinear_1d(L, loc):
+    """Interpolation weights over L grid points for a continuous loc in [0, L-1].
+    Two nonzero entries (floor, ceil) summing to 1: bilinear sampling is a LINEAR
+    map on the value grid, so it conserves (Lemma 1, one row per sample)."""
+    loc = loc.clamp(0, L - 1)
+    lo = torch.floor(loc).long()
+    hi = torch.clamp(lo + 1, max=L - 1)
+    w = loc - lo.to(loc.dtype)
+    row = torch.zeros(L, dtype=loc.dtype)
+    row[lo] += (1 - w)
+    row[hi] += w
+    return row
+
+
+def deformable_attention(x, Wv, Wo, Woff, Wattn, scale=0.1):
+    """Deformable attention (toy, 1D, as in Deformable-DETR/DAT). Each query
+    predicts K sampling offsets and K attention weights; values are bilinearly
+    sampled at ref+offset and combined. The offsets/weights build a DETACHED,
+    row-stochastic mixing M over value tokens (sampling is linear, the K weights
+    sum to 1), so out = M @ (x Wv^T) is exactly the detached-mixing pattern of
+    linear attention and conserves. Woff, Wattn: [K, C]; Wv, Wo: [C, C]."""
+    v = x @ Wv.T
+    L = v.shape[0]
+    N = x.shape[0]
+    offsets = (x @ Woff.T) * scale                 # [N, K] learned sampling offsets
+    attn = torch.softmax(x @ Wattn.T, dim=-1)      # [N, K] weights, sum_k = 1
+    refs = torch.linspace(0, L - 1, N)
+    K = offsets.shape[1]
+    M = torch.zeros(N, L, dtype=x.dtype)
+    for i in range(N):
+        for k in range(K):
+            M[i] += attn[i, k] * _bilinear_1d(L, refs[i] + offsets[i, k])
+    o = M @ v                                      # row-stochastic mixing (sum_j M_ij = 1)
+    return o @ Wo.T, dict(x=x, v=v, o=o, M=M)
+
+
+def deformable_attention_lrp(cache, W, R_out, eps=0.0):
+    """CP rule: the sampling grid M (offsets x weights) is detached mixing, so
+    relevance flows through the value path and back to x via Wv/Wo. Conserves."""
+    Wv, Wo = W
+    R_o = lrp_linear(cache["o"], Wo, None, R_out, eps=eps)
+    R_v = _matmul_detached_lrp(cache["M"].detach(), cache["v"], R_o, eps=eps)
+    return lrp_linear(cache["x"], Wv, None, R_v, eps=eps)

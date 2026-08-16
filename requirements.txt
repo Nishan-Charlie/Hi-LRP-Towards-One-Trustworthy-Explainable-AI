@@ -10,13 +10,28 @@ scikit-image
 Pillow
 PyYAML
 matplotlib
-datasets
 
-# Attribution methods
+# Attribution methods (baselines)
 captum>=0.7.0
 
-# Optional — enable richer methods / metrics if installed
-# grad-cam            # pytorch-grad-cam: alternative Grad-CAM backend (native one is built in)
-# quantus             # standardized faithfulness/localization metrics (seams provided)
-python-louvain        # graph clustering (notebook prototype)
-networkx
+# HiLRP backend. lxt MUST be 2.x: the `lxt.efficient` submodules HiLRP imports
+# do not exist in 0.6.x. On Windows set PYTHONUTF8=1 before installing, or the
+# sdist metadata step hits a charmap UnicodeDecodeError.
+#
+# lxt==2.1 pulls timm 1.0.28; the class-level patches and the cached baselines
+# were validated on timm==1.0.16, so re-pin timm afterwards to reproduce the
+# published numbers exactly.
+lxt==2.1
+zennit
+
+# Benchmark metrics and datasets
+quantus
+datasets
+
+# Optional
+# grad-cam            # alternative Grad-CAM backend (a native one is built in)
+# networkx            # graph analysis on the relevance flow
+# python-louvain      # clustering, notebook prototypes
+
+# Tests
+pytest

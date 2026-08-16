@@ -1,0 +1,45 @@
+# AttnLRP baseline rows for the full quantus metric grid, hierarchical/hybrid
+# models (naive generic LXT recipe, lineage protocol). DEDICATED RUN: class-level
+# patches; ONLY attnlrp in this config. Keep vit_base in the separate
+# attnlrp_grid_vit.yaml: attribute_vit's timm-subclass patches would un-naive
+# this baseline if run in the same process.
+# Protocol identical to hilrp_grid.yaml except n=100.
+
+models:
+  - "swin_base_patch4_window7_224"
+  - "pvt_v2_b2"
+  - "maxvit_small_tf_224"
+  - "mobilevitv2_100"
+  - "efficientvit_b1"
+  - "efficientvit_b2"
+
+methods:
+  - "attnlrp"
+
+metrics:
+  - "faithfulness_correlation"
+  - "apf"
+  - "faithfulness_estimate"
+  - "pointing_game"
+  - "max_sensitivity"
+  - "sparseness"
+
+metric_kwargs:
+  faithfulness_correlation:
+    { nr_runs: 20, subset_size: 224, return_aggregate: false }
+  apf:
+    { nr_runs: 20, subset_size: 224, return_aggregate: false }
+  faithfulness_estimate: { features_in_step: 448, return_aggregate: false }
+  max_sensitivity: { nr_samples: 3, lower_bound: 0.2 }
+
+dataset: "imagenets_cached"
+dataset_kwargs:
+  { cache_path: "data/ImageNetS/cache_validation_1000.pt", num_samples: 100 }
+num_images: 100
+seeds: [0]
+device: "auto"
+input_size: 224
+output_dir: "results"
+run_name: "attnlrp_grid_hier"
+save_saliency: false
+limit_methods_to_supported: true

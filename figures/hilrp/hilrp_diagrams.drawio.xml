@@ -1,0 +1,340 @@
+<mxfile host="app.diagrams.net" agent="HiLRP paper figures" type="device" version="24.7.17">
+  <!-- ===================================================================== -->
+  <!-- HiLRP paper diagrams. Open in https://app.diagrams.net or the draw.io -->
+  <!-- desktop app. Four pages, one per schematic figure.                    -->
+  <!--                                                                       -->
+  <!-- Primitive colour scheme (kept identical across all pages):            -->
+  <!--   linear map        blue    fill #DAE8FC / stroke #1F4E91            -->
+  <!--   bilinear mix      orange  fill #FFE6CC / stroke #C0600A            -->
+  <!--   normalise/gate    purple  fill #E1D5E7 / stroke #7A2C8C            -->
+  <!--   reindex/permute   green   fill #D5E8D4 / stroke #226E32            -->
+  <!--   relevance flow    red     stroke #B0141E                            -->
+  <!-- Export for LaTeX: File > Export as > PDF, "Crop to content".          -->
+  <!-- ===================================================================== -->
+
+  <diagram id="primitives" name="Fig2-attention-primitives">
+    <mxGraphModel dx="1400" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1450" pageHeight="800" math="0" shadow="0">
+      <root>
+        <mxCell id="p1-0" />
+        <mxCell id="p1-1" parent="p1-0" />
+
+        <mxCell id="p1-title" value="Attention is four conserving primitives: relevance flow through a multi-head attention block" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="p1-1">
+          <mxGeometry x="120" y="20" width="1200" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- forward nodes -->
+        <mxCell id="p1-x" value="tokens&#10;X" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=14;fontStyle=1;" vertex="1" parent="p1-1">
+          <mxGeometry x="50" y="350" width="90" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-wq" value="W&lt;sub&gt;Q&lt;/sub&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#1F4E91;fontSize=14;" vertex="1" parent="p1-1">
+          <mxGeometry x="220" y="150" width="90" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-wk" value="W&lt;sub&gt;K&lt;/sub&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#1F4E91;fontSize=14;" vertex="1" parent="p1-1">
+          <mxGeometry x="220" y="250" width="90" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-wv" value="W&lt;sub&gt;V&lt;/sub&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#1F4E91;fontSize=14;" vertex="1" parent="p1-1">
+          <mxGeometry x="220" y="500" width="90" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-qk" value="QK&lt;sup&gt;T&lt;/sup&gt; / &#8730;d" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#C0600A;fontSize=14;" vertex="1" parent="p1-1">
+          <mxGeometry x="400" y="190" width="120" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-sm" value="softmax" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#7A2C8C;fontSize=14;" vertex="1" parent="p1-1">
+          <mxGeometry x="590" y="190" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-av" value="A &#183; V" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#C0600A;fontSize=14;" vertex="1" parent="p1-1">
+          <mxGeometry x="780" y="350" width="90" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-mh" value="merge&#10;heads" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#226E32;fontSize=14;" vertex="1" parent="p1-1">
+          <mxGeometry x="940" y="350" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-wo" value="W&lt;sub&gt;O&lt;/sub&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#1F4E91;fontSize=14;" vertex="1" parent="p1-1">
+          <mxGeometry x="1110" y="350" width="90" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-y" value="output&#10;y" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=14;fontStyle=1;" vertex="1" parent="p1-1">
+          <mxGeometry x="1270" y="350" width="90" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- forward edges -->
+        <mxCell id="p1-e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;" edge="1" parent="p1-1" source="p1-x" target="p1-wq"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p1-e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;" edge="1" parent="p1-1" source="p1-x" target="p1-wk"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p1-e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;" edge="1" parent="p1-1" source="p1-x" target="p1-wv"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p1-e4" value="Q" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;fontSize=12;" edge="1" parent="p1-1" source="p1-wq" target="p1-qk"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p1-e5" value="K" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;fontSize=12;" edge="1" parent="p1-1" source="p1-wk" target="p1-qk"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p1-e6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;" edge="1" parent="p1-1" source="p1-qk" target="p1-sm"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p1-e7" value="A" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;fontSize=12;" edge="1" parent="p1-1" source="p1-sm" target="p1-av"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p1-e8" value="V" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;fontSize=12;" edge="1" parent="p1-1" source="p1-wv" target="p1-av"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p1-e9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;" edge="1" parent="p1-1" source="p1-av" target="p1-mh"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p1-e10" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;" edge="1" parent="p1-1" source="p1-mh" target="p1-wo"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p1-e11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;" edge="1" parent="p1-1" source="p1-wo" target="p1-y"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- relevance (backward) edges: solid = HiLRP CP path -->
+        <mxCell id="p1-r1" value="R&lt;sup&gt;(y)&lt;/sup&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#B0141E;strokeWidth=2.5;endArrow=blockThin;endFill=1;fontSize=12;fontColor=#B0141E;exitX=0.5;exitY=1;entryX=0.5;entryY=1;" edge="1" parent="p1-1" source="p1-y" target="p1-wo"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1315" y="450" /><mxPoint x="1155" y="450" /></Array></mxGeometry></mxCell>
+        <mxCell id="p1-r2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#B0141E;strokeWidth=2.5;endArrow=blockThin;endFill=1;exitX=0.5;exitY=1;entryX=0.5;entryY=1;" edge="1" parent="p1-1" source="p1-wo" target="p1-mh"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1155" y="470" /><mxPoint x="990" y="470" /></Array></mxGeometry></mxCell>
+        <mxCell id="p1-r3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#B0141E;strokeWidth=2.5;endArrow=blockThin;endFill=1;exitX=0.5;exitY=1;entryX=0.5;entryY=1;" edge="1" parent="p1-1" source="p1-mh" target="p1-av"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="990" y="490" /><mxPoint x="825" y="490" /></Array></mxGeometry></mxCell>
+        <mxCell id="p1-r4" value="HiLRP (CP): all relevance via the value path" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#B0141E;strokeWidth=2.5;endArrow=blockThin;endFill=1;fontSize=12;fontColor=#B0141E;fontStyle=1;exitX=0.5;exitY=1;entryX=0.5;entryY=1;verticalAlign=top;" edge="1" parent="p1-1" source="p1-av" target="p1-wv"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="825" y="600" /><mxPoint x="265" y="600" /></Array></mxGeometry></mxCell>
+        <mxCell id="p1-r5" value="R&lt;sup&gt;(X)&lt;/sup&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#B0141E;strokeWidth=2.5;endArrow=blockThin;endFill=1;fontSize=12;fontColor=#B0141E;exitX=0;exitY=0.5;entryX=0.5;entryY=1;" edge="1" parent="p1-1" source="p1-wv" target="p1-x"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="95" y="522" /></Array></mxGeometry></mxCell>
+
+        <!-- relevance: dashed = AttnLRP-only attention branch -->
+        <mxCell id="p1-r6" value="AttnLRP only: R/2 through A,&#10;Taylor through softmax" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#B0141E;strokeWidth=2;dashed=1;endArrow=blockThin;endFill=1;fontSize=11;fontColor=#B0141E;exitX=0;exitY=0.5;entryX=0.5;entryY=1;" edge="1" parent="p1-1" source="p1-av" target="p1-sm"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="640" y="375" /></Array></mxGeometry></mxCell>
+        <mxCell id="p1-r7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#B0141E;strokeWidth=2;dashed=1;endArrow=blockThin;endFill=1;exitX=0.5;exitY=0;entryX=0.5;entryY=0;" edge="1" parent="p1-1" source="p1-sm" target="p1-qk"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="640" y="160" /><mxPoint x="460" y="160" /></Array></mxGeometry></mxCell>
+        <mxCell id="p1-r8" value="R/4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#B0141E;strokeWidth=2;dashed=1;endArrow=blockThin;endFill=1;fontSize=11;fontColor=#B0141E;exitX=0;exitY=0.25;entryX=1;entryY=0.5;" edge="1" parent="p1-1" source="p1-qk" target="p1-wq"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p1-r9" value="R/4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#B0141E;strokeWidth=2;dashed=1;endArrow=blockThin;endFill=1;fontSize=11;fontColor=#B0141E;exitX=0;exitY=0.75;entryX=1;entryY=0.5;" edge="1" parent="p1-1" source="p1-qk" target="p1-wk"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- rule annotations -->
+        <mxCell id="p1-n1" value="&#949;/&#947;-rule (linear)&#10;head split = exact reshape" style="text;html=1;align=center;fontSize=12;fontColor=#1F4E91;fontStyle=2" vertex="1" parent="p1-1">
+          <mxGeometry x="170" y="95" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-n2" value="bilinear matmul&#10;(uniform split / CP gate)" style="text;html=1;align=center;fontSize=12;fontColor=#C0600A;fontStyle=2" vertex="1" parent="p1-1">
+          <mxGeometry x="380" y="105" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-n3" value="normalisation / gate:&#10;detached denominator" style="text;html=1;align=center;fontSize=12;fontColor=#7A2C8C;fontStyle=2" vertex="1" parent="p1-1">
+          <mxGeometry x="570" y="105" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-n4" value="reindexing:&#10;permutation, exact (Lemma 2)" style="text;html=1;align=center;fontSize=12;fontColor=#226E32;fontStyle=2" vertex="1" parent="p1-1">
+          <mxGeometry x="890" y="290" width="200" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- legend -->
+        <mxCell id="p1-leg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;" vertex="1" parent="p1-1">
+          <mxGeometry x="50" y="650" width="1310" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-lt" value="The four primitives" style="text;html=1;align=left;fontSize=13;fontStyle=1;" vertex="1" parent="p1-1">
+          <mxGeometry x="65" y="658" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-l1" value="1. linear map &#8594; &#949;/&#947;-rule" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#1F4E91;fontSize=12;" vertex="1" parent="p1-1">
+          <mxGeometry x="70" y="685" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-l2" value="2. bilinear mix &#8594; split / CP gate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#C0600A;fontSize=12;" vertex="1" parent="p1-1">
+          <mxGeometry x="290" y="685" width="210" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-l3" value="3. normalise / gate &#8594; detached denom." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#7A2C8C;fontSize=12;" vertex="1" parent="p1-1">
+          <mxGeometry x="520" y="685" width="250" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-l4" value="4. reindex / sparsity &#8594; permutation (exact)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#226E32;fontSize=12;" vertex="1" parent="p1-1">
+          <mxGeometry x="790" y="685" width="260" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-l5" value="&#8594; forward&#10;&#8594; relevance (HiLRP)&#10;&#8594; relevance (AttnLRP only)" style="text;html=1;align=left;fontSize=11;fontColor=#B0141E;" vertex="1" parent="p1-1">
+          <mxGeometry x="1075" y="682" width="270" height="46" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="overview" name="Fig1-HiLRP-overview">
+    <mxGraphModel dx="1400" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1450" pageHeight="700" math="0" shadow="0">
+      <root>
+        <mxCell id="p2-0" />
+        <mxCell id="p2-1" parent="p2-0" />
+
+        <mxCell id="p2-title" value="HiLRP on a hierarchical ViT: one conservation-valid path from the logit back to the pixels" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="p2-1">
+          <mxGeometry x="120" y="20" width="1200" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p2-img" value="image&#10;224&#215;224&#215;3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=13;fontStyle=1;" vertex="1" parent="p2-1">
+          <mxGeometry x="40" y="180" width="100" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-pe" value="patch embed&#10;(strided conv)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#1F4E91;fontSize=13;" vertex="1" parent="p2-1">
+          <mxGeometry x="185" y="180" width="115" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-s1" value="Stage 1&#10;W-MSA / SW-MSA&#10;56&#215;56" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#7A2C8C;fontSize=13;" vertex="1" parent="p2-1">
+          <mxGeometry x="345" y="180" width="130" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-m1" value="patch merge&#10;56 &#8594; 28" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#226E32;fontSize=13;" vertex="1" parent="p2-1">
+          <mxGeometry x="520" y="180" width="110" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-s2" value="Stage 2&#10;28&#215;28" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#7A2C8C;fontSize=13;" vertex="1" parent="p2-1">
+          <mxGeometry x="675" y="180" width="100" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-m2" value="patch merge&#10;28 &#8594; 14 &#8594; 7" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#226E32;fontSize=13;" vertex="1" parent="p2-1">
+          <mxGeometry x="820" y="180" width="110" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-s4" value="Stage 3-4&#10;14&#215;14, 7&#215;7" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#7A2C8C;fontSize=13;" vertex="1" parent="p2-1">
+          <mxGeometry x="975" y="180" width="110" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-hd" value="norm + pool&#10;+ head" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#1F4E91;fontSize=13;" vertex="1" parent="p2-1">
+          <mxGeometry x="1130" y="180" width="105" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-lg" value="logit&#10;f&lt;sub&gt;c&lt;/sub&gt;(x)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=13;fontStyle=1;" vertex="1" parent="p2-1">
+          <mxGeometry x="1285" y="180" width="90" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p2-f1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;" edge="1" parent="p2-1" source="p2-img" target="p2-pe"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p2-f2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;" edge="1" parent="p2-1" source="p2-pe" target="p2-s1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p2-f3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;" edge="1" parent="p2-1" source="p2-s1" target="p2-m1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p2-f4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;" edge="1" parent="p2-1" source="p2-m1" target="p2-s2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p2-f5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;" edge="1" parent="p2-1" source="p2-s2" target="p2-m2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p2-f6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;" edge="1" parent="p2-1" source="p2-m2" target="p2-s4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p2-f7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;" edge="1" parent="p2-1" source="p2-s4" target="p2-hd"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p2-f8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;" edge="1" parent="p2-1" source="p2-hd" target="p2-lg"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="p2-rel" value="relevance R, conserved at every step:  &#8721;&#8320; R&#7522; = f&lt;sub&gt;c&lt;/sub&gt;(x)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#B0141E;strokeWidth=3;endArrow=blockThin;endFill=1;fontSize=14;fontColor=#B0141E;fontStyle=1;verticalAlign=bottom;" edge="1" parent="p2-1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1330" y="300" as="sourcePoint" />
+            <mxPoint x="90" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="p2-a1" value="&#947;-rule&#10;(controlled pixel-level&#10;deviation, quantified)" style="text;html=1;align=center;fontSize=11;fontColor=#1F4E91;fontStyle=2" vertex="1" parent="p2-1">
+          <mxGeometry x="175" y="320" width="135" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-a2" value="window partition + cyclic shift&#10;= permutations &#8594; exact (Lemma 2)&#10;masked pairs carry zero relevance" style="text;html=1;align=center;fontSize=11;fontColor=#7A2C8C;fontStyle=2" vertex="1" parent="p2-1">
+          <mxGeometry x="325" y="320" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-a3" value="T(N) = W &#966;(concat(x&#8321;..x&#8324;))&#10;one &#949;-rule, conserves&#10;(Lemma 1, Sec. III-A)" style="text;html=1;align=center;fontSize=11;fontColor=#226E32;fontStyle=2" vertex="1" parent="p2-1">
+          <mxGeometry x="510" y="320" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-a4" value="identity-LN rule&#10;CP attention rule" style="text;html=1;align=center;fontSize=11;fontColor=#7A2C8C;fontStyle=2" vertex="1" parent="p2-1">
+          <mxGeometry x="960" y="320" width="140" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p2-out" value="stage-localized maps: halt the backward pass at any resolution (Fig. 7)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=13;fontStyle=1;" vertex="1" parent="p2-1">
+          <mxGeometry x="345" y="420" width="740" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-note" value="Conservation is exact at the token level through the proven operations; the &#947;-rule on the convolutional stem introduces a controlled, quantified deviation at the pixel level (Sec. VI)." style="text;html=1;align=center;fontSize=12;fontStyle=2;fontColor=#555555;" vertex="1" parent="p2-1">
+          <mxGeometry x="245" y="490" width="940" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="unifying" name="Fig3-resolution-reduction">
+    <mxGraphModel dx="1400" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="700" math="0" shadow="0">
+      <root>
+        <mxCell id="p3-0" />
+        <mxCell id="p3-1" parent="p3-0" />
+
+        <mxCell id="p3-title" value="One unifying form: every resolution reduction is a linear map on a token neighbourhood" style="text;html=1;align=center;verticalAlign=middle;fontSize=19;fontStyle=1;" vertex="1" parent="p3-1">
+          <mxGeometry x="60" y="20" width="1080" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-o1" value="&lt;b&gt;Patch merging&lt;/b&gt; (Swin)&#10;concat a 2&#215;2 neighbourhood,&#10;then project" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#226E32;fontSize=13;align=center;" vertex="1" parent="p3-1">
+          <mxGeometry x="60" y="110" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-o2" value="&lt;b&gt;Strided patch embed&lt;/b&gt; (conv stem)&#10;linear map on a pixel&#10;neighbourhood" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#226E32;fontSize=13;align=center;" vertex="1" parent="p3-1">
+          <mxGeometry x="60" y="215" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-o3" value="&lt;b&gt;Spatial reduction&lt;/b&gt; (PVT, EfficientViT)&#10;strided conv on the token grid&#10;(K/V downsampling)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#226E32;fontSize=13;align=center;" vertex="1" parent="p3-1">
+          <mxGeometry x="60" y="320" width="240" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-form" value="&lt;b&gt;T(N) = W &#966;( concat(x&lt;sup&gt;(1)&lt;/sup&gt;, &#8230;, x&lt;sup&gt;(n)&lt;/sup&gt;) )&lt;/b&gt;&#10;&#10;concat = coordinate embedding&#10;&#966; = conservation-preserving normalisation&#10;W = linear projection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#1F4E91;fontSize=14;align=center;" vertex="1" parent="p3-1">
+          <mxGeometry x="410" y="180" width="330" height="150" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;" edge="1" parent="p3-1" source="p3-o1" target="p3-form"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p3-e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;" edge="1" parent="p3-1" source="p3-o2" target="p3-form"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p3-e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;" edge="1" parent="p3-1" source="p3-o3" target="p3-form"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="p3-rule" value="&lt;b&gt;One &#949;-rule&lt;/b&gt;&#10;&#10;R(v&#8323;) = &#8721;&#7522; ( z&#7522;&#8323; / z&#7522; ) R(y&#7522;)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#C0600A;fontSize=14;align=center;" vertex="1" parent="p3-1">
+          <mxGeometry x="850" y="180" width="270" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-e4" value="Lemma 1&#10;(sum exchange)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=1.5;endArrow=blockThin;endFill=1;fontSize=12;" edge="1" parent="p3-1" source="p3-form" target="p3-rule"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="p3-cons" value="&lt;b&gt;Conserves:&lt;/b&gt;  &#8721;&#8323; R(v&#8323;) = &#8721;&#7522; R(y&#7522;)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#226E32;fontSize=14;align=center;fontStyle=1" vertex="1" parent="p3-1">
+          <mxGeometry x="850" y="310" width="270" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-e5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#B0141E;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="p3-1" source="p3-rule" target="p3-cons"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="p3-l2" value="&lt;b&gt;Lemma 2 (free operations).&lt;/b&gt; When exactly one contribution z&#7522;&#8323; is non-zero per output, the ratio is 1 and the rule is exact with no leakage. This covers the coordinate embedding (concat), window partitioning, and the cyclic shift: they are permutations, so they need no new rule and lose no relevance. Verified: patch merge 3&#215;10&#8315;&#185;&#8310;, shifted-window mask leak ~10&#8315;&#8308;&#179; (structurally zero)." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=12;align=left;spacingLeft=10;spacingRight=10;verticalAlign=middle;" vertex="1" parent="p3-1">
+          <mxGeometry x="60" y="440" width="1060" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-cor" value="&lt;b&gt;Corollaries, not new derivations:&lt;/b&gt;  patch merging &#183; strided patch embedding &#183; spatial reduction &#8594; each is an instance of T(N), so each inherits the proof." style="text;html=1;align=center;fontSize=13;fontStyle=2;fontColor=#555555;" vertex="1" parent="p3-1">
+          <mxGeometry x="60" y="540" width="1060" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="taxonomy" name="Fig4-attribution-taxonomy">
+    <mxGraphModel dx="1400" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="900" pageHeight="820" math="0" shadow="0">
+      <root>
+        <mxCell id="p4-0" />
+        <mxCell id="p4-1" parent="p4-0" />
+
+        <mxCell id="p4-title" value="The four attribution families and the architectural assumption each one breaks on" style="text;html=1;align=center;verticalAlign=middle;fontSize=17;fontStyle=1;" vertex="1" parent="p4-1">
+          <mxGeometry x="40" y="15" width="820" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p4-g" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAF2FB;strokeColor=none;" vertex="1" parent="p4-1">
+          <mxGeometry x="40" y="60" width="820" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-gb" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1F6FB4;strokeColor=none;" vertex="1" parent="p4-1">
+          <mxGeometry x="40" y="60" width="9" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-gt" value="Gradient-based" style="text;html=1;align=left;fontSize=17;fontStyle=1;fontColor=#1F6FB4;" vertex="1" parent="p4-1">
+          <mxGeometry x="65" y="70" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-gm" value="Saliency &#183; Integrated Grad &#183; Input&#215;Grad &#183; SmoothGrad &#183; VarGrad &#183; GradientSHAP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1F6FB4;fontSize=12;" vertex="1" parent="p4-1">
+          <mxGeometry x="65" y="100" width="640" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-ga" value="assumes: smooth, meaningful input gradients" style="text;html=1;align=left;fontSize=12;fontStyle=2;fontColor=#666666;" vertex="1" parent="p4-1">
+          <mxGeometry x="65" y="145" width="500" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-gf" value="breaks: gradient methods swing by 0.2-0.4 Pointing across backbones, with no stable winner" style="text;html=1;align=left;fontSize=12;fontColor=#B0141E;" vertex="1" parent="p4-1">
+          <mxGeometry x="65" y="168" width="700" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p4-c" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDF3E3;strokeColor=none;" vertex="1" parent="p4-1">
+          <mxGeometry x="40" y="215" width="820" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-cb" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8A33D;strokeColor=none;" vertex="1" parent="p4-1">
+          <mxGeometry x="40" y="215" width="9" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-ct" value="CAM-based" style="text;html=1;align=left;fontSize=17;fontStyle=1;fontColor=#E8A33D;" vertex="1" parent="p4-1">
+          <mxGeometry x="65" y="225" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-cm" value="Grad-CAM &#183; Grad-CAM++" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E8A33D;fontSize=12;" vertex="1" parent="p4-1">
+          <mxGeometry x="65" y="255" width="230" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-ca" value="assumes: a terminal spatial feature map" style="text;html=1;align=left;fontSize=12;fontStyle=2;fontColor=#666666;" vertex="1" parent="p4-1">
+          <mxGeometry x="65" y="300" width="500" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-cf" value="breaks: EfficientViT's linear attention removes that map &#8594; Pointing 0.55, below the 0.61 random prior" style="text;html=1;align=left;fontSize=12;fontColor=#B0141E;" vertex="1" parent="p4-1">
+          <mxGeometry x="65" y="323" width="740" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p4-a" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E9F7F0;strokeColor=none;" vertex="1" parent="p4-1">
+          <mxGeometry x="40" y="370" width="820" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-ab" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#12A05C;strokeColor=none;" vertex="1" parent="p4-1">
+          <mxGeometry x="40" y="370" width="9" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-at" value="Attention-native" style="text;html=1;align=left;fontSize=17;fontStyle=1;fontColor=#12A05C;" vertex="1" parent="p4-1">
+          <mxGeometry x="65" y="380" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-am" value="Attention Rollout &#183; Chefer et al. &#183; AttnLRP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#12A05C;fontSize=12;" vertex="1" parent="p4-1">
+          <mxGeometry x="65" y="410" width="330" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-aa" value="assumes: explicit, global softmax attention matrices" style="text;html=1;align=left;fontSize=12;fontStyle=2;fontColor=#666666;" vertex="1" parent="p4-1">
+          <mxGeometry x="65" y="455" width="500" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-af" value="breaks: undefined on windowed / linear / hierarchical attention; Rollout scores 0.48 on DeiT" style="text;html=1;align=left;fontSize=12;fontColor=#B0141E;" vertex="1" parent="p4-1">
+          <mxGeometry x="65" y="478" width="740" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p4-p" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBEFE7;strokeColor=none;" vertex="1" parent="p4-1">
+          <mxGeometry x="40" y="525" width="820" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-pb" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D2691E;strokeColor=none;" vertex="1" parent="p4-1">
+          <mxGeometry x="40" y="525" width="9" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-pt" value="Perturbation-based" style="text;html=1;align=left;fontSize=17;fontStyle=1;fontColor=#D2691E;" vertex="1" parent="p4-1">
+          <mxGeometry x="65" y="535" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-pm" value="Occlusion &#183; RISE &#183; LIME &#183; SHAP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D2691E;fontSize=12;" vertex="1" parent="p4-1">
+          <mxGeometry x="65" y="565" width="270" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-pa" value="assumes: masking the input is informative; forward passes only" style="text;html=1;align=left;fontSize=12;fontStyle=2;fontColor=#666666;" vertex="1" parent="p4-1">
+          <mxGeometry x="65" y="610" width="500" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-pf" value="breaks: output-level only (no stage maps) and costly; ViTs are robust to spatial masking" style="text;html=1;align=left;fontSize=12;fontColor=#B0141E;" vertex="1" parent="p4-1">
+          <mxGeometry x="65" y="633" width="740" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p4-h" value="&lt;b&gt;HiLRP (ours):&lt;/b&gt; assumes only that the network is built from the four primitives, which every ViT is. Defined and conservation-valid on all ten backbones." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#1F4E91;strokeWidth=2;fontSize=13;align=center;" vertex="1" parent="p4-1">
+          <mxGeometry x="40" y="690" width="820" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

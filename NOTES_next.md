@@ -20,7 +20,7 @@ instance; contribution 1 = universal framework. See CLAUDE.md "THE AIM".
 Next, in priority order (each = one *_lxt.py real-model port + a conservation row + a
 test, like the existing ports):
 1. CROSS / CO-ATTENTION port: DONE for multi-modal via CLIP (`clip_lxt.py`,
-   `scripts/clip_demo.py`, figures/clip_multimodal.png, commit 7fb3d65). CLIP ViT-B/16
+   `scripts/hilrp/clip_demo.py`, figures/clip_multimodal.png, commit 7fb3d65). CLIP ViT-B/16
    image tower (nn.MultiheadAttention CP + LN/GELU identity + Gamma), scalar =
    cos(f_img(x), f_text(caption)) with text frozen + image cosine-denom detached.
    Forward-equiv 1.9e-6; text-conditioned (correct caption > wrong on object energy,
@@ -43,9 +43,9 @@ todo) and cite the 15-type span in the intro/contributions.
 
 `data/ImageNetS/cache_validation_1000.pt` = 1000 imgs, all with bboxes, 161
 classes (validated). Build the cache with BASE conda python (mri-diffuser's
-datasets/aiohttp is broken): `C:\Users\nisha\miniconda3\python.exe cache_imagenets.py`.
+datasets/aiohttp is broken): `C:\Users\nisha\miniconda3\python.exe scripts/data/cache_imagenets.py`.
 All eval scripts auto-pick the largest cache. Stale cache_validation_500.pt (only
-100 imgs) deleted. SCALED EVAL RUNNING: scripts/scaled_eval.py, HiLRP vs Grad-CAM
+100 imgs) deleted. SCALED EVAL RUNNING: scripts/bench/scaled_eval.py, HiLRP vs Grad-CAM
 per-image hits at n=1000 on efficientvit_b2 (the win leg) -> bootstrap 95% CIs +
 paired McNemar. Next: pvt leg, fold CI+p into paper Table 1 / conservation-validity.
 
@@ -54,7 +54,7 @@ paired McNemar. Next: pvt leg, fold CI+p into paper Table 1 / conservation-valid
 `data/ImageNetS/cache_validation_100.pt` has 100 images. Lineage scripts
 (`lineage_comparison.py`, `lineage_naive_legs.py`) are now set to N_IMAGES=1000
 -> they will IndexError at image 100. To scale (the #1 A* lever), BUILD A
-500-1000 IMAGE CACHE first: use `cache_imagenets.py` (see [[xai-bench-run-setup]]
+500-1000 IMAGE CACHE first: use `scripts/data/cache_imagenets.py` (see [[xai-bench-run-setup]]
 for the flaky-HF-streaming gotcha; pre-cache locally). Then re-run pointing /
 Shapley / lineage / conservation at n>=500 with 95% CIs + paired Wilcoxon vs
 baselines. Until the cache exists, keep N_IMAGES<=100.
@@ -65,7 +65,7 @@ baselines. Until the cache exists, keep N_IMAGES<=100.
   scores pointing 1.0; GradCAM corr 0.72/0.63 with it vs HiLRP 0.25/0.14. Paper
   sec:gradcam-blob.
 - Gamma-selection ablation: gamma=0.25 robust no-tuning default. Paper sec:gamma,
-  scripts/gamma_selection.py.
+  scripts/hilrp/gamma_selection.py.
 - MobileViT "blank map" = display bug (heavy-tailed), fixed hilrp/viz.py.
 - 8-model HiLRP coverage complete (mean pointing 0.90); MaxViT ported; per-family
   attn_mode enforced in bench dispatch.
@@ -218,7 +218,7 @@ everywhere".
 
 ## 5b. Equivariance thread STARTED (2026-07-05): theorem must be conditional
 
-First measurement (scripts/equivariance_test.py, swin_tiny, cyclic shifts,
+First measurement (scripts/hilrp/equivariance_test.py, swin_tiny, cyclic shifts,
 8 imgs) killed the naive theorem: even window-multiple cyclic shifts are NOT a
 symmetry of real Swin (forward drift 7e-2), because the SW-MSA masks anchor to
 the canvas. There is no exact input-space translation symmetry for masked Swin.
@@ -244,7 +244,7 @@ DETACHED (cosine is scale-invariant; an in-graph norm zeroes relevance sums by
 the same invariance mechanism as an unpatched LayerNorm: this is now a design
 rule: every scalar head needs its own identity treatment for normalizers).
 
-Demo (scripts/ssl_scalar_demo.py, ViT-S/16 DINO vs supervised AugReg, 12 imgs):
+Demo (scripts/hilrp/ssl_scalar_demo.py, ViT-S/16 DINO vs supervised AugReg, 12 imgs):
 - label-free pointing 0.92 for BOTH pretrainings (no labels anywhere)
 - conservation to pixels differs by pretraining: supervised 0.91 +/- 0.04 vs
   DINO 0.37 +/- 0.04 of the scalar: a mechanistic RQ2 observation (where the
@@ -257,7 +257,7 @@ MAE reconstruction scalar, DINOv2 (needs 518px or interpolated pos-embed).
 
 ## 5d. LINEAGE COMPARISON DONE (2026-07-05): LRP / AttnLRP vs HiLRP
 
-scripts/lineage_comparison.py, 100 imgs, pointing + conservation at deep/head cuts.
+scripts/hilrp/lineage_comparison.py, 100 imgs, pointing + conservation at deep/head cuts.
 
 Leg A, vit_base (AttnLRP's home turf):
 - AttnLRP (inherited, attn_mode flag): pointing 0.770, cons deep +0.15
@@ -285,7 +285,7 @@ silently zeroed relevance sums (we measured 0.89 -> 0.98 pointing from our
 guard alone). THE LINEAGE CLAIM, sharpened: HiLRP = AttnLRP's rules where they
 exist, plus guarantees and guards where they do not.
 
-COMPLETE LINEAGE TABLE (naive legs done 2026-07-05, scripts/lineage_naive_legs.py,
+COMPLETE LINEAGE TABLE (naive legs done 2026-07-05, scripts/hilrp/lineage_naive_legs.py,
 100 imgs, generous naive = canonizer + correct stats):
 
 model            | naive point | naive deep-cons | HiLRP point | HiLRP deep-cons
@@ -328,7 +328,7 @@ in hilrp_method (committed ef0bf40).
 
 ## 5f. RQ2 DONE (2026-07-05): pretraining objective determines explanation
 
-scripts/rq2_pretraining.py. Fixed ViT-B/16, 4 pretrainings (supervised/DINO/
+scripts/hilrp/rq2_pretraining.py. Fixed ViT-B/16, 4 pretrainings (supervised/DINO/
 MAE/CLIP), one common label-free scalar cos(cls(x),cls(flip(x))). n=30:
 - cross-objective map agreement (mean pairwise Spearman) = 0.33 (vs 1.0 if
   objective irrelevant). MAE the outlier (0.17-0.18 with others).

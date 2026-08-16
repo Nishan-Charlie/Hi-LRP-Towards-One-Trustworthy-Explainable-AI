@@ -4,10 +4,25 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xai-bench"
-version = "0.1.0"
-description = "A controlled benchmark of attribution methods across ViT foundation models."
+version = "0.2.0"
+description = "HiLRP: conservation-valid attribution for hierarchical and hybrid Vision Transformers, plus a controlled cross-architecture attribution benchmark."
 readme = "README.md"
 requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [{ name = "Nishankar Sathiyamohan", email = "e17230@eng.pdn.ac.lk" }]
+keywords = [
+    "explainable-ai",
+    "vision-transformer",
+    "layer-wise-relevance-propagation",
+    "attribution",
+    "benchmark",
+]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "torch>=2.1",
     "torchvision>=0.16",
@@ -24,10 +39,18 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-extra = ["grad-cam", "quantus", "python-louvain", "networkx"]
+# HiLRP itself. lxt must be 2.x: the `lxt.efficient` backend it imports does
+# not exist in 0.6.x. See README "Version notes that matter".
+hilrp = ["lxt==2.1", "zennit"]
+# Benchmark metrics and the alternative CAM backend.
+extra = ["quantus", "grad-cam", "networkx", "python-louvain", "datasets"]
+dev = ["pytest"]
 
 [project.scripts]
 xai-bench = "xai_bench.runner:main"
 
 [tool.setuptools.packages.find]
 include = ["xai_bench*"]
+
+[tool.pytest.ini_options]
+testpaths = ["xai_bench/methods/hilrp/tests"]

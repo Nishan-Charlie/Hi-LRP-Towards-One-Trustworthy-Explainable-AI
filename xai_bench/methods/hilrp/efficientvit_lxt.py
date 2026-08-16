@@ -69,7 +69,13 @@ def ensure_patched(verbose=False):
 
 
 def make_composite(model, gamma=0.25, conv_gamma=None):
-    conv_gamma = gamma if conv_gamma is None else conv_gamma
+    # EfficientViT's deep conv stack + wide head-conv (e.g. 384->2304) make the
+    # global gamma=0.25 over-concentrate on positive contributions and drive the
+    # input-level relevance to zero (degenerate, sum ~0.003). A lower conv_gamma
+    # restores conservation (pixel sum ~0.35) with no loss of localization; gamma
+    # below ~0.03 swings the other way into epsilon-cancellation instability.
+    # This is the split-gamma strategy used for the convolution-hybrid family.
+    conv_gamma = 0.05 if conv_gamma is None else conv_gamma
     return LayerMapComposite([
         (nn.Conv2d, Gamma(conv_gamma)),
         (nn.Linear, Gamma(gamma)),

@@ -44,15 +44,26 @@ from timm.layers.norm import GroupNorm1
 from timm.layers import norm as _norm_mod
 
 
+# GroupNorm1 (num_groups==1) takes the mean over the whole (C,H,W) tensor, so
+# keeping it live routes every output pixel's gradient through the global mean and
+# was suspected of smearing object relevance across the background. A/B TESTED
+# (scripts/diagnose_vit_mobilevit.py, n=50): detaching the mean actually LOWERS
+# Pointing (0.88 -> 0.82) with no conservation gain, so mean-live is kept. The
+# smear affects the map's appearance, not the peak; MobileViT's honest limitation
+# is robustness (max-sensitivity), inherent to the deep separable-conv gradient.
+DETACH_MEAN = False
+
+
 # ------------------------------------------------------------- norm patch
 def group_norm1_forward(self, x):
     """Identity rule for GroupNorm with num_groups == 1: normalize with the
-    std detached, affine kept. Same principle as the LayerNorm patch."""
+    std detached, affine kept. Same principle as the LayerNorm patch. With
+    DETACH_MEAN, the global mean is detached too (see note above)."""
     dims = tuple(range(1, x.dim()))
     mean = x.mean(dim=dims, keepdim=True)
     var = ((x - mean) ** 2).mean(dim=dims, keepdim=True)
     std = (var + self.eps).sqrt()
-    y = (x - mean) / std.detach()
+    y = (x - (mean.detach() if DETACH_MEAN else mean)) / std.detach()
     if self.weight is not None:
         shape = (1, -1) + (1,) * (x.dim() - 2)
         y = y * self.weight.view(shape) + self.bias.view(shape)

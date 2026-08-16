@@ -1,0 +1,38 @@
+name: conservation tests
+
+# The conservation suite IS the guarantee: thresholds are tied to dtype, so a
+# regression in any relevance rule fails the build rather than silently
+# degrading a published number.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.11"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install CPU torch and test deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install timm numpy scipy pytest
+
+      - name: Run the conservation / coverage / equivariance suite
+        # rules.py is deliberately self-contained, so these tests need no lxt
+        # and no GPU. 24 tests, float64, dtype-tied numeric ceilings.
+        run: python -m pytest xai_bench/methods/hilrp/tests/ -v

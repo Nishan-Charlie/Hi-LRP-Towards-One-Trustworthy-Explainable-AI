@@ -1,0 +1,39 @@
+# Grad-CAM vs Grad-CAM++ stability reproduction (Issue 3 empirical backing).
+# Runs both CAM methods on 100 images across all 8 backbones and reports
+# Max-Sensitivity (MS, robustness/variance) and Pointing Game (PG) per image,
+# so the paper can quote mean +/- std. Same MS protocol as the main table
+# (nr_samples=3, lower_bound=0.2). Both methods share the pytorch-grad-cam
+# backend, target layer, and normalization; only the alpha-weight formula
+# differs, which isolates the divergence to that formula rather than a hook bug.
+models:
+  - "vit_base_patch16_224"          # global softmax  (predict: GC++ explodes)
+  - "resnet50"                      # CNN control     (predict: both stable)
+  - "swin_base_patch4_window7_224"  # windowed softmax(predict: both stable/equal)
+  - "pvt_v2_b2"                     # spatial-reduction
+  - "maxvit_small_tf_224"           # multi-axis (has a global grid branch)
+  - "mobilevitv2_100"               # conv-hybrid
+  - "efficientvit_b1"               # linear attention
+  - "efficientvit_b2"               # linear attention
+
+methods:
+  - "grad_cam"
+  - "grad_cam_plus_plus"
+
+metrics:
+  - "max_sensitivity"
+  - "pointing_game"
+
+metric_kwargs:
+  max_sensitivity: { nr_samples: 3, lower_bound: 0.2, return_aggregate: false }
+
+dataset: "imagenets_cached"
+dataset_kwargs:
+  { cache_path: "data/ImageNetS/cache_validation_1000.pt", num_samples: 100 }
+num_images: 100
+seeds: [0]
+device: "auto"
+input_size: 224
+output_dir: "results"
+run_name: "gradcam_ms_100"
+save_saliency: false
+limit_methods_to_supported: true
