@@ -40,23 +40,31 @@ images/videos/
 *.lof
 *.lot
 
-# ── Editor / OS / tooling ───────────────────────────────────────────────
+# ── Editor / OS ─────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 .$*.drawio.bkp
 .$*.drawio.dtmp
-.claude/settings.local.json
+
+# ── AI coding-agent config and internal working notes ───────────────────
+# Kept on disk, never published: agent instructions and live research notes
+# are private working state, not part of the released artifact.
+.claude/
+.cursor/
+.github/copilot-instructions.md
+AGENTS.md
+CLAUDE.md
+CLAUDE.local.md
+NOTES_next.md
+.mcp.json
 
 # ── Compiled manuscripts (regenerable from .tex) ────────────────────────
 paper/
+
+# ── Source images (local working set) ───────────────────────────────────
+images/
 
 # ── Exception: vector figures are tracked, they are paper/README assets ─
 !figures/**/*.pdf
 !figures/**/*.tex
 !figures/**/*.xml
-
-AGENTS.md
-CLAUDE.md
-NOTES_next.md
-
-images/

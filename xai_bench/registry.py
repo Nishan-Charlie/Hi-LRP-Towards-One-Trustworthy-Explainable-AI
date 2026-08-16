@@ -7,7 +7,7 @@ can add their own the same way without touching the runner.
 
 from __future__ import annotations
 
-from typing import Callable, Dict, Iterator, List
+from typing import Callable, Dict, Iterable, Iterator, List
 
 
 class Registry:
@@ -33,6 +33,7 @@ class Registry:
         if key not in self._entries:
             raise KeyError(
                 f"unknown {self.kind} '{name}'. Available: {sorted(self._entries)}"
+                + _missing_dependency_hint()
             )
         return self._entries[key]
 
@@ -50,3 +51,44 @@ MODELS = Registry("model")
 METHODS = Registry("method")
 DATASETS = Registry("dataset")
 METRICS = Registry("metric")
+
+
+# module path -> the ImportError that stopped its entries from registering.
+# A module that fails to import leaves a HOLE in the registries, so a lookup
+# miss must say so rather than report a plain "unknown method" and let a missing
+# optional dependency look like a typo.
+REGISTRATION_ERRORS: Dict[str, BaseException] = {}
+
+
+def import_optional_submodules(package: str, names: Iterable[str]) -> None:
+    """Import each submodule for its registration side effects, tolerantly.
+
+    The benchmark modules pull heavy optional dependencies (captum for the
+    Captum-backed methods, quantus for the metrics). Importing them eagerly is
+    what populates the registries, but a hard failure used to make the WHOLE
+    package unimportable -- including `xai_bench.methods.hilrp`, whose rules are
+    deliberately self-contained and need neither. Record the failure instead;
+    `Registry.get` surfaces it on the first lookup that comes up empty.
+    """
+    import importlib
+
+    for name in names:
+        try:
+            importlib.import_module(f".{name}", package)
+        except ImportError as exc:
+            REGISTRATION_ERRORS[f"{package}.{name}"] = exc
+
+
+def _missing_dependency_hint() -> str:
+    if not REGISTRATION_ERRORS:
+        return ""
+    lines = "".join(
+        f"\n  - {mod} did not import: {exc}"
+        for mod, exc in sorted(REGISTRATION_ERRORS.items())
+    )
+    return (
+        "\nNOTE: some modules failed to import, so their entries are missing"
+        f" from this registry:{lines}"
+        "\nInstall the benchmark extras to restore them:"
+        ' pip install -e ".[extra]"'
+    )

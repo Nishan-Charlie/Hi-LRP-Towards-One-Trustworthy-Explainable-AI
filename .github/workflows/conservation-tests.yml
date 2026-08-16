@@ -3,6 +3,12 @@ name: conservation tests
 # The conservation suite IS the guarantee: thresholds are tied to dtype, so a
 # regression in any relevance rule fails the build rather than silently
 # degrading a published number.
+#
+# The install is deliberately minimal. HiLRP's rules are self-contained, and
+# xai_bench records (rather than raises) missing optional dependencies, so this
+# job needs neither the benchmark stack (captum, quantus) nor the attribution
+# backend (lxt, zennit). Keeping it that way is what stops the guarantee from
+# silently depending on a heavyweight dependency resolution.
 
 on:
   push:
@@ -16,7 +22,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.11"]
+        # torch >= 2.9 requires Python >= 3.10.
+        python-version: ["3.10", "3.12"]
 
     steps:
       - uses: actions/checkout@v4
@@ -24,15 +31,24 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: pip
 
-      - name: Install CPU torch and test deps
+      - name: Install CPU torch and test dependencies
+        # CPU wheels only: the suite is pure float64 numerics and needs no GPU.
+        # torchvision comes first because timm requires it, and installing both
+        # from the CPU index keeps pip from pulling the multi-GB CUDA build.
         run: |
           python -m pip install --upgrade pip
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
-          pip install timm numpy scipy pytest
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install timm numpy pytest
 
       - name: Run the conservation / coverage / equivariance suite
-        # rules.py is deliberately self-contained, so these tests need no lxt
-        # and no GPU. 24 tests, float64, dtype-tied numeric ceilings.
+        # No `pip install -e .`: the repo root is on sys.path under `python -m`,
+        # and an editable install would drag in the benchmark dependency set
+        # this job exists to prove unnecessary.
         run: python -m pytest xai_bench/methods/hilrp/tests/ -v
+
+      - name: Report which registries populated
+        # Not a gate, a diagnostic: shows that hilrp imports cleanly while the
+        # captum/quantus-backed entries are correctly reported as absent.
+        if: always()
+        run: python -c "import xai_bench; print(xai_bench.registration_report())"

@@ -7,7 +7,9 @@ name = "xai-bench"
 version = "0.2.0"
 description = "HiLRP: conservation-valid attribution for hierarchical and hybrid Vision Transformers, plus a controlled cross-architecture attribution benchmark."
 readme = "README.md"
-requires-python = ">=3.9"
+# torch >= 2.9 requires Python >= 3.10; pinning lower would resolve to a torch
+# older than the one every result in the paper was produced with.
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [{ name = "Nishankar Sathiyamohan", email = "e17230@eng.pdn.ac.lk" }]
 keywords = [

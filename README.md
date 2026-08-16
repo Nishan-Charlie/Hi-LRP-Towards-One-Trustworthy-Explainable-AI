@@ -3,7 +3,7 @@
 **Conservation-valid attribution via attention primitives, plus a controlled 14-method × 10-architecture benchmark of what current XAI does on modern ViTs.**
 
 <p align="left">
-  <img alt="Python" src="https://img.shields.io/badge/python-3.9%2B-blue">
+  <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-blue">
   <img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-2.1%2B-ee4c2c">
   <img alt="tests" src="https://img.shields.io/badge/conservation%20tests-24%20passing-brightgreen">
   <img alt="license" src="https://img.shields.io/badge/license-MIT-green">
@@ -264,7 +264,7 @@ Four findings, each a plank under the method:
 
 ## Installation
 
-Python 3.9+, PyTorch 2.1+, one GPU (CPU works, slower).
+Python 3.10+, PyTorch 2.1+, one GPU (CPU works, slower).
 
 ```bash
 git clone https://github.com/<your-org>/hilrp.git
@@ -404,8 +404,15 @@ notebooks/                    figure reproduction from cached results
 Thresholds are tied to dtype and enforced on every push by
 [`.github/workflows/conservation-tests.yml`](.github/workflows/conservation-tests.yml), so a
 regression in any relevance rule fails the build instead of silently degrading a published
-number. `rules.py` is deliberately self-contained: the suite runs on CPU with no `lxt` and no
-`zennit`.
+number.
+
+The CI install is deliberately minimal — CPU `torch`, `torchvision`, `timm`, `numpy`,
+`pytest`, nothing else. `rules.py` is self-contained, so the guarantee never comes to depend
+on the benchmark stack (`captum`, `quantus`) or the attribution backend (`lxt`, `zennit`).
+`xai_bench` records missing optional dependencies rather than raising on import, so
+`xai_bench.methods.hilrp` stays importable in a bare environment; ask a registry for an entry
+whose module failed to load and it names the missing package instead of reporting an unknown
+method. `xai_bench.registration_report()` prints what did and did not register.
 
 | Property                                    | Achieved (float64) | Test ceiling      |
 | ------------------------------------------- | ------------------ | ----------------- |
