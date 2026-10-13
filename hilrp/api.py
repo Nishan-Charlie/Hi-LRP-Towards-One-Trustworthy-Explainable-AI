@@ -12,6 +12,7 @@ ViT, the label-free and CLIP scalars).
 Ports are imported lazily: importing ``hilrp`` needs only torch, while the ports
 need the attribution backend (``lxt`` and ``zennit``).
 """
+import functools
 import importlib
 import sys
 
@@ -27,8 +28,27 @@ _PORTS = {
 
 _BACKEND_HINT = (
     "HiLRP attribution needs the LXT backend, which is not installed. "
-    'Install it with:  pip install -e ".[backend]"   (or: pip install "lxt==2.1" zennit)'
+    'Install it with:  pip install "lxt==2.1" "zennit>=1.0"'
 )
+
+
+@functools.lru_cache(maxsize=None)        # a passing check is not repeated
+def _check_zennit():
+    """Refuse a zennit that silently changes the maps.
+
+    Under zennit 0.5.x the BatchNorm-merge canonizer is not forward-exact, and
+    MobileViT / EfficientViT relevance differs from every published number. The
+    package metadata already requires >= 1.0; this catches a manual downgrade.
+    """
+    from importlib.metadata import version
+
+    installed = version("zennit")
+    if int(installed.split(".")[0]) < 1:
+        raise ImportError(
+            f"hilrp needs zennit>=1.0, found {installed}: with 0.5.x the BatchNorm "
+            "merge is not forward-exact and MobileViT / EfficientViT maps change. "
+            'Upgrade with:  pip install "zennit>=1.0"'
+        )
 
 
 def supported_architectures():
@@ -51,6 +71,7 @@ def attributor_for(arch):
                 if (exc.name or "").split(".")[0] in ("lxt", "zennit"):
                     raise ImportError(_BACKEND_HINT) from exc
                 raise
+            _check_zennit()
             return getattr(port, entry)
     raise ValueError(
         f"no HiLRP port for architecture '{arch}'. Supported timm name prefixes: "

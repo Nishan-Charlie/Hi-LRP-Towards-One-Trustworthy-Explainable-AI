@@ -60,11 +60,22 @@ jobs:
 
   backend:
     # The production ports (LXT efficient backend + zennit) on real timm
-    # architectures. A SEPARATE job on purpose: importing a port patches classes
-    # for the life of the interpreter, so this suite must never share a process
-    # with the reference suite above, and the reference guarantee must never come
-    # to depend on this install.
+    # architectures, installed the way a user installs them: `pip install .`
+    # resolves the declared dependencies, and the suite then runs against the
+    # INSTALLED package from outside the checkout. A module left out of the
+    # wheel, or a dependency bound that no longer resolves, fails here.
+    #
+    # A SEPARATE job on purpose: importing a port patches classes for the life of
+    # the interpreter, so this suite must never share a process with the
+    # reference suite above, and the reference guarantee must never come to
+    # depend on this install.
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # resolved: whatever pip picks today, i.e. what a new user gets.
+        # 1.0.16:   the timm release the published numbers were produced on.
+        timm: ["resolved", "1.0.16"]
 
     steps:
       - uses: actions/checkout@v4
@@ -73,16 +84,19 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install CPU torch and the HiLRP backend
-        # timm is re-pinned last: lxt pulls a newer one, and the class-level
-        # patches were validated on 1.0.16 (README, "Version notes that matter").
+      - name: Install the package as a user would
+        # CPU torch first, so the backend's dependencies do not pull the CUDA build.
         run: |
           python -m pip install --upgrade pip
           pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
-          pip install "lxt==2.1" zennit pytest
-          pip install "timm==1.0.16"
+          pip install . pytest
 
-      - name: Run the production-backend suite
+      - name: Re-pin timm to the validated release
+        if: matrix.timm != 'resolved'
+        run: pip install "timm==${{ matrix.timm }}"
+
+      - name: Run the production-backend suite against the installed package
         # Random weights, CPU, float32: forward equivalence, finite maps, port
         # coexistence, and bias-free conservation on Swin / PVT-v2.
-        run: python -m pytest hilrp/tests_backend/ -v
+        working-directory: ${{ runner.temp }}
+        run: python -m pytest --pyargs hilrp.tests_backend -v

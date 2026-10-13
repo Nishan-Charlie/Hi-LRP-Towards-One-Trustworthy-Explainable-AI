@@ -1,45 +1,50 @@
 [build-system]
-requires = ["setuptools>=64"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "hilrp"
-version = "0.2.0"
-description = "HiLRP: relevance propagation for hierarchical and hybrid Vision Transformers, plus a controlled cross-architecture attribution benchmark."
+dynamic = ["version"]                  # single source: hilrp.__version__
+description = "HiLRP: relevance propagation that explains hierarchical and hybrid Vision Transformers in one backward pass."
 readme = "README.md"
-# torch >= 2.9 requires Python >= 3.10; pinning lower would resolve to a torch
-# older than the one every result in the paper was produced with.
-requires-python = ">=3.10"
-license = { file = "LICENSE" }
+# zennit >= 1.0 is required (see below) and itself requires Python >= 3.11.11.
+requires-python = ">=3.11.11"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "Nishankar Sathiyamohan", email = "e17230@eng.pdn.ac.lk" }]
 keywords = [
     "explainable-ai",
     "vision-transformer",
     "layer-wise-relevance-propagation",
     "attribution",
-    "benchmark",
+    "interpretability",
 ]
 classifiers = [
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-# What `import hilrp` and the reference rules need. Nothing else is required to
-# read the rules or run hilrp/tests.
 dependencies = [
     "torch>=2.1",
     "torchvision>=0.16",
-    "timm>=1.0.0",
+    # Lower bound is the release the ports were written against. Relevance maps
+    # are bit-identical on 1.0.16 and 1.0.30.
+    "timm>=1.0.16",
     "numpy",
+    # The attribution backend. Pinned exactly: the ports patch classes through
+    # lxt.efficient internals, which do not exist in 0.6.x.
+    "lxt==2.1",
+    # 1.0 or newer, not optional: under 0.5.x the BatchNorm-merge canonizer is
+    # not forward-exact, and MobileViT / EfficientViT maps change.
+    "zennit>=1.0",
 ]
 
 [project.optional-dependencies]
-# The attribution backend `hilrp.attribute` runs on. lxt must be 2.x: the
-# `lxt.efficient` modules the ports import do not exist in 0.6.x. See README
-# "Installation" for the timm re-pin and the Windows note.
-backend = ["lxt==2.1", "zennit"]
-# The benchmark harness (xai_bench): baselines, metrics, datasets, tables, figures.
+# For the benchmark harness in this repository (xai_bench/, scripts/). It is not
+# part of the installed library; run it from a clone.
 bench = [
     "pandas",
     "scipy",
@@ -56,14 +61,23 @@ bench = [
     "python-louvain",
     "datasets",
 ]
-dev = ["pytest"]
-all = ["hilrp[backend,bench,dev]"]
+dev = ["pytest", "build", "twine"]
+all = ["hilrp[bench,dev]"]
 
-[project.scripts]
-xai-bench = "xai_bench.runner:main"
+[project.urls]
+Homepage = "https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI"
+Documentation = "https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI#tutorial"
+Repository = "https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI"
+Issues = "https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/issues"
 
+[tool.setuptools.dynamic]
+version = { attr = "hilrp.__version__" }
+
+# Only the library is distributed. xai_bench (the benchmark harness) stays in the
+# repository and is run from a clone, so `pip install hilrp` does not put a
+# second top-level package into site-packages.
 [tool.setuptools.packages.find]
-include = ["hilrp*", "xai_bench*"]
+include = ["hilrp*"]
 
 [tool.pytest.ini_options]
 # hilrp/tests_backend is deliberately NOT listed: importing a port patches

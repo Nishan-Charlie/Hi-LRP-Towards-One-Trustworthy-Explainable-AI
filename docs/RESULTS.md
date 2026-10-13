@@ -252,7 +252,8 @@ drifts even without biases, so it is reported as a measurement in
 
 The reference job's install is deliberately minimal (CPU torch, torchvision, timm, numpy,
 pytest) so the guarantee never comes to depend on the benchmark stack or the attribution
-backend. The backend job installs `lxt==2.1`, `zennit` and `timm==1.0.16` separately.
+backend. The backend job installs the package itself with `pip install .` and runs the suite against
+the installed copy, once on the `timm` pip resolves and once on 1.0.16.
 `xai_bench` records missing optional dependencies rather than raising on import, so
 `hilrp` stays importable in a bare environment; a registry lookup that comes
 up empty names the missing package instead of reporting an unknown method. Run

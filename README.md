@@ -7,7 +7,7 @@
 <p align="left">
   <img alt="paper" src="https://img.shields.io/badge/paper-under%20review-lightgrey">
   <a href="https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/actions/workflows/conservation-tests.yml"><img alt="tests" src="https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/actions/workflows/conservation-tests.yml/badge.svg"></a>
-  <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-blue">
+  <img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-blue">
   <img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-2.1%2B-ee4c2c">
   <img alt="license" src="https://img.shields.io/badge/license-MIT-green">
 </p>
@@ -17,7 +17,7 @@ hierarchical and hybrid Vision Transformers in a single backward pass, and of th
 used to evaluate it.
 
 <p align="center">
-  <img src="docs/assets/hero_architecture_comparison.jpg" width="100%"
+  <img src="https://raw.githubusercontent.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/main/docs/assets/hero_architecture_comparison.jpg" width="100%"
        alt="HiLRP compared with Grad-CAM, Grad-CAM++, Integrated Gradients and SmoothGrad on Swin-B, PVT-v2-b2, EfficientViT-B2 and MobileViT-v2">
 </p>
 
@@ -55,30 +55,38 @@ dataset.
 
 ## Installation
 
-Python 3.10+ and PyTorch 2.1+.
+HiLRP is a pip package. It needs Python 3.11.11 or newer.
+
+```bash
+pip install "hilrp @ git+https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI.git"
+```
+
+That installs `hilrp` and everything it needs to run, including the attribution backend
+(`lxt`, `zennit`). To work on the code or reproduce the paper, install from a clone instead:
 
 ```bash
 git clone https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI.git
 cd Hi-LRP-Towards-One-Trustworthy-Explainable-AI
 
-pip install -e ".[backend]"      # hilrp and its attribution backend (lxt, zennit)
-pip install -e ".[all]"          # plus the benchmark harness and the test tools
+pip install -e .                 # the library, editable
+pip install -e ".[all]"          # plus what the benchmark harness and the tests need
 ```
 
-`pip install -e .` on its own installs the package and the reference rules without the
-backend; `hilrp.attribute` then tells you what is missing.
+Version notes that matter:
 
-Three version notes that matter:
-
-- `lxt` must be 2.x. The modules HiLRP builds on do not exist in 0.6.x.
-- On Windows, set `PYTHONUTF8=1` before installing `lxt`, or its metadata step fails with a
-  `UnicodeDecodeError`.
-- `lxt` pulls a recent `timm`. Everything here was validated on **timm 1.0.16**, so run
-  `pip install "timm==1.0.16"` afterwards if you want to reproduce the published numbers.
+- **`zennit` must be 1.0 or newer**, which is why Python 3.11.11+ is required. Under 0.5.x
+  the BatchNorm merge is not forward-exact and the MobileViT-v2 and EfficientViT maps change,
+  so `hilrp` refuses to run on it.
+- **`lxt` is pinned to 2.1.** The modules HiLRP builds on do not exist in 0.6.x.
+- **`timm` 1.0.16 or newer.** Relevance maps are bit-identical on 1.0.16 and 1.0.30. The
+  published benchmark numbers were produced on 1.0.16.
+- On Windows, set `PYTHONUTF8=1` before installing, or the metadata step of `lxt` fails with
+  a `UnicodeDecodeError`.
 
 ## Quick start
 
 ```bash
+# from a clone of this repository
 python examples/quickstart.py                                    # Swin-T on images/cat.jpg
 python examples/quickstart.py --model pvt_v2_b2 --image images/tiger.jpg
 ```
@@ -137,7 +145,7 @@ heatmap, vmax = hilrp.normalize_for_display(res["pixel_map"])
 ```
 
 <p align="center">
-  <img src="docs/assets/quickstart_swin_cat.jpg" width="100%"
+  <img src="https://raw.githubusercontent.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/main/docs/assets/quickstart_swin_cat.jpg" width="100%"
        alt="Input image, HiLRP relevance at the pixels, and HiLRP relevance at the 56, 28, 14 and 7 token stages of Swin-T">
 </p>
 
@@ -245,7 +253,7 @@ res["similarity"], res["pixel_map"]     # 0.996, [224, 224]
 ```
 
 For CLIP image-text similarity see `hilrp.clip_lxt.attribute_clip_image_text` and the worked
-example in [`scripts/hilrp/clip_demo.py`](scripts/hilrp/clip_demo.py).
+example in [`scripts/hilrp/clip_demo.py`](https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/blob/main/scripts/hilrp/clip_demo.py).
 
 ## Method
 
@@ -254,7 +262,7 @@ reduction into four operation classes. Each has one conserving rule, so any arra
 them is covered.
 
 <p align="center">
-  <img src="docs/assets/method_pipeline.png" width="100%"
+  <img src="https://raw.githubusercontent.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/main/docs/assets/method_pipeline.png" width="100%"
        alt="HiLRP pipeline: one backward pass over a hierarchical or hybrid ViT, built from four conserving primitives">
 </p>
 
@@ -265,7 +273,7 @@ them is covered.
 | P3  | Normalize / gate   | softmax, LayerNorm, linear-attention denominator | detach the denominator, identity rule         |
 | P4  | Reindex / sparsity | heads, windows, cyclic shifts, patch merging     | permutation, exact                            |
 
-The lemmas and the full attention-coverage table are in [`docs/METHOD.md`](docs/METHOD.md).
+The lemmas and the full attention-coverage table are in [`docs/METHOD.md`](https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/blob/main/docs/METHOD.md).
 
 ## Results
 
@@ -282,7 +290,7 @@ intervals, n = 1000.
 HiLRP is not best everywhere: Grad-CAM saturates the Pointing Game on Swin and MobileViT-v2.
 The cross-architecture benchmark, agreement with Shapley values, conservation measurements,
 sanity checks and the provenance of every number are in
-[`docs/RESULTS.md`](docs/RESULTS.md).
+[`docs/RESULTS.md`](https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/blob/main/docs/RESULTS.md).
 
 ## Reproducing the paper
 
@@ -304,7 +312,7 @@ python -m xai_bench.runner --config configs/hilrp_grid.yaml
 ```
 
 The script behind each table and figure is listed in
-[`docs/RESULTS.md`](docs/RESULTS.md#reproducing-results).
+[`docs/RESULTS.md`](https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/blob/main/docs/RESULTS.md#reproducing-results).
 
 ## Repository layout
 
@@ -315,7 +323,7 @@ hilrp/            the method, as an installable package
 ├── hierarchical.py, attention_primitives.py, rules.py     the rules
 ├── viz.py          display normalization
 └── tests/, tests_backend/
-xai_bench/        the benchmark harness: models, baselines, metrics, datasets, runner
+xai_bench/        the benchmark harness (not in the pip package; run it from a clone)
 configs/          benchmark run configs
 scripts/          experiments, tables and figures for the paper
 examples/         quickstart.py, the script behind the tutorial
@@ -331,7 +339,8 @@ python -m pytest hilrp/tests_backend/ -v    # 26 passed: the ports on real timm 
 ```
 
 Run the last one as its own command. Importing a port patches classes for the life of the
-interpreter.
+interpreter. With the library installed from pip and no clone, the same suites run as
+`python -m pytest --pyargs hilrp.tests` and `python -m pytest --pyargs hilrp.tests_backend`.
 
 ## Limitations
 
@@ -346,7 +355,7 @@ interpreter.
 - **Scope.** CNNs are not supported. Cross-attention decoders and deformable attention are
   covered by the rules but not yet exercised on trained weights.
 
-Numbers for each point are in [`docs/RESULTS.md`](docs/RESULTS.md#limitations).
+Numbers for each point are in [`docs/RESULTS.md`](https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/blob/main/docs/RESULTS.md#limitations).
 
 ## Citation
 
@@ -361,7 +370,7 @@ Numbers for each point are in [`docs/RESULTS.md`](docs/RESULTS.md#limitations).
 
 ## License and acknowledgements
 
-MIT, see [`LICENSE`](LICENSE). Model weights come from `timm` and carry their own licenses.
+MIT, see [`LICENSE`](https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/blob/main/LICENSE). Model weights come from `timm` and carry their own licenses.
 ImageNet-S and PASCAL VOC 2007 are subject to their respective terms.
 
 Built on [LXT / AttnLRP](https://github.com/rachtibat/LRP-eXplains-Transformers),
