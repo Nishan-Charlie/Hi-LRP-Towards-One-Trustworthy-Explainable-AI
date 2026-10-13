@@ -49,13 +49,13 @@ x = transform(pil_img).unsqueeze(0).to(device)
 
 if method == "hilrp":
     if model_name.startswith("pvt"):
-        from xai_bench.methods.hilrp.pvt_lxt import attribute_pvt
+        from hilrp.pvt_lxt import attribute_pvt
         res = attribute_pvt(model, x)
     elif model_name.startswith("swin"):
-        from xai_bench.methods.hilrp.swin_lxt import attribute_swin
+        from hilrp.swin_lxt import attribute_swin
         res = attribute_swin(model, x)
     elif model_name.startswith("mobilevit"):
-        from xai_bench.methods.hilrp.mobilevit_lxt import attribute_mobilevit
+        from hilrp.mobilevit_lxt import attribute_mobilevit
         res = attribute_mobilevit(model, x)
 elif method == "naive":
     from scripts.lineage_naive_legs import naive_patch_once, attribute_naive

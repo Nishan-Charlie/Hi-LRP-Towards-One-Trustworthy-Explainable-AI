@@ -14,7 +14,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 # Import HiLRP for PVT as an example (it had the best score!)
-from xai_bench.methods.hilrp.pvt_lxt import attribute_pvt, ensure_patched
+from hilrp.pvt_lxt import attribute_pvt, ensure_patched
 
 def denorm(img_t, mean, std):
     img = img_t.permute(1, 2, 0).numpy() * std + mean

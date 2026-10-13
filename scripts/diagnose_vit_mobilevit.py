@@ -44,7 +44,7 @@ def summarize(tag, hits, cerr):
 
 def run_vit(data, n, device):
     import timm
-    from xai_bench.methods.hilrp.vit_lxt import attribute_vit
+    from hilrp.vit_lxt import attribute_vit
     model = timm.create_model("vit_base_patch16_224", pretrained=True).eval().to(device)
     res = {"cp": ([], []), "attnlrp": ([], [])}
     for i in range(n):
@@ -61,7 +61,7 @@ def run_vit(data, n, device):
 
 def run_mobilevit(data, n, device):
     import timm
-    import xai_bench.methods.hilrp.mobilevit_lxt as mv
+    import hilrp.mobilevit_lxt as mv
     model = timm.create_model("mobilevitv2_100", pretrained=True).eval().to(device)
     cfg = model.pretrained_cfg
     need_raw = any(abs(a - b) > 1e-6 for a, b in zip(cfg["mean"], (0.485, 0.456, 0.406)))

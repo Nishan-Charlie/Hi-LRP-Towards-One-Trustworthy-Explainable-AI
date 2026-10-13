@@ -63,8 +63,8 @@ def main():
     data = torch.load(os.path.join("data", "ImageNetS", "cache_validation_100.pt"),
                       map_location="cpu", weights_only=False)
 
-    from xai_bench.methods.hilrp.vit_lxt import attribute_ssl_similarity, ensure_patched
-    from xai_bench.methods.hilrp.pvt_lxt import audit_norm_patches
+    from hilrp.vit_lxt import attribute_ssl_similarity, ensure_patched
+    from hilrp.pvt_lxt import audit_norm_patches
     ensure_patched()
 
     results = {}

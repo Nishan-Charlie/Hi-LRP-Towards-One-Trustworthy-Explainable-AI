@@ -103,7 +103,7 @@ def main():
             results.append((disp, float("nan"), float("nan"), passes))
 
     # ---- pass 2: HiLRP (patches the process from here on) ------------------
-    from xai_bench.methods.hilrp.vit_lxt import attribute_vit, ensure_patched
+    from hilrp.vit_lxt import attribute_vit, ensure_patched
     ensure_patched()
     wrapper = MODELS.get(MODEL)()
     wrapper.model.to(DEV).eval()

@@ -16,26 +16,10 @@ from xai_bench.registry import METHODS
 
 
 def _dispatch(model_name):
-    if model_name.startswith("swin"):
-        from xai_bench.methods.hilrp.swin_lxt import attribute_swin
-        return attribute_swin
-    if model_name.startswith("mobilevit"):
-        from xai_bench.methods.hilrp.mobilevit_lxt import attribute_mobilevit
-        return attribute_mobilevit
-    if model_name.startswith("efficientvit"):
-        from xai_bench.methods.hilrp.efficientvit_lxt import attribute_efficientvit
-        return attribute_efficientvit
-    if model_name.startswith("pvt"):
-        from xai_bench.methods.hilrp.pvt_lxt import attribute_pvt
-        return attribute_pvt
-    if model_name.startswith("maxvit") or model_name.startswith("maxxvit"):
-        from xai_bench.methods.hilrp.maxvit_lxt import attribute_maxvit
-        return attribute_maxvit
-    if any(model_name.startswith(p) for p in ("vit", "deit", "beit")):
-        from xai_bench.methods.hilrp.vit_lxt import attribute_vit
-        # Unified universal rule: use CP-LRP everywhere for true architecture-agnosticism
-        return attribute_vit
-    raise ValueError(f"no HiLRP attributor for {model_name}")
+    """The HiLRP port for a bench model name. The table lives in the package
+    (hilrp/api.py) so the bench and `hilrp.attribute` cannot drift apart."""
+    from hilrp import attributor_for
+    return attributor_for(model_name)
 
 
 @METHODS.register("hilrp")

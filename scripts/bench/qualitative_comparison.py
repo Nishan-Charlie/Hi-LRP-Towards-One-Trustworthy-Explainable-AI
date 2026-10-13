@@ -57,10 +57,10 @@ def run_baselines():
 
 
 def run_hilrp():
-    from xai_bench.methods.hilrp.swin_lxt import attribute_swin, ensure_patched as sp
-    from xai_bench.methods.hilrp.pvt_lxt import attribute_pvt, ensure_patched as pp
-    from xai_bench.methods.hilrp.efficientvit_lxt import attribute_efficientvit, ensure_patched as ep
-    from xai_bench.methods.hilrp.mobilevit_lxt import attribute_mobilevit, ensure_patched as mp
+    from hilrp.swin_lxt import attribute_swin, ensure_patched as sp
+    from hilrp.pvt_lxt import attribute_pvt, ensure_patched as pp
+    from hilrp.efficientvit_lxt import attribute_efficientvit, ensure_patched as ep
+    from hilrp.mobilevit_lxt import attribute_mobilevit, ensure_patched as mp
     import timm
     sp(); pp(); ep(); mp()
     data = torch.load(CACHE, map_location="cpu", weights_only=False)
@@ -83,7 +83,7 @@ def assemble():
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    from xai_bench.methods.hilrp.viz import normalize_for_display
+    from hilrp.viz import normalize_for_display
     data = torch.load(CACHE, map_location="cpu", weights_only=False)
     img = np.clip(data[IMG_IDX]["image"].permute(1, 2, 0).numpy() * STD.squeeze().numpy()
                   + MEAN.squeeze().numpy(), 0, 1)

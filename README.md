@@ -26,7 +26,7 @@
 
 **What this project is.** A conservation-valid attribution framework for hierarchical and
 hybrid Vision Transformers, plus the benchmark harness that motivates it. The method half is
-`xai_bench/methods/hilrp/`; the benchmark half is the rest of `xai_bench/`.
+`hilrp/`; the benchmark half is the rest of `xai_bench/`.
 
 **The problem it solves.** Vision Transformer design has fragmented. Every new backbone
 recombines convolutional stems, windowed or linear or multi-axis attention, patch merging,
@@ -118,7 +118,7 @@ new objects requiring new derivations.
 
 ## Supported Models
 
-HiLRP ports live in `xai_bench/methods/hilrp/*_lxt.py` and are dispatched by model name.
+HiLRP ports live in `hilrp/*_lxt.py` and are dispatched by model name.
 Pointing Game is on ImageNet-S, n = 50, from the HiLRP metric grid.
 
 | Backbone | Attention type | HiLRP port | Pointing |
@@ -162,9 +162,9 @@ needs the backend and must run as its own command, because importing a port patc
 for the life of the interpreter.
 
 ```bash
-python -m pytest xai_bench/methods/hilrp/tests/ -v          # 24 passed: reference rules, float64
+python -m pytest hilrp/tests/ -v          # 24 passed: reference rules, float64
 python -m pytest xai_bench/tests/ -v                        # harness: process isolation, seeding
-python -m pytest xai_bench/methods/hilrp/tests_backend/ -v  # 26 passed: production ports (lxt + zennit)
+python -m pytest hilrp/tests_backend/ -v  # 26 passed: production ports (lxt + zennit)
 ```
 
 What each one establishes is different. The reference suite proves that the *rules* conserve,
@@ -181,8 +181,8 @@ Minimal example: load a model, attribute one image, visualise the map.
 ```python
 import timm, torch
 import matplotlib.pyplot as plt
-from xai_bench.methods.hilrp.swin_lxt import attribute_swin
-from xai_bench.methods.hilrp.viz import normalize_for_display
+from hilrp.swin_lxt import attribute_swin
+from hilrp.viz import normalize_for_display
 
 # Input: a normalized [1, 3, H, W] batch (seeded noise here, so the trace below reproduces)
 torch.manual_seed(0)
@@ -252,10 +252,10 @@ notebooks/                    figure reproduction from cached results
 ```
 
 **Where the important code is.** The novel rules are in
-[`hierarchical.py`](xai_bench/methods/hilrp/hierarchical.py) and
-[`attention_primitives.py`](xai_bench/methods/hilrp/attention_primitives.py). Everything
+[`hierarchical.py`](hilrp/hierarchical.py) and
+[`attention_primitives.py`](hilrp/attention_primitives.py). Everything
 `*_lxt.py` is a per-backbone port that wires those rules into LXT's stabilized block rules.
-[`rules.py`](xai_bench/methods/hilrp/rules.py) is inherited LRP machinery, kept dependency-free
+[`rules.py`](hilrp/rules.py) is inherited LRP machinery, kept dependency-free
 so the tests run anywhere.
 
 ## Benchmark / Evaluation
@@ -313,10 +313,10 @@ it.
 | Agreement with Shapley values | 50, ImageNet-S | `scripts/hilrp/shapley_pilot.py` | yes |
 | Cross-architecture baseline transfer | 100, ImageNet-S | `xai_bench.runner`, baseline configs | 11 of 13 rows: see below |
 | Supported Models, HiLRP Pointing | 50, ImageNet-S | `xai_bench.runner`, `configs/hilrp_grid*.yaml` | a different run: see below |
-| Verified numerics, reference rules | toy model | `xai_bench/methods/hilrp/tests/` | as a claim, not as this table |
+| Verified numerics, reference rules | toy model | `hilrp/tests/` | as a claim, not as this table |
 | Grad-CAM target-layer check | 1000, ImageNet-S and VOC 2007 | `scripts/bench/gradcam_target_layers.py` | not in the manuscript |
 | Conservation per port (input, head, pixels) | 20, ImageNet-S | `scripts/hilrp/conservation_grid.py` | not in the manuscript |
-| Verified numerics, production ports | random weights | `xai_bench/methods/hilrp/tests_backend/` | not in the manuscript |
+| Verified numerics, production ports | random weights | `hilrp/tests_backend/` | not in the manuscript |
 
 Three things to know when comparing against the manuscript:
 
@@ -483,7 +483,7 @@ The reference job's install is deliberately minimal (CPU torch, torchvision, tim
 pytest) so the guarantee never comes to depend on the benchmark stack or the attribution
 backend. The backend job installs `lxt==2.1`, `zennit` and `timm==1.0.16` separately.
 `xai_bench` records missing optional dependencies rather than raising on import, so
-`xai_bench.methods.hilrp` stays importable in a bare environment; a registry lookup that comes
+`hilrp` stays importable in a bare environment; a registry lookup that comes
 up empty names the missing package instead of reporting an unknown method. Run
 `python -c "import xai_bench; print(xai_bench.registration_report())"` to see what registered.
 

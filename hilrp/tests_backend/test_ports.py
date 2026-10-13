@@ -13,7 +13,7 @@ asserts
   * a complete trace      one finite sum(R)/logit per capture;
   * coexistence           a port's map is unchanged after the other ports patch,
                           which is what lets one `hilrp` run sweep several
-                          backbones (see xai_bench/isolation.py).
+                          backbones.
 
 and, ONLY where the rules guarantee it, conservation:
 
@@ -35,7 +35,7 @@ by the forward check. timm's default init leaves most of them at zero.
 RUN IN ITS OWN PROCESS. Importing a port patches classes for the life of the
 interpreter, so this directory is deliberately outside ``testpaths``:
 
-    python -m pytest xai_bench/methods/hilrp/tests_backend -v
+    python -m pytest hilrp/tests_backend -v
 
 The coexistence check is in-process, so it sees a port before and after LATER
 ports patch, never the effect of earlier ones. Each port was also compared
@@ -46,8 +46,7 @@ import importlib
 import pytest
 import torch
 
-import xai_bench  # noqa: F401  installs the transformers shim; must precede LXT
-from xai_bench import isolation
+import hilrp  # installs the transformers shim; must precede LXT
 
 timm = pytest.importorskip("timm")
 pytest.importorskip("zennit", reason="HiLRP backend missing: pip install 'lxt==2.1' zennit")
@@ -91,7 +90,7 @@ def _build(name, bias_free):
 @pytest.fixture(scope="module")
 def runs():
     """Attribute every port once, in an order that keeps the references honest."""
-    live = isolation.live_patches()
+    live = hilrp.patched_ports()
     if live:
         pytest.fail(f"needs a fresh interpreter: class-level patches already live from {live}")
 
@@ -101,11 +100,11 @@ def runs():
 
     with torch.no_grad():                       # ALL references before ANY patch
         refs = {name: model(x) for name, model in models.items()}
-    assert isolation.live_patches() == []
+    assert hilrp.patched_ports() == []
 
     out = {}
     for name, (module, entry) in PORTS.items():
-        attribute = getattr(importlib.import_module(f"xai_bench.methods.hilrp.{module}"), entry)
+        attribute = getattr(importlib.import_module(f"hilrp.{module}"), entry)
         target = int(refs[name][0].argmax())
         first = attribute(models[name], x, target=target)
         with torch.no_grad():

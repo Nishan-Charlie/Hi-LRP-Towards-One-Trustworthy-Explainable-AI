@@ -1,7 +1,7 @@
 """Compatibility shims for upstream API drift.
 
-Imported for its side effects by ``xai_bench/__init__.py``, before anything
-touches LXT.
+Imported for its side effects by ``hilrp/__init__.py``, before anything touches
+LXT.
 
 transformers v5 removed ``transformers.pytorch_utils.find_pruneable_heads_and_indices``,
 but LXT's ``lxt/efficient/models/bert.py`` still imports it at module scope, and

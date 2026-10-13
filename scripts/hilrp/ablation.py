@@ -46,7 +46,7 @@ def pointing(pm, bboxes):
 
 def main():
     import timm
-    from xai_bench.methods.hilrp.swin_lxt import attribute_swin
+    from hilrp.swin_lxt import attribute_swin
     device = "cuda" if torch.cuda.is_available() else "cpu"
     data = load_cache()
     n = min(N, len(data))

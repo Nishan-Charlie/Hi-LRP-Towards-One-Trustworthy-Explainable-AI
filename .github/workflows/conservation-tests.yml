@@ -45,7 +45,7 @@ jobs:
         # No `pip install -e .`: the repo root is on sys.path under `python -m`,
         # and an editable install would drag in the benchmark dependency set
         # this job exists to prove unnecessary.
-        run: python -m pytest xai_bench/methods/hilrp/tests/ -v
+        run: python -m pytest hilrp/tests/ -v
 
       - name: Run the harness suite (process isolation, seeding)
         # Same minimal install: these use stub registry entries, so they need
@@ -85,4 +85,4 @@ jobs:
       - name: Run the production-backend suite
         # Random weights, CPU, float32: forward equivalence, finite maps, port
         # coexistence, and bias-free conservation on Swin / PVT-v2.
-        run: python -m pytest xai_bench/methods/hilrp/tests_backend/ -v
+        run: python -m pytest hilrp/tests_backend/ -v

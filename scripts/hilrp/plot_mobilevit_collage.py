@@ -48,7 +48,7 @@ pil_img = Image.open(img_path).convert('RGB')
 x = transform(pil_img).unsqueeze(0).to(device)
 
 if method == "hilrp":
-    from xai_bench.methods.hilrp.mobilevit_lxt import attribute_mobilevit
+    from hilrp.mobilevit_lxt import attribute_mobilevit
     # USE conv_gamma=0.1 to stabilize MobileViT!
     res = attribute_mobilevit(model, x, gamma=0.25, conv_gamma=0.1)
 elif method == "naive":

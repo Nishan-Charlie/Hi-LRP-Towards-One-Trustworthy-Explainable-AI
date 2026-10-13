@@ -90,7 +90,7 @@ def main():
 
     # ---------------- Leg A: plain ViT ----------------
     print("=== Leg A: vit_base_patch16_224 (AttnLRP's home turf) ===")
-    from xai_bench.methods.hilrp.vit_lxt import attribute_vit, ensure_patched as vit_patch
+    from hilrp.vit_lxt import attribute_vit, ensure_patched as vit_patch
     vit_patch()
     vit = timm.create_model("vit_base_patch16_224", pretrained=True).eval().cuda()
     run_leg("HiLRP-CP (ours)", attribute_vit, vit, data, attn_mode="cp")
@@ -103,7 +103,7 @@ def main():
 
     # ---------------- Leg B: Swin ----------------
     print("\n=== Leg B: swin_base_patch4_window7_224 (hierarchical, our turf) ===")
-    from xai_bench.methods.hilrp.swin_lxt import attribute_swin, ensure_patched as swin_patch
+    from hilrp.swin_lxt import attribute_swin, ensure_patched as swin_patch
     swin_patch()
     swin = timm.create_model("swin_base_patch4_window7_224", pretrained=True).eval().cuda()
     run_leg("HiLRP (ours)", attribute_swin, swin, data)

@@ -45,7 +45,7 @@ def main():
     data = torch.load(os.path.join("data", "ImageNetS", "cache_validation_100.pt"),
                       map_location="cpu", weights_only=False)
 
-    from xai_bench.methods.hilrp.swin_lxt import attribute_swin, ensure_patched
+    from hilrp.swin_lxt import attribute_swin, ensure_patched
     ensure_patched()
     model = timm.create_model(MODEL, pretrained=True).eval().to(device)
 

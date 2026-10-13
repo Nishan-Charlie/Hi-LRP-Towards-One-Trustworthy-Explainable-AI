@@ -66,7 +66,7 @@ def import_optional_submodules(package: str, names: Iterable[str]) -> None:
     The benchmark modules pull heavy optional dependencies (captum for the
     Captum-backed methods, quantus for the metrics). Importing them eagerly is
     what populates the registries, but a hard failure used to make the WHOLE
-    package unimportable -- including `xai_bench.methods.hilrp`, whose rules are
+    package unimportable -- including `hilrp`, whose rules are
     deliberately self-contained and need neither. Record the failure instead;
     `Registry.get` surfaces it on the first lookup that comes up empty.
     """
@@ -90,5 +90,5 @@ def _missing_dependency_hint() -> str:
         "\nNOTE: some modules failed to import, so their entries are missing"
         f" from this registry:{lines}"
         "\nInstall the benchmark extras to restore them:"
-        ' pip install -e ".[extra]"'
+        ' pip install -e ".[bench]"'
     )

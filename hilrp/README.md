@@ -60,7 +60,7 @@ conservation-preserving normalization, `concat` an index partition) admits one
 | **negative:** affine-LN leaks | 1.1 | `> 0.5` |
 | **negative:** naive+bias unstable | 6.5e3 | `> 1.0` |
 
-Run: `python -m pytest xai_bench/methods/hilrp/tests/ -v`
+Run: `python -m pytest hilrp/tests/ -v`
 
 ## Gate-2-real: pretrained Swin-T (timm), verified 2026-07-04
 

@@ -54,7 +54,7 @@ def main():
         data = torch.load(path, map_location="cpu", weights_only=False)  # trusted local cache
     n = min(n, len(data))
 
-    mod = importlib.import_module(f"xai_bench.methods.hilrp.{mod_name}")
+    mod = importlib.import_module(f"hilrp.{mod_name}")
     if hasattr(mod, "ensure_patched"):
         mod.ensure_patched()
     attributor = getattr(mod, fn_name)

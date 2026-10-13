@@ -77,13 +77,13 @@ def adapt_input(img, model):
 
 def get_attributor(model_name):
     if model_name.startswith("swin"):
-        from xai_bench.methods.hilrp.swin_lxt import attribute_swin
+        from hilrp.swin_lxt import attribute_swin
         return attribute_swin
     if model_name.startswith("pvt"):
-        from xai_bench.methods.hilrp.pvt_lxt import attribute_pvt
+        from hilrp.pvt_lxt import attribute_pvt
         return attribute_pvt
     if model_name.startswith("efficientvit"):
-        from xai_bench.methods.hilrp.efficientvit_lxt import attribute_efficientvit
+        from hilrp.efficientvit_lxt import attribute_efficientvit
         return attribute_efficientvit
     raise ValueError(f"no HiLRP attributor for {model_name}")
 
@@ -267,7 +267,7 @@ def make_figure(demos, orders, summary, models, data):
                           mode_label, FULL_W, FS_TITLE, FS_LABEL)
     apply_paper_style()
     import matplotlib.pyplot as plt
-    from xai_bench.methods.hilrp.viz import normalize_for_display
+    from hilrp.viz import normalize_for_display
 
     m = models[0]
     order = orders[m]

@@ -209,7 +209,7 @@ def run_attnlrp_hier():
 
 def run_attnlrp_vit():
     import timm
-    from xai_bench.methods.hilrp.vit_lxt import attribute_vit
+    from hilrp.vit_lxt import attribute_vit
     device = "cuda" if torch.cuda.is_available() else "cpu"
     targets = _targets()
     name = "vit_base_patch16_224"

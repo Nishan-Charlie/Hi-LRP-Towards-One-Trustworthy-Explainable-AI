@@ -12,7 +12,7 @@ import timm
 from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
 
-from xai_bench.methods.hilrp.mobilevit_lxt import attribute_mobilevit
+from hilrp.mobilevit_lxt import attribute_mobilevit
 
 def denorm(img_t, mean, std):
     img = img_t.permute(1, 2, 0).numpy() * std + mean

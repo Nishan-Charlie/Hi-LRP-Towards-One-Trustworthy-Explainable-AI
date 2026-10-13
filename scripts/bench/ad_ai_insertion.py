@@ -79,13 +79,13 @@ def conv_gamma_for(name):
 
 def get_attributor(name):
     if name.startswith("swin"):
-        from xai_bench.methods.hilrp.swin_lxt import attribute_swin
+        from hilrp.swin_lxt import attribute_swin
         return attribute_swin
     if name.startswith("pvt"):
-        from xai_bench.methods.hilrp.pvt_lxt import attribute_pvt
+        from hilrp.pvt_lxt import attribute_pvt
         return attribute_pvt
     if name.startswith("efficientvit"):
-        from xai_bench.methods.hilrp.efficientvit_lxt import attribute_efficientvit
+        from hilrp.efficientvit_lxt import attribute_efficientvit
         return attribute_efficientvit
     raise ValueError(name)
 

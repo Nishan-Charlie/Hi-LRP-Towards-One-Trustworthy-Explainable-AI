@@ -75,8 +75,8 @@ def main():
     cache = max(caches, key=lambda p: int(p.rsplit("_", 1)[-1].split(".")[0]))
     data = torch.load(cache, map_location="cpu", weights_only=False)
 
-    from xai_bench.methods.hilrp.vit_lxt import attribute_ssl_similarity, ensure_patched
-    from xai_bench.methods.hilrp.pvt_lxt import audit_norm_patches
+    from hilrp.vit_lxt import attribute_ssl_similarity, ensure_patched
+    from hilrp.pvt_lxt import audit_norm_patches
     ensure_patched()
 
     models = {}

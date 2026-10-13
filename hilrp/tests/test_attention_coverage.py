@@ -16,7 +16,7 @@ These are the same guarantees, and the same ceilings, as tests/test_conservation
 import torch
 import pytest
 
-from xai_bench.methods.hilrp.attention_primitives import (
+from hilrp.attention_primitives import (
     self_attention, self_attention_lrp,
     cross_attention, cross_attention_lrp,
     co_attention, co_attention_lrp,

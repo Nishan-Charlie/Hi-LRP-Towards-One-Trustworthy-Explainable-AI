@@ -7,7 +7,7 @@ registries — models, methods, datasets, metrics — plus a runner that sweeps 
 Importing the sub-packages is what registers their built-in entries, so it stays
 eager. It is also TOLERANT: the benchmark sub-packages pull heavy optional
 dependencies (captum for methods, quantus for metrics), and a missing one used to
-make the whole package unimportable — including `xai_bench.methods.hilrp`, which
+make the whole package unimportable — including `hilrp`, which
 needs neither. HiLRP's rules are deliberately self-contained, so a bare
 `torch`/`timm` install must be enough to import and test them.
 
@@ -20,8 +20,9 @@ import importlib
 
 __version__ = "0.2.0"
 
-# Must precede any LXT import; see xai_bench/_compat.py.
-from . import _compat as _compat  # noqa: F401
+# Importing hilrp installs the transformers shim LXT needs (hilrp/_compat.py);
+# it must precede any LXT import.
+import hilrp as _hilrp  # noqa: F401
 
 from .registry import (  # noqa: F401
     Registry, MODELS, METHODS, DATASETS, METRICS, REGISTRATION_ERRORS,

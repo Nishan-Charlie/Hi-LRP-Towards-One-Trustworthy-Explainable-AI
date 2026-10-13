@@ -49,16 +49,16 @@ BATCH = 32
 def get_hilrp_attributor(model_name):
     """Same dispatch as gate3: pick the HiLRP attributor for the architecture."""
     if model_name.startswith("swin"):
-        from xai_bench.methods.hilrp.swin_lxt import attribute_swin, ensure_patched
+        from hilrp.swin_lxt import attribute_swin, ensure_patched
         return attribute_swin, ensure_patched
     if model_name.startswith("mobilevit"):
-        from xai_bench.methods.hilrp.mobilevit_lxt import attribute_mobilevit, ensure_patched
+        from hilrp.mobilevit_lxt import attribute_mobilevit, ensure_patched
         return attribute_mobilevit, ensure_patched
     if model_name.startswith("efficientvit"):
-        from xai_bench.methods.hilrp.efficientvit_lxt import attribute_efficientvit, ensure_patched
+        from hilrp.efficientvit_lxt import attribute_efficientvit, ensure_patched
         return attribute_efficientvit, ensure_patched
     if model_name.startswith("pvt"):
-        from xai_bench.methods.hilrp.pvt_lxt import attribute_pvt, ensure_patched
+        from hilrp.pvt_lxt import attribute_pvt, ensure_patched
         return attribute_pvt, ensure_patched
     raise ValueError(model_name)
 

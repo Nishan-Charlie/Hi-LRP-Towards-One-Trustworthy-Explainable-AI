@@ -6,7 +6,7 @@ This module provides standardized wrappers around various attribution methods
 Imports are tolerant: `captum_methods` and `perturbation_methods` need captum,
 which the HiLRP sub-package does not. A missing optional dependency records a
 registration error (surfaced by `Registry.get`) instead of making
-`xai_bench.methods.hilrp` unimportable.
+`hilrp` unimportable.
 """
 
 from xai_bench.registry import import_optional_submodules

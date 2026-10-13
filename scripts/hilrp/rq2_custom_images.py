@@ -20,7 +20,7 @@ import numpy as np
 from PIL import Image
 
 from figstyle import apply_paper_style, lxt_transformers_shim, save, FULL_W
-from xai_bench.methods.hilrp.viz import normalize_for_display
+from hilrp.viz import normalize_for_display
 
 lxt_transformers_shim()
 import torch
@@ -52,7 +52,7 @@ def load(path):
 
 def compute():
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    from xai_bench.methods.hilrp.vit_lxt import attribute_ssl_similarity, ensure_patched
+    from hilrp.vit_lxt import attribute_ssl_similarity, ensure_patched
     ensure_patched()
     models = {t: timm.create_model(n, pretrained=True, num_classes=0, img_size=224).eval().to(device)
               for t, n in MODELS.items()}
@@ -100,7 +100,7 @@ def make_figure(raws, demo, tags):
         for j, t in enumerate(tags):
             # Percentile-99 clipping, not symmetric-max: SSL relevance is
             # heavy-tailed and a raw max washes the panel out to near-white
-            # (xai_bench/methods/hilrp/viz.py).
+            # (hilrp/viz.py).
             m, v = normalize_for_display(demo[t][i], percentile=99.0)
             ax[i, 1 + j].imshow(m, cmap="bwr", vmin=-v, vmax=v)
             ax[i, 1 + j].axis("off")

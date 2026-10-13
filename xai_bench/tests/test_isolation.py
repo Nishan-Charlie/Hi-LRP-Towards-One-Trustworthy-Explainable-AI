@@ -62,7 +62,7 @@ def test_every_shipped_config_is_runnable_in_one_process(path):
 
 # ----------------------------------------------------------------- dynamic
 def test_live_patches_reads_the_ports_own_flags(monkeypatch):
-    port = types.ModuleType("xai_bench.methods.hilrp._planted_lxt")
+    port = types.ModuleType("hilrp._planted_lxt")
     monkeypatch.setitem(isolation.sys.modules, port.__name__, port)
     assert port.__name__ not in isolation.live_patches()      # imported, not yet patched
     port._PATCHED = True
@@ -85,18 +85,18 @@ def test_clean_process_runs_anything(live):
 
 
 def test_baselines_refuse_a_process_with_a_live_patch(live):
-    live("xai_bench.methods.hilrp.swin_lxt")
+    live("hilrp.swin_lxt")
     with pytest.raises(RuntimeError, match="fresh Python process"):
         isolation.check_process(["saliency", "grad_cam"], [HIER])
 
 
 def test_hilrp_runs_alongside_its_own_ports(live):
-    live("xai_bench.methods.hilrp.swin_lxt", "xai_bench.methods.hilrp.pvt_lxt")
+    live("hilrp.swin_lxt", "hilrp.pvt_lxt")
     isolation.check_process(["hilrp"], [HIER, "pvt_v2_b2"])
 
 
 def test_naive_attnlrp_refuses_a_process_patched_by_a_hilrp_port(live):
-    live("xai_bench.methods.hilrp.vit_lxt")
+    live("hilrp.vit_lxt")
     with pytest.raises(RuntimeError, match="naive attnlrp"):
         isolation.check_process(["attnlrp"], [HIER])
     isolation.check_process(["attnlrp"], [FLAT])             # flat recipe IS that port

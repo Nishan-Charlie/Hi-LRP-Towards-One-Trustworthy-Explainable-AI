@@ -3,9 +3,9 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "xai-bench"
+name = "hilrp"
 version = "0.2.0"
-description = "HiLRP: conservation-valid attribution for hierarchical and hybrid Vision Transformers, plus a controlled cross-architecture attribution benchmark."
+description = "HiLRP: relevance propagation for hierarchical and hybrid Vision Transformers, plus a controlled cross-architecture attribution benchmark."
 readme = "README.md"
 # torch >= 2.9 requires Python >= 3.10; pinning lower would resolve to a torch
 # older than the one every result in the paper was produced with.
@@ -25,36 +25,47 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
+# What `import hilrp` and the reference rules need. Nothing else is required to
+# read the rules or run hilrp/tests.
 dependencies = [
     "torch>=2.1",
     "torchvision>=0.16",
     "timm>=1.0.0",
     "numpy",
+]
+
+[project.optional-dependencies]
+# The attribution backend `hilrp.attribute` runs on. lxt must be 2.x: the
+# `lxt.efficient` modules the ports import do not exist in 0.6.x. See README
+# "Installation" for the timm re-pin and the Windows note.
+backend = ["lxt==2.1", "zennit"]
+# The benchmark harness (xai_bench): baselines, metrics, datasets, tables, figures.
+bench = [
     "pandas",
     "scipy",
     "scikit-learn",
     "scikit-image",
     "Pillow",
     "PyYAML",
+    "tqdm",
     "matplotlib",
     "captum>=0.7.0",
+    "quantus",
+    "grad-cam",
+    "networkx",
+    "python-louvain",
+    "datasets",
 ]
-
-[project.optional-dependencies]
-# HiLRP itself. lxt must be 2.x: the `lxt.efficient` backend it imports does
-# not exist in 0.6.x. See README "Version notes that matter".
-hilrp = ["lxt==2.1", "zennit"]
-# Benchmark metrics and the alternative CAM backend.
-extra = ["quantus", "grad-cam", "networkx", "python-louvain", "datasets"]
 dev = ["pytest"]
+all = ["hilrp[backend,bench,dev]"]
 
 [project.scripts]
 xai-bench = "xai_bench.runner:main"
 
 [tool.setuptools.packages.find]
-include = ["xai_bench*"]
+include = ["hilrp*", "xai_bench*"]
 
 [tool.pytest.ini_options]
-# xai_bench/methods/hilrp/tests_backend is deliberately NOT listed: importing a
-# port patches classes process-wide, so that suite runs in its own interpreter.
-testpaths = ["xai_bench/methods/hilrp/tests", "xai_bench/tests"]
+# hilrp/tests_backend is deliberately NOT listed: importing a port patches
+# classes process-wide, so that suite runs in its own interpreter.
+testpaths = ["hilrp/tests", "xai_bench/tests"]

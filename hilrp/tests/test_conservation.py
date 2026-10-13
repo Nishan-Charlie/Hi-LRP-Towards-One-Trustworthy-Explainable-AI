@@ -28,14 +28,14 @@ conservation must fail loudly. Re-derive the ceilings if the dtype changes.
 import torch
 import pytest
 
-from xai_bench.methods.hilrp.hierarchical import (
+from hilrp.hierarchical import (
     patch_merge_forward, patch_merge_lrp, unconcat_2x2,
     window_partition, window_reverse, cyclic_shift, cyclic_unshift,
 )
-from xai_bench.methods.hilrp.rules import (
+from hilrp.rules import (
     lrp_linear, lrp_layernorm_identity, lrp_layernorm_affine, layernorm,
 )
-from xai_bench.methods.hilrp.toy_swin import ToyModel
+from hilrp.toy_swin import ToyModel
 
 # dtype-tied numeric ceilings (float64) -- the guarantee, as sharp as the proof
 TOL_MERGE_PURE     = 1e-13   # patch-merge rule (reduction + identity-LN + un-concat), eps=0
@@ -219,7 +219,7 @@ def test_naive_block_rules_are_unstable_with_bias_documented():
 def test_deformable_sampling_rule_conserves():
     """Deformable attention bilinear sampling rule conserves exactly via autograd.
     It treats the sampling grid as fixed routing weights for a linear map."""
-    from xai_bench.methods.hilrp.hierarchical import deformable_sample_forward, deformable_sample_lrp
+    from hilrp.hierarchical import deformable_sample_forward, deformable_sample_lrp
     torch.manual_seed(6)
     B, C, H, W = 2, 3, 4, 4
     x = torch.rand(B, C, H, W) + 1.0  # strictly positive to keep relerr denominator stable

@@ -8,7 +8,7 @@ Produces, in results/hilrp_gate2real/:
   stage_localization.png the capability figure: relevance at 56/28/14/7 per image
 
 Conservation here is diagnostic reporting; the sharp guarantees live in
-xai_bench/methods/hilrp/tests/. What THIS script establishes is the part a
+hilrp/tests/. What THIS script establishes is the part a
 conservation test cannot: maps land on objects and change with the target class.
 
 Run:  <mri-diffuser python> scripts/hilrp/gate2_real_swin.py
@@ -34,7 +34,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
 import timm
-from xai_bench.methods.hilrp.swin_lxt import attribute_swin, ensure_patched
+from hilrp.swin_lxt import attribute_swin, ensure_patched
 
 OUT = os.path.join("results", "hilrp_gate2real")
 os.makedirs(OUT, exist_ok=True)
@@ -72,7 +72,7 @@ def denorm(img_t):
 def show_relevance(ax, R, title, res_note=None):
     # robust percentile normalization: relevance is heavy-tailed, so symmetric-max
     # renders spiky maps (e.g. MobileViT) near-blank. See hilrp.viz.
-    from xai_bench.methods.hilrp.viz import normalize_for_display
+    from hilrp.viz import normalize_for_display
     m, v = normalize_for_display(R, percentile=99.0)
     ax.imshow(m, cmap="bwr", vmin=-v, vmax=v, interpolation="nearest")
     ax.set_title(title + (f"\n{res_note}" if res_note else ""), fontsize=8)
@@ -193,7 +193,7 @@ def stage_figure(rows):
     """rows: list of (raw RGB [H,W,3], pixel_map, [(stage_name, map), ...])."""
     from figstyle import (apply_paper_style, save, stage_label, FULL_W,
                           FS_TITLE)
-    from xai_bench.methods.hilrp.viz import normalize_for_display
+    from hilrp.viz import normalize_for_display
     apply_paper_style()
 
     n_show, n_col = len(rows), 2 + len(rows[0][2])

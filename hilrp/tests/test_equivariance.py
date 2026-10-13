@@ -29,7 +29,7 @@ the same instrument that carries the conservation guarantees.
 import torch
 import pytest
 
-from xai_bench.methods.hilrp.toy_swin import ToyModel
+from hilrp.toy_swin import ToyModel
 
 TOL_FORWARD = 1e-10     # float64 forward equivariance
 TOL_RELEVANCE = 1e-8    # float64 relevance equivariance (eps-rule leakage)

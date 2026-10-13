@@ -116,7 +116,7 @@ def test_an_empty_seed_list_is_rejected(tmp_path):
 
 
 def test_runner_refuses_to_start_in_a_patched_process(tmp_path, stub_bench, monkeypatch):
-    monkeypatch.setattr(isolation, "live_patches", lambda: ["xai_bench.methods.hilrp.swin_lxt"])
+    monkeypatch.setattr(isolation, "live_patches", lambda: ["hilrp.swin_lxt"])
     monkeypatch.setitem(MODELS._entries, "stub_model",
                         lambda: pytest.fail("model loaded before the isolation check"))
     with pytest.raises(RuntimeError, match="fresh Python process"):

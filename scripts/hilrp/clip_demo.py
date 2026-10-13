@@ -24,8 +24,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 import open_clip
-from xai_bench.methods.hilrp.clip_lxt import attribute_clip_image_text, ensure_patched
-from xai_bench.methods.hilrp.viz import normalize_for_display
+from hilrp.clip_lxt import attribute_clip_image_text, ensure_patched
+from hilrp.viz import normalize_for_display
 
 OUT = "figures"
 os.makedirs(OUT, exist_ok=True)

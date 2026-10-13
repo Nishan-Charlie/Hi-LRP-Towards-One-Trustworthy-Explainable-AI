@@ -18,7 +18,7 @@ if not hasattr(_pu, "find_pruneable_heads_and_indices"):
 import numpy as np, timm
 from xai_bench.registry import MODELS
 import xai_bench.methods  # noqa
-from xai_bench.methods.hilrp.vit_lxt import attribute_vit, ensure_patched
+from hilrp.vit_lxt import attribute_vit, ensure_patched
 
 DEV = "cuda" if torch.cuda.is_available() else "cpu"
 

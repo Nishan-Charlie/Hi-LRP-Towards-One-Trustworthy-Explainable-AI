@@ -83,10 +83,10 @@ def run_hilrp():
     _stub.get_default_map = lambda *a, **k: {}
     sys.modules["lxt.efficient.models"] = _stub
 
-    from xai_bench.methods.hilrp.swin_lxt import attribute_swin, ensure_patched as sp
-    from xai_bench.methods.hilrp.pvt_lxt import attribute_pvt, ensure_patched as pp
-    from xai_bench.methods.hilrp.efficientvit_lxt import attribute_efficientvit, ensure_patched as ep
-    from xai_bench.methods.hilrp.mobilevit_lxt import attribute_mobilevit, ensure_patched as mp
+    from hilrp.swin_lxt import attribute_swin, ensure_patched as sp
+    from hilrp.pvt_lxt import attribute_pvt, ensure_patched as pp
+    from hilrp.efficientvit_lxt import attribute_efficientvit, ensure_patched as ep
+    from hilrp.mobilevit_lxt import attribute_mobilevit, ensure_patched as mp
     sp(); pp(); ep(); mp()
     xn = _preprocess()                                      # ImageNet-normalized
     xraw = (xn[0] * torch.tensor(STD).view(3, 1, 1) + torch.tensor(MEAN).view(3, 1, 1)

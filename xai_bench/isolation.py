@@ -74,14 +74,14 @@ def live_patches() -> List[str]:
     """Modules whose class-level patches are live in this interpreter.
 
     Reads the ports' own idempotency flags, so it also sees patches applied by a
-    direct port call that never went through the runner.
+    direct port call that never went through the runner. Looked up in
+    sys.modules rather than imported: a package that was never imported cannot
+    have patched anything, and this module must stay dependency-free.
     """
-    live = []
-    for name, module in list(sys.modules.items()):
-        if module is None or not name.startswith("xai_bench.methods"):
-            continue
-        if getattr(module, "_PATCHED", False) or getattr(module, "_NAIVE_PATCHED", False):
-            live.append(name)
+    hilrp = sys.modules.get("hilrp")
+    live = list(hilrp.patched_ports()) if hilrp is not None else []
+    if getattr(sys.modules.get(_ATTNLRP_MODULE), "_NAIVE_PATCHED", False):
+        live.append(_ATTNLRP_MODULE)
     return sorted(live)
 
 

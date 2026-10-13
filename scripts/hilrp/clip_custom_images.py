@@ -26,7 +26,7 @@ lxt_transformers_shim()
 import torch
 import open_clip
 
-from xai_bench.methods.hilrp.viz import normalize_for_display
+from hilrp.viz import normalize_for_display
 
 apply_paper_style()
 import matplotlib.pyplot as plt
@@ -44,7 +44,7 @@ ITEMS = [
 
 
 def compute():
-    from xai_bench.methods.hilrp.clip_lxt import attribute_clip_image_text, ensure_patched
+    from hilrp.clip_lxt import attribute_clip_image_text, ensure_patched
     model, _, preprocess = open_clip.create_model_and_transforms("ViT-B-16", pretrained="openai")
     model.eval()
     tok = open_clip.get_tokenizer("ViT-B-16")

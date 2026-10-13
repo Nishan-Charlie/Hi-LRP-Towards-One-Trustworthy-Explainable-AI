@@ -122,7 +122,7 @@ def main():
 
     # ---- pass 2: HiLRP -----------------------------------------------------
     print("=== pass 2: HiLRP ===")
-    from xai_bench.methods.hilrp.swin_lxt import attribute_swin
+    from hilrp.swin_lxt import attribute_swin
     model = timm.create_model(MODEL, pretrained=True).to(device).eval()
     for rec in per_image:
         x = data[rec["idx"]]["image"].unsqueeze(0).to(device)

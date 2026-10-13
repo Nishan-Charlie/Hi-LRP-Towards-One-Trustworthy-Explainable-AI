@@ -102,7 +102,7 @@ def get_attnlrp(model_wrapper, model=None, gamma: float = 0.25, **kwargs):
     model_name = model_wrapper.model_name
 
     if _is_flat_vit(model_name):
-        from xai_bench.methods.hilrp.vit_lxt import attribute_vit
+        from hilrp.vit_lxt import attribute_vit
 
         def method(inputs: torch.Tensor, target: int) -> torch.Tensor:
             x = inputs if adapter is None else adapter._adapt(inputs)

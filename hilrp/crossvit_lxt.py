@@ -22,7 +22,7 @@ from zennit.composites import LayerMapComposite
 from zennit.rules import Gamma
 
 from timm.models.crossvit import CrossAttention
-import xai_bench.methods.hilrp.vit_lxt as vit_lxt
+from . import vit_lxt
 
 
 def cp_cross_attention_forward(self, x):

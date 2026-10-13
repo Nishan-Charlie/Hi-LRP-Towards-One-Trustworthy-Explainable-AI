@@ -34,9 +34,9 @@ def main():
         data = torch.load(cache, map_location="cpu", weights_only=False)
     n = min(n, len(data))
     dev = "cuda" if torch.cuda.is_available() else "cpu"
-    from xai_bench.methods.hilrp.swin_lxt import attribute_swin, ensure_patched as sp
-    from xai_bench.methods.hilrp.pvt_lxt import attribute_pvt, ensure_patched as pp
-    from xai_bench.methods.hilrp.efficientvit_lxt import attribute_efficientvit, ensure_patched as ep
+    from hilrp.swin_lxt import attribute_swin, ensure_patched as sp
+    from hilrp.pvt_lxt import attribute_pvt, ensure_patched as pp
+    from hilrp.efficientvit_lxt import attribute_efficientvit, ensure_patched as ep
     sp(); pp(); ep()
     models = [
         ("Swin-B", timm.create_model("swin_base_patch4_window7_224", pretrained=True).to(dev).eval(), attribute_swin, False),
