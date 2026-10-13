@@ -13,6 +13,8 @@ from typing import Any, Dict, List, Optional
 
 import torch
 
+from xai_bench.isolation import check_run
+
 
 @dataclass
 class RunConfig:
@@ -28,6 +30,10 @@ class RunConfig:
     dataset: str = "demo"
     dataset_kwargs: Dict[str, Any] = field(default_factory=dict)
     num_images: Optional[int] = None      # None = all available
+    # Every (model, method, image) is evaluated once per seed and the seed is
+    # recorded on its row. The runner reseeds Python, NumPy and Torch before
+    # each evaluation from (seed, model, method, image), so a stochastic method
+    # or metric is reproducible and unaffected by resume or by sweep order.
     seeds: List[int] = field(default_factory=lambda: [0])
 
     # Execution
@@ -37,6 +43,14 @@ class RunConfig:
     run_name: Optional[str] = None        # defaults to a timestamp
     save_saliency: bool = False           # dump raw saliency arrays (large)
     limit_methods_to_supported: bool = True  # skip e.g. rollout on CNNs silently
+
+    def __post_init__(self) -> None:
+        if not self.seeds or not all(isinstance(s, int) and not isinstance(s, bool)
+                                     for s in self.seeds):
+            raise ValueError(f"seeds must be a non-empty list of integers, got {self.seeds!r}")
+        # A config that mixes a class-patching method with anything else cannot
+        # produce comparable rows in one process; reject it before any work.
+        check_run(self.methods, self.models)
 
     def resolved_device(self) -> str:
         if self.device == "auto":

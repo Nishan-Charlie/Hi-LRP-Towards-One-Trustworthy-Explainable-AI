@@ -1,14 +1,28 @@
 import os
 import json
 import time
+import zlib
 import datetime
 from typing import Dict, Any
 
 import torch
 from tqdm import tqdm
 
+from xai_bench import isolation
 from xai_bench.config import RunConfig
 from xai_bench.registry import MODELS, METHODS, DATASETS, METRICS
+from xai_bench.utils.seed import set_seed
+
+
+def evaluation_seed(seed: int, model_name: str, method_name: str, image_idx: int) -> int:
+    """The RNG seed for one (seed, model, method, image) evaluation.
+
+    Derived per evaluation, not drawn from one stream, so a row's randomness does
+    not depend on which rows ran before it: resuming a crashed run, reordering
+    `methods`, or dropping a model leaves every remaining row unchanged. crc32
+    rather than hash() because str hashes are salted per interpreter.
+    """
+    return zlib.crc32(f"{seed}|{model_name}|{method_name}|{image_idx}".encode())
 
 
 class BenchmarkRunner:
@@ -52,12 +66,16 @@ class BenchmarkRunner:
         print(f"  CSV updated: {len(df)} rows -> {os.path.join(self.run_dir, 'results.csv')}")
 
     def run(self):
+        # Before any model loads: refuse a run whose gradients this interpreter
+        # can no longer compute honestly (class-level LRP patches already live).
+        isolation.check_process(self.config.methods, self.config.models)
+
         dataset_fn = DATASETS.get(self.config.dataset)
         dataset = dataset_fn(**self.config.dataset_kwargs)
-        
+
         num_images = self.config.num_images if self.config.num_images else len(dataset)
         num_images = min(num_images, len(dataset))
-        
+
         results = []
         completed_evals = set()
         results_file = os.path.join(self.run_dir, "results.json")
@@ -66,9 +84,18 @@ class BenchmarkRunner:
             try:
                 with open(results_file, "r") as f:
                     results = json.load(f)
+                # Rows written before seeds were recorded carry no "seed" field.
+                # Keep them (count them under the first seed) rather than
+                # silently recomputing a finished run, but say what they are.
+                unseeded = sum("seed" not in r for r in results)
                 for r in results:
-                    completed_evals.add((r["model"], r["method"], r["image_idx"]))
+                    seed = r.get("seed", self.config.seeds[0])
+                    completed_evals.add((r["model"], r["method"], r["image_idx"], seed))
                 print(f"Loaded {len(results)} existing results.")
+                if unseeded:
+                    print(f"WARNING: {unseeded} of them predate seed recording and were "
+                          f"NOT produced under a fixed seed; they are kept as-is. "
+                          f"Use a new run_name for a fully seeded run.")
             except Exception as e:
                 print(f"Failed to load existing results.json: {e}")
 
@@ -94,9 +121,13 @@ class BenchmarkRunner:
                     print(f"    Failed to initialize {method_name}: {e}")
                     continue
 
-                for i in tqdm(range(num_images), desc=f"    Evaluating {method_name}"):
-                    if (model_name, method_name, i) in completed_evals:
+                evals = [(seed, i) for seed in self.config.seeds for i in range(num_images)]
+                for seed, i in tqdm(evals, desc=f"    Evaluating {method_name}"):
+                    if (model_name, method_name, i, seed) in completed_evals:
                         continue
+                    # Covers everything stochastic in this evaluation: dataset
+                    # augmentation, the attribution, and every metric after it.
+                    set_seed(evaluation_seed(seed, model_name, method_name, i))
                     img, target, metadata = dataset[i]
                     img = img.to(self.device)
                     
@@ -122,6 +153,7 @@ class BenchmarkRunner:
                             "method": method_name,
                             "image_idx": i,
                             "image_name": metadata.get('img_name', str(i)),
+                            "seed": seed,
                             "target": target,
                             "time_ms": attr_time * 1000,
                         }
@@ -162,7 +194,9 @@ class BenchmarkRunner:
                             json.dump(results, f, indent=2)                        
                         # Optionally save saliency map
                         if self.config.save_saliency:
-                            save_path = os.path.join(self.run_dir, f"{model_name}_{method_name}_{i}.pt")
+                            # single-seed runs keep the original file name
+                            tag = f"_s{seed}" if len(self.config.seeds) > 1 else ""
+                            save_path = os.path.join(self.run_dir, f"{model_name}_{method_name}_{i}{tag}.pt")
                             torch.save(attr[0].cpu(), save_path)
                             
                     except Exception as e:

@@ -4,6 +4,12 @@ Conservation-guaranteed attribution for hierarchical / hybrid ViTs (Swin patch
 merging, shifted windows, PVT/CvT spatial reduction), formulated as relevance
 flow on a multi-resolution token graph.
 
+> **Scope of "guaranteed".** The guarantee is on the rules: proved, and tested to
+> machine precision in `tests/`. On the production ports it holds exactly for Swin
+> and PVT-v2 with bias-free weights (`tests_backend/`); on trained weights, and on
+> the convolution-hybrid ports at all, the relevance sum is a measured quantity.
+> Per-backbone numbers are in the top-level README, under Limitations.
+
 > **Name is internal.** `HiLRP` is unclaimed in the literature (cf. AttnLRP,
 > LRP-QViT, CA-LIG) but signals "hierarchical" rather than "resolution-reduction
 > rules". Revisit before it goes in a paper.
@@ -16,6 +22,7 @@ flow on a multi-resolution token graph.
 | `rules.py` | *Inherited* LRP primitives (linear ε-rule, LayerNorm/softmax identity rule, bilinear split, residual). Self-contained so tests run without LXT. |
 | `toy_swin.py` | **Test-only** 2-stage reference model. Uses naive block internals that are numerically unstable with biases — do **not** attribute real models with it. |
 | `tests/test_conservation.py` | The guarantee, as dtype-tied numeric ceilings. |
+| `tests_backend/test_ports.py` | The production `*_lxt.py` ports on real timm architectures: forward equivalence, finite maps, port coexistence, bias-free conservation on Swin / PVT-v2. Needs `lxt` + `zennit`; run it as its own process. |
 
 ## The unifying proposition
 

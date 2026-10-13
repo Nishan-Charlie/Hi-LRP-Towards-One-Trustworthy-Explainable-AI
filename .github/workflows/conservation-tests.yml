@@ -47,8 +47,42 @@ jobs:
         # this job exists to prove unnecessary.
         run: python -m pytest xai_bench/methods/hilrp/tests/ -v
 
+      - name: Run the harness suite (process isolation, seeding)
+        # Same minimal install: these use stub registry entries, so they need
+        # no model download and none of the benchmark stack either.
+        run: python -m pytest xai_bench/tests/ -v
+
       - name: Report which registries populated
         # Not a gate, a diagnostic: shows that hilrp imports cleanly while the
         # captum/quantus-backed entries are correctly reported as absent.
         if: always()
         run: python -c "import xai_bench; print(xai_bench.registration_report())"
+
+  backend:
+    # The production ports (LXT efficient backend + zennit) on real timm
+    # architectures. A SEPARATE job on purpose: importing a port patches classes
+    # for the life of the interpreter, so this suite must never share a process
+    # with the reference suite above, and the reference guarantee must never come
+    # to depend on this install.
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install CPU torch and the HiLRP backend
+        # timm is re-pinned last: lxt pulls a newer one, and the class-level
+        # patches were validated on 1.0.16 (README, "Version notes that matter").
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install "lxt==2.1" zennit pytest
+          pip install "timm==1.0.16"
+
+      - name: Run the production-backend suite
+        # Random weights, CPU, float32: forward equivalence, finite maps, port
+        # coexistence, and bias-free conservation on Swin / PVT-v2.
+        run: python -m pytest xai_bench/methods/hilrp/tests_backend/ -v

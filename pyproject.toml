@@ -55,4 +55,6 @@ xai-bench = "xai_bench.runner:main"
 include = ["xai_bench*"]
 
 [tool.pytest.ini_options]
-testpaths = ["xai_bench/methods/hilrp/tests"]
+# xai_bench/methods/hilrp/tests_backend is deliberately NOT listed: importing a
+# port patches classes process-wide, so that suite runs in its own interpreter.
+testpaths = ["xai_bench/methods/hilrp/tests", "xai_bench/tests"]

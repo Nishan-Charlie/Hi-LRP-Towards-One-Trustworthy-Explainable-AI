@@ -24,7 +24,7 @@ def main():
     print(f"Loaded {len(df)} evaluation records.")
     
     # Calculate means grouped by model and method
-    metrics = [col for col in df.columns if col not in ['model', 'method', 'image_idx', 'image_name', 'target', 'time_ms']]
+    metrics = [col for col in df.columns if col not in ['model', 'method', 'image_idx', 'image_name', 'seed', 'target', 'time_ms']]
     
     if not metrics:
         print("No metrics found in results.")

@@ -20,6 +20,9 @@ import importlib
 
 __version__ = "0.2.0"
 
+# Must precede any LXT import; see xai_bench/_compat.py.
+from . import _compat as _compat  # noqa: F401
+
 from .registry import (  # noqa: F401
     Registry, MODELS, METHODS, DATASETS, METRICS, REGISTRATION_ERRORS,
 )

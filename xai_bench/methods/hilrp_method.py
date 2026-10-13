@@ -7,7 +7,8 @@ method's GRADIENTS are altered by those patches (forward numerics identical,
 gradient paths not: detached-std LN, CP attention). Therefore hilrp rows MUST
 be produced in a run whose methods list contains ONLY hilrp (see
 configs/hilrp_grid.yaml); never mix it with baselines in one process. The same
-lesson produced the two-pass Shapley protocol.
+lesson produced the two-pass Shapley protocol. The runner enforces this: see
+xai_bench/isolation.py.
 """
 import torch
 

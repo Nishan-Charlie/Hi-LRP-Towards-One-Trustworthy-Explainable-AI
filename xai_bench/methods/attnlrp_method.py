@@ -31,11 +31,8 @@ configs/attnlrp_grid_hier.yaml).
 import torch
 import torch.nn as nn
 
+from xai_bench.isolation import is_flat_vit as _is_flat_vit
 from xai_bench.registry import METHODS
-
-
-def _is_flat_vit(model_name: str) -> bool:
-    return any(model_name.startswith(p) for p in ("vit", "deit", "beit"))
 
 
 _NAIVE_PATCHED = False

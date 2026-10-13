@@ -46,13 +46,9 @@ def main():
 
     results = {}
 
-    # HiLRP (forward + backward, CP rule)
-    ensure_patched()
-    def hilrp():
-        r = attribute_vit(inner, x.clone(), target=1)
-        inner.zero_grad(set_to_none=True)
-        return r
-    results["HiLRP (ours)"] = timeit(hilrp)
+    # Every vanilla method is measured BEFORE HiLRP: its patches are class-level
+    # and process-global, so anything run after them is timed on the patched
+    # forward, not its own (same ordering as runtime_table.py).
 
     # Grad-CAM
     gc = MODELS.get("vit_base_patch16_224")(); gc.model.to(DEV).eval()
@@ -77,6 +73,14 @@ def main():
         results["Attention Rollout"] = timeit(lambda: arm(x.clone(), target=1))
     except Exception as e:
         print("Rollout failed:", str(e)[:80])
+
+    # HiLRP (forward + backward, CP rule): last, it patches the process from here on
+    ensure_patched()
+    def hilrp():
+        r = attribute_vit(inner, x.clone(), target=1)
+        inner.zero_grad(set_to_none=True)
+        return r
+    results["HiLRP (ours)"] = timeit(hilrp)
 
     print(f"\nViT-B/16, single image, {DEV}:")
     print(f"{'method':20s} {'time (ms)':>10s} {'peak mem (MB)':>14s}")

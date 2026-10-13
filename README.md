@@ -14,10 +14,11 @@
        alt="HiLRP compared with Grad-CAM, Grad-CAM++, Integrated Gradients and SmoothGrad on Swin-B, PVT-v2-b2, EfficientViT-B2 and MobileViT-v2">
 </p>
 
-> One image, four backbones, one method that works on all of them. EfficientViT-B2's linear
-> attention removes the terminal spatial feature map that CAM depends on: Grad-CAM drops to
-> **0.518** Pointing, below the 0.61 random-point prior, while HiLRP holds **0.936**
-> (n = 1000, paired McNemar p = 2e-104).
+> One image, four backbones, one method that works on all of them. On EfficientViT-B2,
+> Grad-CAM scores **0.518** Pointing at the benchmark's target layer, below the 0.61
+> random-point prior, and no other spatial layer rescues it (best 0.714), while HiLRP holds
+> **0.936** (n = 1000, paired McNemar p = 2e-104). The cause of that failure is measured, not
+> explained: see [the target-layer check](#grad-cam-on-efficientvit-a-target-layer-check).
 
 ---
 
@@ -34,7 +35,7 @@ assumption:
 
 | Method family | Structural assumption | What breaks it |
 |---|---|---|
-| Grad-CAM, Grad-CAM++ | a meaningful terminal spatial feature map | linear cross-covariance attention (EfficientViT) |
+| Grad-CAM, Grad-CAM++ | one late spatial feature map whose channel-weighted sum localizes the class | fails empirically on EfficientViT at every candidate layer; mechanism not established |
 | Attention rollout, attention flow | usable global softmax attention over all tokens | windowed, spatial-reduction, multi-axis attention |
 | Captum LRP | a hand-derived rule per supported module type | rejects unsupported modules: 0 rows on timm ViTs |
 | Perturbation (RISE, LIME, Occlusion) | nothing, but output-level only and expensive | reports that a patch mattered, not where it emerged |
@@ -45,21 +46,31 @@ defined and trustworthy on it.
 **The main contribution.** This architectural space is structurally simpler than its variety
 suggests. The attention and resolution-reduction operators of current ViTs compose four
 operation classes, and each admits one relevance rule that conserves. A new backbone is
-covered by construction rather than by derivation, and the resulting map is a decomposition
-of the prediction rather than a heuristic saliency score.
+covered by construction rather than by derivation.
+
+**What "conservation-valid" does and does not mean here.** Each of the four rules is proved to
+conserve and is checked to machine precision in a float64 reference implementation. On the
+production ports that claim holds exactly on Swin and PVT-v2 up to bias absorption, and is a
+*measured* quantity everywhere else: on the convolution-hybrid ports the relevance sum drifts
+by backbone and by depth. The per-backbone numbers are in
+[Scope of the conservation claim](#limitations); read every "conserves" below with that
+scope.
 
 ## Key Features
 
 **Main capabilities**
 
-- One conservation-valid backward pass for any hierarchical or hybrid ViT.
+- One backward pass, built from conserving rules, for any hierarchical or hybrid ViT. Exact
+  on Swin and PVT-v2 up to bias absorption; measured, not guaranteed, on the hybrid ports.
 - Stage-localized maps at every resolution from a single pass (pixels, 56², 28², 14², 7²),
   which output-perturbation methods structurally cannot produce.
 - Label-free attribution of self-supervised objectives, with no classifier head.
 - Multi-modal attribution of CLIP image-text similarity, with no new rule.
 - A registry-based benchmark harness: 15 baseline attribution methods, 37 Quantus-backed
   metrics, ImageNet-S and PASCAL VOC loaders, config-driven sweeps.
-- Conservation guarantees enforced as dtype-tied numeric ceilings in CI.
+- Conservation of the reference rules enforced as dtype-tied numeric ceilings in CI, with
+  the production ports checked in a separate job (forward equivalence, finite maps,
+  bias-free conservation on Swin and PVT-v2).
 
 **Supported architectures.** Isotropic ViT, DeiT, Swin, PVT-v2, MaxViT, MobileViT-v2,
 EfficientViT, CLIP ViT, with ResNet and ConvNeXt as CNN baselines. See
@@ -132,8 +143,8 @@ CNN baselines only; HiLRP targets the ViT family, so it is not run on them.
 the benchmark sweeps. The conservation test suite runs on CPU.
 
 ```bash
-git clone https://github.com/<your-org>/hilrp.git
-cd hilrp
+git clone https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI.git
+cd Hi-LRP-Towards-One-Trustworthy-Explainable-AI
 
 pip install -e .                 # core: torch, timm, captum, numpy, pandas, matplotlib
 pip install -e ".[extra]"        # quantus metrics, pytorch-grad-cam, networkx
@@ -146,11 +157,22 @@ the sdist metadata step hits a charmap `UnicodeDecodeError`. `lxt==2.1` pulls `t
 while the class-level patches and the cached baselines were validated on **timm 1.0.16**, so
 re-pin afterwards when reproducing published numbers.
 
-Verify the install by running the conservation suite. These tests are the guarantee:
+Verify the install with the test suites. The first needs only `torch` and `timm`; the last
+needs the backend and must run as its own command, because importing a port patches classes
+for the life of the interpreter.
 
 ```bash
-python -m pytest xai_bench/methods/hilrp/tests/ -v      # 24 passed
+python -m pytest xai_bench/methods/hilrp/tests/ -v          # 24 passed: reference rules, float64
+python -m pytest xai_bench/tests/ -v                        # harness: process isolation, seeding
+python -m pytest xai_bench/methods/hilrp/tests_backend/ -v  # 26 passed: production ports (lxt + zennit)
 ```
+
+What each one establishes is different. The reference suite proves that the *rules* conserve,
+to machine precision, on a toy model with no backend. The backend suite runs the ports that
+produce the published maps on real timm architectures with random weights: every port is
+forward-exact, returns a finite map, and is unaffected by the other ports' patches, and Swin
+and PVT-v2 conserve at every capture when the weights are bias-free. Neither suite asserts
+conservation on the hybrid ports, and neither says anything about faithfulness.
 
 ## Quick Start
 
@@ -162,7 +184,8 @@ import matplotlib.pyplot as plt
 from xai_bench.methods.hilrp.swin_lxt import attribute_swin
 from xai_bench.methods.hilrp.viz import normalize_for_display
 
-# Input: a normalized [1, 3, H, W] batch
+# Input: a normalized [1, 3, H, W] batch (seeded noise here, so the trace below reproduces)
+torch.manual_seed(0)
 model = timm.create_model("swin_tiny_patch4_window7_224", pretrained=True).eval()
 x = torch.randn(1, 3, 224, 224)
 
@@ -179,9 +202,13 @@ plt.imshow(heatmap, cmap="bwr", vmin=-vmax, vmax=vmax)
 ```
 
 ```text
-stage_sums: tokens_56 1.11 | stage1_in_28 1.48 | stage2_in_14 1.95 |
-            stage3_in_7 1.42 | final_7 1.03      # relevance stays on the logit's scale
+stage_sums: tokens_56 0.97 | stage1_in_28 1.29 | stage2_in_14 1.71 |
+            stage3_in_7 1.36 | final_7 1.03      # sum(R) / logit at each capture
 ```
+
+That trace is the verified output of the snippet as written (CPU, timm 1.0.16, lxt 2.1). A
+noise input is the hard case for it; on real images the same captures sit closer to 1 (see
+[Limitations](#limitations)).
 
 Other backbones expose the same signature: `pvt_lxt.attribute_pvt`,
 `efficientvit_lxt.attribute_efficientvit`, `mobilevit_lxt.attribute_mobilevit`,
@@ -204,11 +231,14 @@ xai_bench/                    the benchmark harness and the method
 │   │                           per-backbone ports on the LXT efficient backend
 │   ├── viz.py                  normalize_for_display, use for ALL rendering
 │   ├── toy_swin.py             test-only 2-stage reference model
-│   └── tests/                  24 conservation / coverage / equivariance tests
+│   ├── tests/                  24 conservation / coverage / equivariance tests (no backend)
+│   └── tests_backend/          26 production-port tests (lxt + zennit, own process)
 ├── methods/                  15 baseline attribution methods, registry-registered
 ├── metrics/                  37 metrics, Quantus-backed
 ├── models/, datasets/        timm backbones, ImageNet-S and VOC loaders
 ├── registry.py, runner.py    string-keyed registry, config-driven runner
+├── isolation.py              rejects sweeps that mix a class-patching method with others
+├── tests/                    harness tests: process isolation, seeding
 configs/                      benchmark run configs (dev/ holds smoke tests)
 scripts/
 ├── bench/                    benchmark runs, tables, figures
@@ -218,7 +248,6 @@ scripts/
 benchmark_results/            all_results_sofar.csv, single source of truth for tables
 figures/{bench,hilrp}/        full-resolution paper figures (PNG and PDF)
 docs/assets/                  web-optimized copies used by this README
-paper/                        LaTeX sources for both manuscripts
 notebooks/                    figure reproduction from cached results
 ```
 
@@ -260,8 +289,52 @@ tiers: a large tier at n = 1000 for cheap metrics, and a deep-validation tier at
 > a `methods:` list alongside baselines. The same lesson produced the two-pass Shapley
 > protocol: contaminated baselines had artificially depressed scores (saliency 0.08 vs 0.21
 > honest).
+>
+> This is enforced, not just documented. A config that lists `hilrp` or `attnlrp` next to any
+> other method is rejected when it is loaded, and a baseline run refuses to start in an
+> interpreter where a port has already patched
+> ([`xai_bench/isolation.py`](xai_bench/isolation.py)). One `hilrp` run may still sweep
+> several backbones: each port's map is identical with and without the other ports' patches
+> live. Scripts that call the ports directly, outside the runner, are not guarded and keep
+> their own two-pass or separate-process protocol.
 
 ## Results
+
+### Where each number comes from
+
+"Manuscript" is the paper in [Citation](#citation), currently under review. Rows marked *not
+in the manuscript* were added to this repository afterwards and have not been reviewed with
+it.
+
+| Result | n, dataset | Produced by | In the manuscript |
+|---|---|---|---|
+| Main result, HiLRP vs Grad-CAM | 1000, ImageNet-S and VOC 2007 | `scripts/bench/scaled_eval.py` | yes |
+| Conservation is the discriminator | 100, ImageNet-S | `scripts/hilrp/lineage_comparison.py`, `lineage_naive_legs.py` | yes |
+| Agreement with Shapley values | 50, ImageNet-S | `scripts/hilrp/shapley_pilot.py` | yes |
+| Cross-architecture baseline transfer | 100, ImageNet-S | `xai_bench.runner`, baseline configs | 11 of 13 rows: see below |
+| Supported Models, HiLRP Pointing | 50, ImageNet-S | `xai_bench.runner`, `configs/hilrp_grid*.yaml` | a different run: see below |
+| Verified numerics, reference rules | toy model | `xai_bench/methods/hilrp/tests/` | as a claim, not as this table |
+| Grad-CAM target-layer check | 1000, ImageNet-S and VOC 2007 | `scripts/bench/gradcam_target_layers.py` | not in the manuscript |
+| Conservation per port (input, head, pixels) | 20, ImageNet-S | `scripts/hilrp/conservation_grid.py` | not in the manuscript |
+| Verified numerics, production ports | random weights | `xai_bench/methods/hilrp/tests_backend/` | not in the manuscript |
+
+Three things to know when comparing against the manuscript:
+
+- **HiLRP Pointing per backbone differs between the two.** The Supported Models column is the
+  n = 50 metric grid. The manuscript's benchmark table reports a separate HiLRP run, with
+  different values on some backbones (ViT-B 0.70 against 0.78 here, MobileViT-v2 0.86 against
+  0.78). Quote one source, not a mix.
+- **Two rows of the cross-architecture table differ; the other eleven are identical.**
+  GradientSHAP is from a different run on every transformer backbone (EffViT-B1 0.86 here
+  against 0.64). AttnLRP on ViT-B is 0.83 here against 0.78, and the manuscript also fills the
+  hierarchical cells with the naive AttnLRP extension, which this table leaves undefined.
+- **The runner-produced rows predate seed handling.** `seeds` was accepted by the config but
+  not applied, so in those rows the stochastic methods (SmoothGrad, VarGrad, GradientSHAP,
+  RISE, LIME) and stochastic metrics (Faithfulness Correlation, Max-Sensitivity) are single
+  unseeded draws. Deterministic methods scored with the Pointing Game are unaffected, and the
+  Shapley sampler has always been seeded.
+
+The three rows added in this revision were produced with `timm` 1.0.16 and `lxt` 2.1.
 
 ### Main result: localization where CAM's assumption breaks
 
@@ -276,6 +349,36 @@ Paired per-image Pointing Game, same images for every method, 95% bootstrap CIs.
 
 The gap replicates on a second dataset with a different annotation type, so it is not an
 ImageNet-S artifact.
+
+### Grad-CAM on EfficientViT: a target-layer check
+
+An earlier version of this README said EfficientViT's linear attention "removes the terminal
+spatial feature map that CAM depends on". That is not what the code does. `forward_features`
+returns a real 7×7 map on this family and the benchmark's Grad-CAM targets it. What differs
+from a CNN is what follows: a 1×1 expansion conv (`head.in_conv`), global pooling, then a
+two-layer MLP, so the map Grad-CAM reads is not the map pooling consumes.
+
+To separate "wrong layer" from "Grad-CAM fails here", the same Grad-CAM was re-run at every
+candidate spatial layer on the same images. Pointing Game, n = 1000.
+
+| Target layer | Map | EffViT-B2, ImageNet-S | EffViT-B2, VOC 2007 | EffViT-B1, ImageNet-S |
+|---|---|---|---|---|
+| `stages.0` | 56×56 | 0.714 | 0.571 | 0.684 |
+| `stages.1` | 28×28 | 0.658 | 0.515 | 0.677 |
+| `stages.2` | 14×14 | 0.510 | 0.346 | 0.678 |
+| `stages.3`, the benchmark protocol (`forward_features`) | 7×7 | 0.518 | 0.582 | 0.647 |
+| `head.in_conv`, the map pooling consumes | 7×7 | 0.271 | 0.315 | 0.327 |
+| HiLRP, for reference | pixels | 0.936 | 0.820 | not run at this n |
+
+No layer closes the gap. The best Grad-CAM layer on EfficientViT-B2 still trails HiLRP by 22
+points on ImageNet-S (paired McNemar p = 1.1e-43), and the textbook choice, the last map
+before pooling, is the worst on all three. The protocol number in the tables above is
+therefore not an artifact of the target layer.
+
+What this does not establish is why. Both EfficientViTs use linear attention and both have
+the non-linear head, so this benchmark cannot attribute the failure to either one. Reproduce
+with `python scripts/bench/gradcam_target_layers.py efficientvit_b2 1000 [voc]`; the
+protocol-layer hits it writes match the cached run behind the main table image for image.
 
 ### Conservation is the actual discriminator
 
@@ -294,6 +397,12 @@ A zero-sum map still has an argmax, so it can point convincingly while its regio
 contributions do not sum to the logit, violating the completeness property that is LRP's
 entire justification. Full discussion: [`docs/lineage_table.md`](docs/lineage_table.md).
 
+Two HiLRP cells above are not input-adjacent sums: "traceable" (EfficientViT-B2) and
+"+1.05 (head)" (MobileViT-v2). The measured input-adjacent, head-adjacent and pixel sums for
+every port are in
+[Scope of the conservation claim](#limitations). HiLRP's own sums are far from 1 on those two
+backbones below the head, so the contrast this table supports is "not zeroed", not "conserved".
+
 ### Agreement with axiomatic Shapley values
 
 Faithfulness Correlation is uninformative in this benchmark (absolute mean below 0.08 in
@@ -309,8 +418,8 @@ SLIC regions. Mean Spearman agreement, n = 50, m = 64.
 | Saliency | 0.214 | 0.137 | 0.240 |
 
 On Swin and PVT, HiLRP and Grad-CAM are statistically indistinguishable (paired Wilcoxon
-p = 0.45 on Swin). The separation appears exactly where linear attention removes CAM's
-spatial heuristic. Two independently computed yardsticks, one story.
+p = 0.45 on Swin). The separation appears on EfficientViT, the same backbone where
+Grad-CAM's Pointing collapses. Two independently computed yardsticks, one story.
 
 ### Cross-architecture baseline transfer
 
@@ -341,6 +450,9 @@ Thresholds are tied to dtype and enforced on every push by
 regression in any relevance rule fails the build instead of silently degrading a published
 number.
 
+**Reference rules** (`tests/`): the float64 implementation of the rules and a two-stage toy
+model, no attribution backend. This is where conservation is proved to machine precision.
+
 | Property | Achieved (float64) | Test ceiling |
 |---|---|---|
 | Patch-merge rule, isolated | 3.4e-16 | < 1e-13 |
@@ -352,8 +464,24 @@ number.
 | Negative control: affine-LN rule leaks | 1.1 | must be > 0.5 |
 | Negative control: naive epsilon plus bias unstable | 6.5e3 | must be > 1.0 |
 
-The CI install is deliberately minimal (CPU torch, torchvision, timm, numpy, pytest) so the
-guarantee never comes to depend on the benchmark stack or the attribution backend.
+**Production ports** (`tests_backend/`): the `*_lxt.py` ports that produce the published maps,
+through LXT and zennit, on the smallest timm variant of each family with random weights. A
+passing reference suite does not validate these, so they have their own CI job.
+
+| Property | Achieved (float32) | Test ceiling |
+|---|---|---|
+| Forward unchanged by patches and composite, all six ports | 7e-7 | < 1e-5 |
+| Map unchanged once every other port has patched, all six ports | 0 | ≤ 1e-6 |
+| Conservation at every capture, bias-free Swin-T and PVT-v2-b0 | 7e-6 | < 1e-4 |
+
+Conservation is asserted only on Swin and PVT-v2, and only bias-free, because that is the only
+place the ports guarantee it. On EfficientViT, MobileViT-v2, MaxViT and flat ViTs the sum
+drifts even without biases, so it is reported as a measurement in
+[Limitations](#limitations) and not tested as a guarantee.
+
+The reference job's install is deliberately minimal (CPU torch, torchvision, timm, numpy,
+pytest) so the guarantee never comes to depend on the benchmark stack or the attribution
+backend. The backend job installs `lxt==2.1`, `zennit` and `timm==1.0.16` separately.
 `xai_bench` records missing optional dependencies rather than raising on import, so
 `xai_bench.methods.hilrp` stays importable in a bare environment; a registry lookup that comes
 up empty names the missing package instead of reporting an unknown method. Run
@@ -363,8 +491,10 @@ up empty names the missing package instead of reporting an unknown method. Run
 
 **1. Attribution rankings do not transfer across ViT families.** Attention rollout scores
 0.64 on ViT-B, worse than plain gradients, and is undefined on six of the seven ViT variants.
-Grad-CAM breaks specifically on linear attention (EffViT-B1 0.70, B2 0.55), not on conv
-hybrids generally: on a healthy MobileViT-v2 it scores 1.00. Captum LRP does not run at all
+Grad-CAM breaks on the two EfficientViT backbones (B1 0.70, B2 0.55) at every target layer
+tried, not on conv hybrids generally: on a healthy MobileViT-v2 it scores 1.00. Whether
+linear attention or EfficientViT's non-linear head is responsible is not separated here.
+Captum LRP does not run at all
 on the four timm transformers, producing 0 rows. That is the literal infrastructure gap the
 method fills.
 
@@ -389,9 +519,11 @@ Hierarchical backbones end at a 7x7 terminal grid, so a CAM map is 49 numbers up
        alt="CAM square artifacts on hierarchical backbones originate from the 7x7 terminal grid upsampled 32 times">
 </p>
 
-**4. Conservation buys stage-localized maps for free.** Because relevance is conserved at
-every interface, the same backward pass yields a valid map at every resolution: pixels, 56²
-tokens, 28², 14², 7². Texture becomes parts becomes object.
+**4. Tracking relevance at every interface gives stage-localized maps for free.** The same
+backward pass yields a map at every resolution: pixels, 56² tokens, 28², 14², 7². On Swin-B
+the relevance sum at the token captures stays within 0.91 to 1.15 of the logit (0.74 at
+pixels, n = 20), so each token-level map accounts for roughly the whole prediction. Texture
+becomes parts becomes object.
 
 <p align="center">
   <img src="docs/assets/stage_localization.jpg" width="100%"
@@ -444,7 +576,13 @@ python scripts/data/cache_voc.py --num 1000               # optional second data
 **2. Configuration.** Run configs live in `configs/`. Start from `configs/default.yaml` for
 the schema; `configs/full_benchmark_100.yaml` and `configs/hilrp_grid.yaml` are the two
 protocol configs. Each declares `models`, `methods`, `metrics`, `metric_kwargs`, `dataset`,
-`num_images`, and `run_name`.
+`num_images`, `seeds`, and `run_name`.
+
+`seeds` is honored. Every (model, method, image) is evaluated once per seed, the seed is
+written on its row, and the runner reseeds Python, NumPy and Torch before each evaluation
+from (seed, model, method, image). A stochastic method (SmoothGrad, VarGrad, GradientSHAP,
+RISE, LIME) or metric therefore reproduces on the same hardware and library versions, and a
+row does not change if the run is resumed or the sweep is reordered.
 
 **3. Run the experiments.**
 
@@ -471,6 +609,8 @@ python scripts/make_readme_assets.py           # -> docs/assets/*
 | Gate 1 and 2 conservation, stage maps | `scripts/hilrp/gate2_real_swin.py` |
 | Pointing game, four architectures | `scripts/hilrp/gate3_pointing.py` |
 | n = 1000 scaled eval, bootstrap CI, McNemar | `scripts/bench/scaled_eval.py` |
+| Grad-CAM target-layer check | `scripts/bench/gradcam_target_layers.py` |
+| Conservation per port (input, head, pixels), one backbone per process | `scripts/hilrp/conservation_grid.py` |
 | Shapley agreement (SLIC and SAM segments) | `scripts/hilrp/shapley_pilot.py`, `gate4_shapley_sam.py` |
 | Lineage: naive AttnLRP vs HiLRP | `scripts/hilrp/lineage_naive_legs.py` |
 | RQ2 pretraining objectives | `scripts/hilrp/rq2_pretraining.py` |
@@ -481,12 +621,32 @@ python scripts/make_readme_assets.py           # -> docs/assets/*
 
 ## Limitations
 
-**Scope of the conservation claim.** Conservation is guaranteed at the token level and
-through the proven operations (patch merge, shift, mask, regroup, pool). It is approximate at
-the pixel level: the gamma = 0.25 rule on `Linear` and `Conv2d` and the patch-embed
-convolution introduce controlled, monotone, reproducible deviation in exchange for denoising.
-Measured on real Swin-T over 20 images: tokens 1.05 ± 0.11, pixels 0.82 ± 0.08, final logit
-1.00. We do not claim end-to-end pixel-level conservation.
+**Scope of the conservation claim.** Three different things are established, and they should
+not be read as one.
+
+1. *Proved, and tested to machine precision.* Each rule conserves through the proven
+   operations (patch merge, shift, mask, regroup, pool): reference suite, float64, toy model.
+2. *Tested on the production ports.* Swin and PVT-v2 conserve at every capture, pixels
+   included, when the weights are bias-free (backend suite, float32, 7e-6). On those two
+   backbones the deviation on trained weights is therefore what the biases absorb.
+3. *Measured, not guaranteed.* Everything on trained weights. `sum(R)/logit`, mean ± std
+   over the first 20 ImageNet-S images, bench defaults (gamma = 0.25):
+
+| Backbone | Input-adjacent capture | Head-adjacent capture | Pixels |
+|---|---|---|---|
+| Swin-B | 0.91 ± 0.07 | 1.00 ± 0.01 | 0.74 ± 0.07 |
+| PVT-v2-b2 | 0.44 ± 0.04 | 1.01 ± 0.01 | 0.37 ± 0.03 |
+| MobileViT-v2 | −0.05 ± 0.05 | 1.05 ± 0.01 | −0.14 ± 0.13 |
+| MaxViT-S | 0.44 ± 0.06 | 0.77 ± 0.04 | 0.16 ± 0.03 |
+| EfficientViT-B1 | 0.37 ± 0.34 | 4.16 ± 4.09 | 0.18 ± 0.17 |
+| EfficientViT-B2 | 0.79 ± 0.36 | 3.80 ± 3.06 | 0.34 ± 0.22 |
+
+The head-adjacent capture is conserved on Swin, PVT-v2 and MobileViT-v2. It is not on MaxViT,
+and not on EfficientViT, where the sum also swings in sign from image to image. No backbone
+conserves to the pixels. We do not claim end-to-end pixel-level conservation, and on
+EfficientViT, MaxViT and MobileViT-v2 we do not claim it below the head either. Reproduce one
+backbone per process with `python scripts/hilrp/conservation_grid.py <model> 20`. An earlier
+Swin-T run over 20 images gave tokens 1.05 ± 0.11, pixels 0.82 ± 0.08, final logit 1.00.
 
 Conservation is also necessary but not sufficient. A passing conservation check proves no
 relevance leaked, but wrong token bookkeeping still conserves numerically while scrambling the

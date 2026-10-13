@@ -12,7 +12,7 @@ dist/
 
 # ── Run outputs and local caches (regenerable) ──────────────────────────
 results/
-data/
+/data/
 checkpoints/
 scratch/
 archive/
@@ -58,11 +58,29 @@ CLAUDE.local.md
 NOTES_next.md
 .mcp.json
 
-# ── Compiled manuscripts (regenerable from .tex) ────────────────────────
-paper/
+# ── Manuscripts and reference papers ────────────────────────────────────
+# Kept on disk, never published: LaTeX sources, bibliography and compiled
+# PDFs of the papers, plus third-party PDFs that are not ours to redistribute.
+/paper/
+/paper.*
+/refs.bib
+/*.pdf
+/reference_Papers/
 
 # ── Source images (local working set) ───────────────────────────────────
 images/
+
+/*.ipynb
+/*.csv
+/*.bat
+/*.png
+/test_*.py
+/inspect_mobilevit.py
+/download_*.py
+/generate_foundation_nb.py
+/run_imagenets_xai.py
+/results_test/
+*_backup.*
 
 # ── Exception: vector figures are tracked, they are paper/README assets ─
 !figures/**/*.pdf

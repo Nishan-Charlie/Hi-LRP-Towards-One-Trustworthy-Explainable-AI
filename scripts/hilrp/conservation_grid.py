@@ -60,9 +60,21 @@ def main():
     attributor = getattr(mod, fn_name)
     model = timm.create_model(model_name, pretrained=True).eval().cuda()
 
+    # The cache is ImageNet-normalized; the mobilevit family expects raw [0, 1]
+    # inputs. Convert to the model's own stats (same affine as the bench's
+    # InputStatsAdapter and scaled_eval.py), or its legs run out of distribution.
+    cfg = model.pretrained_cfg
+    IM = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
+    IS = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
+    mean, std = torch.tensor(cfg["mean"]).view(3, 1, 1), torch.tensor(cfg["std"]).view(3, 1, 1)
+    need_raw = any(abs(a - b) > 1e-6 for a, b in zip(cfg["mean"], (0.485, 0.456, 0.406)))
+
     deep, head, pix = [], [], []
     for i in range(n):
-        x = data[i]["image"].unsqueeze(0).cuda()
+        img = data[i]["image"]
+        if need_raw:
+            img = (img * IS + IM - mean) / std
+        x = img.unsqueeze(0).cuda()
         res = attributor(model, x)
         ss = res["stage_sums"]
         deep.append(ss[0][1])

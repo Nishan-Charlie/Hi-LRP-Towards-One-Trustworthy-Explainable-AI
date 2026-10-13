@@ -148,8 +148,8 @@ def main():
             m = demo_maps[t][i]; v = np.abs(m).max() + 1e-12
             axes[i, 1 + j].imshow(m, cmap="bwr", vmin=-v, vmax=v); axes[i, 1 + j].axis("off")
             if i == 0: axes[i, 1 + j].set_title(t, fontsize=8)
-    fig.suptitle(f"RQ2: view-invariance evidence under {len(tags)} pretraining "
-                 "objectives (frozen ViT-B)", fontsize=10)
+    # No suptitle: the caption carries the description in the paper, and a
+    # figure-internal title duplicates it and wastes column height.
     fig.tight_layout()
     fig.savefig(os.path.join(OUT, "rq2_maps.png"), dpi=150)
     print(f"\nwritten to {OUT}")
