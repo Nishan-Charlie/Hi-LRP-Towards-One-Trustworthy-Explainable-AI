@@ -193,14 +193,14 @@ for name in ["pvt_v2_b2", "maxvit_small_tf_224", "mobilevitv2_100", "efficientvi
     res = hilrp.attribute(model, transform(image).unsqueeze(0))
 ```
 
-| Family | Attention | Checked on | Conservation on trained weights |
-|---|---|---|---|
-| Swin | windowed and shifted, patch merging | `swin_tiny`, `swin_base` | exact up to bias absorption |
-| PVT-v2 | spatial reduction | `pvt_v2_b0`, `pvt_v2_b2` | exact up to bias absorption |
-| MaxViT | multi-axis | `maxvit_tiny_tf_224`, `maxvit_small_tf_224` | measured |
-| MobileViT-v2 | separable, conv hybrid | `mobilevitv2_050`, `mobilevitv2_100` | measured |
-| EfficientViT (MIT) | linear | `efficientvit_b0`, `b1`, `b2` | measured |
-| ViT, DeiT | global self-attention | `vit_tiny`, `vit_base`, `deit_base` | measured |
+| Family             | Attention                           | Checked on                                  | Conservation on trained weights |
+| ------------------ | ----------------------------------- | ------------------------------------------- | ------------------------------- |
+| Swin               | windowed and shifted, patch merging | `swin_tiny`, `swin_base`                    | exact up to bias absorption     |
+| PVT-v2             | spatial reduction                   | `pvt_v2_b0`, `pvt_v2_b2`                    | exact up to bias absorption     |
+| MaxViT             | multi-axis                          | `maxvit_tiny_tf_224`, `maxvit_small_tf_224` | measured                        |
+| MobileViT-v2       | separable, conv hybrid              | `mobilevitv2_050`, `mobilevitv2_100`        | measured                        |
+| EfficientViT (MIT) | linear                              | `efficientvit_b0`, `b1`, `b2`               | measured                        |
+| ViT, DeiT          | global self-attention               | `vit_tiny`, `vit_base`, `deit_base`         | measured                        |
 
 `hilrp.supported_architectures()` returns the same list in code. CNNs are out of scope.
 
@@ -219,7 +219,7 @@ The default `attn_mode="cp"` detaches the attention matrix and is the conserving
 
 HiLRP installs its rules as class-level patches on `nn.LayerNorm`, `nn.GELU` and the timm
 attention classes. The patches are process-global and are never undone. Forward passes are
-numerically unchanged, but any *other* gradient-based method computed afterwards runs through
+numerically unchanged, but any _other_ gradient-based method computed afterwards runs through
 the patched rules and is no longer the method you meant to compare against.
 
 ```python
@@ -258,12 +258,12 @@ them is covered.
        alt="HiLRP pipeline: one backward pass over a hierarchical or hybrid ViT, built from four conserving primitives">
 </p>
 
-| # | Primitive | Instances | Rule |
-|---|---|---|---|
-| P1 | Linear map | Q/K/V/out projections, MLP, conv, pooling | epsilon / gamma rule |
-| P2 | Bilinear mix | QKᵀ, A·V, linear-attention products | uniform split, or detach one factor as a gate |
-| P3 | Normalize / gate | softmax, LayerNorm, linear-attention denominator | detach the denominator, identity rule |
-| P4 | Reindex / sparsity | heads, windows, cyclic shifts, patch merging | permutation, exact |
+| #   | Primitive          | Instances                                        | Rule                                          |
+| --- | ------------------ | ------------------------------------------------ | --------------------------------------------- |
+| P1  | Linear map         | Q/K/V/out projections, MLP, conv, pooling        | epsilon / gamma rule                          |
+| P2  | Bilinear mix       | QKᵀ, A·V, linear-attention products              | uniform split, or detach one factor as a gate |
+| P3  | Normalize / gate   | softmax, LayerNorm, linear-attention denominator | detach the denominator, identity rule         |
+| P4  | Reindex / sparsity | heads, windows, cyclic shifts, patch merging     | permutation, exact                            |
 
 The lemmas and the full attention-coverage table are in [`docs/METHOD.md`](docs/METHOD.md).
 
@@ -272,12 +272,12 @@ The lemmas and the full attention-coverage table are in [`docs/METHOD.md`](docs/
 Paired per-image Pointing Game, same images for both methods, 95% bootstrap confidence
 intervals, n = 1000.
 
-| Backbone | Dataset | HiLRP | Grad-CAM | Paired McNemar |
-|---|---|---|---|---|
-| EfficientViT-B2 | ImageNet-S | **0.936** [0.921, 0.950] | 0.518 [0.486, 0.549] | p = 2.1e-104 |
-| PVT-v2-b2 | ImageNet-S | **0.958** [0.945, 0.970] | 0.846 [0.823, 0.868] | p = 1.3e-24 |
-| EfficientViT-B2 | VOC 2007 | **0.820** [0.795, 0.843] | 0.582 [0.551, 0.612] | p = 3.3e-41 |
-| PVT-v2-b2 | VOC 2007 | **0.865** [0.844, 0.886] | 0.621 [0.591, 0.650] | p = 5.7e-48 |
+| Backbone        | Dataset    | HiLRP                    | Grad-CAM             | Paired McNemar |
+| --------------- | ---------- | ------------------------ | -------------------- | -------------- |
+| EfficientViT-B2 | ImageNet-S | **0.936** [0.921, 0.950] | 0.518 [0.486, 0.549] | p = 2.1e-104   |
+| PVT-v2-b2       | ImageNet-S | **0.958** [0.945, 0.970] | 0.846 [0.823, 0.868] | p = 1.3e-24    |
+| EfficientViT-B2 | VOC 2007   | **0.820** [0.795, 0.843] | 0.582 [0.551, 0.612] | p = 3.3e-41    |
+| PVT-v2-b2       | VOC 2007   | **0.865** [0.844, 0.886] | 0.621 [0.591, 0.650] | p = 5.7e-48    |
 
 HiLRP is not best everywhere: Grad-CAM saturates the Pointing Game on Swin and MobileViT-v2.
 The cross-architecture benchmark, agreement with Shapley values, conservation measurements,
@@ -351,12 +351,11 @@ Numbers for each point are in [`docs/RESULTS.md`](docs/RESULTS.md#limitations).
 ## Citation
 
 ```bibtex
-@article{sathiyamohan2026hilrp,
-  title   = {Toward One Trustworthy Explanation for Any Vision Transformer:
-             Conservation-Valid Attribution via Attention Primitives},
-  author  = {Sathiyamohan, Nishankar},
-  journal = {Under review},
-  year    = {2026}
+@article{nishankar2026hilrp,
+  title={HiLRP: Toward One Trustworthy Explanation for Vision Transformer: Conservation-Valid Attribution via Attention Primitives},
+  author={Nishankar, Sathiyamohan and Sanjeewani, Pubudu and Perera, Asanka and Thuseethan, Selvarajah},
+  journal={arXiv preprint arXiv:2609.01282},
+  year={2026}
 }
 ```
 
