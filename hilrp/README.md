@@ -1,23 +1,29 @@
-# HiLRP — hierarchical LRP for resolution-reducing vision transformers
+# hilrp — the package
 
 Conservation-guaranteed attribution for hierarchical / hybrid ViTs (Swin patch
 merging, shifted windows, PVT/CvT spatial reduction), formulated as relevance
-flow on a multi-resolution token graph.
+flow on a multi-resolution token graph. Installation and a step-by-step tutorial
+are in the [top-level README](../README.md); this file is for readers of the code.
+
+```python
+import hilrp
+
+res = hilrp.attribute(model, x)        # any supported timm backbone
+res["pixel_map"], res["stage_sums"]
+```
 
 > **Scope of "guaranteed".** The guarantee is on the rules: proved, and tested to
 > machine precision in `tests/`. On the production ports it holds exactly for Swin
 > and PVT-v2 with bias-free weights (`tests_backend/`); on trained weights, and on
 > the convolution-hybrid ports at all, the relevance sum is a measured quantity.
-> Per-backbone numbers are in the top-level README, under Limitations.
-
-> **Name is internal.** `HiLRP` is unclaimed in the literature (cf. AttnLRP,
-> LRP-QViT, CA-LIG) but signals "hierarchical" rather than "resolution-reduction
-> rules". Revisit before it goes in a paper.
+> Per-backbone numbers are in [`docs/RESULTS.md`](../docs/RESULTS.md#limitations).
 
 ## What is the contribution vs. what is inherited
 
 | File | Role |
 |---|---|
+| `api.py` | The public entry point: `attribute`, and the dispatch from a timm architecture name to its port. |
+| `*_lxt.py` | One port per architecture family, wiring the rules into LXT's stabilized block rules. Importable on their own for family-specific options. |
 | `hierarchical.py` | **The contribution.** Flow-conserving rules for patch merging, the shifted-window (cyclic shift + attention mask) transition, and the un-concat regroup. |
 | `rules.py` | *Inherited* LRP primitives (linear ε-rule, LayerNorm/softmax identity rule, bilinear split, residual). Self-contained so tests run without LXT. |
 | `toy_swin.py` | **Test-only** 2-stage reference model. Uses naive block internals that are numerically unstable with biases — do **not** attribute real models with it. |
@@ -45,7 +51,7 @@ conservation-preserving normalization, `concat` an index partition) admits one
    the `hierarchical.py` rules into LXT's stabilized rules rather than
    reimplementing softmax/matmul/linears.
 
-## Verified numbers (float64, `pytest tests/`)
+## Verified numbers (float64, `pytest hilrp/tests/`)
 
 | property | achieved | CI ceiling |
 |---|---|---|
@@ -64,7 +70,7 @@ Run: `python -m pytest hilrp/tests/ -v`
 
 ## Gate-2-real: pretrained Swin-T (timm), verified 2026-07-04
 
-`swin_lxt.py` + `scripts/gate2_real_swin.py`, on LXT's *efficient* (Gradient x
+`swin_lxt.py` + `scripts/hilrp/gate2_real_swin.py`, on LXT's *efficient* (Gradient x
 Input) backend per their vision recipe: CP-LRP inside attention, identity-rule
 LN/GELU patches, zennit **Gamma(0.25)** on Linear/Conv2d. Two findings that
 matter:

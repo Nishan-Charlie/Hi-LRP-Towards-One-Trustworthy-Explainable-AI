@@ -5,7 +5,7 @@ as sum(R)/logit at the input-adjacent ("deep") capture. "AttnLRP-naive" = LXT's
 generic flat-transformer recipe applied to an unsupported architecture, granted
 the BN canonizer and correct preprocessing but none of HiLRP's contributions
 (attention rules, norm-subclass guard, non-GELU activation identities). Scripts:
-`scripts/lineage_comparison.py`, `scripts/lineage_naive_legs.py`.
+`scripts/hilrp/lineage_comparison.py`, `scripts/hilrp/lineage_naive_legs.py`.
 
 | model | family | AttnLRP-naive pointing | naive deep-cons | HiLRP pointing | HiLRP deep-cons |
 |---|---|---|---|---|---|

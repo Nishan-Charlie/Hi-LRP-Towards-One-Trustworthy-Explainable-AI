@@ -39,7 +39,7 @@ Conservation is not faithfulness: seeds are `logits[0, target].backward()`
 (seed 1), so total relevance = the logit value; the per-stage sums in
 `stage_sums` are reported normalized by the logit and should be ~1.0 up to
 bias/gamma absorption. Whether maps land on objects / are class-sensitive is
-the Gate-2-real script's job (scripts/gate2_real_swin.py).
+the Gate-2-real script's job (scripts/hilrp/gate2_real_swin.py).
 """
 from functools import partial
 
