@@ -15,7 +15,6 @@ import numpy as np
 import torch
 import torchvision.transforms as T
 from PIL import Image
-from skimage.transform import resize as sk_resize
 
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
@@ -68,4 +67,8 @@ def resize_map(hm: np.ndarray, size: int = 224) -> np.ndarray:
     hm = np.squeeze(np.asarray(hm, dtype=np.float32))
     if hm.shape[0] == size and hm.shape[1] == size:
         return hm
+    # Imported here, not at module scope: `xai_bench.utils` is imported by the
+    # runner (for set_seed), and scikit-image is the one dependency in this
+    # module that a bare torch/timm install does not have.
+    from skimage.transform import resize as sk_resize
     return sk_resize(hm, (size, size), mode="reflect", anti_aliasing=True).astype(np.float32)
