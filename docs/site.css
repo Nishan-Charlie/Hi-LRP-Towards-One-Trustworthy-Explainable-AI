@@ -1,0 +1,264 @@
+/* Shared by index.html and tutorial.html. No build step: edit and push. */
+
+/* Tokens. The two accents are the ends of HiLRP's diverging relevance scale:
+   blue is evidence against the class, red is evidence for it. */
+:root {
+  --paper: #fcfdfe;
+  --ink: #18202c;
+  --muted: #5b6676;
+  --rule: #dce2ea;
+  --panel: #f1f4f8;
+  --plate: #ffffff;
+  --against: #2c5aa0;
+  --for: #c0303a;
+  --p1: #6c8ebf;
+  --p2: #d79b00;
+  --p3: #9673a6;
+  --p4: #82b366;
+  --sans: "Schibsted Grotesk", "Segoe UI", system-ui, sans-serif;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --text: 42rem;
+  --wide: 70rem;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #121822;
+    --ink: #e6ebf2;
+    --muted: #9aa6b6;
+    --rule: #2a3442;
+    --panel: #1a2230;
+    --against: #7fa6e8;
+    --for: #f0646c;
+    color-scheme: dark;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 1.125rem/1.62 var(--serif);
+  font-optical-sizing: auto;
+}
+a { color: var(--against); text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--for); outline-offset: 3px; border-radius: 2px; }
+
+.wrap { width: min(var(--wide), 100% - 2.5rem); margin-inline: auto; }
+.measure { max-width: var(--text); }
+
+/* ---------- header ---------- */
+header { padding: clamp(2.5rem, 7vw, 5rem) 0 0; }
+.name {
+  font: 700 1rem/1 var(--sans);
+  letter-spacing: 0.01em;
+  margin: 0 0 1.25rem;
+}
+h1 {
+  font: 700 clamp(2.1rem, 5.2vw, 3.6rem)/1.04 var(--sans);
+  letter-spacing: -0.022em;
+  margin: 0;
+  max-width: 22ch;
+}
+.subtitle {
+  font: 500 clamp(1.15rem, 2.2vw, 1.45rem)/1.3 var(--sans);
+  color: var(--muted);
+  margin: 0.9rem 0 0;
+  max-width: 46ch;
+}
+.authors {
+  font: 400 1.05rem/1.5 var(--sans);
+  margin: 1.75rem 0 0;
+}
+.authors span { white-space: nowrap; }
+.links { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 1.5rem 0 0; padding: 0; list-style: none; }
+.links a {
+  display: inline-block;
+  font: 600 0.95rem/1 var(--sans);
+  color: var(--ink);
+  text-decoration: none;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  padding: 0.62rem 1.05rem;
+}
+.links a:hover { background: var(--ink); color: var(--paper); }
+
+/* Legend for the maps drawn on HiLRP's own diverging scale. */
+.colorbar { margin: 0.9rem 0 0; }
+.colorbar .bar {
+  height: 0.55rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2c5aa0 0%, #8fb0de 28%, #ffffff 50%, #eaa0a4 72%, #c0303a 100%);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+.colorbar .ends {
+  display: flex;
+  justify-content: space-between;
+  font: 500 0.9rem/1 var(--sans);
+  margin-top: 0.55rem;
+}
+.colorbar .ends span:first-child { color: var(--against); }
+.colorbar .ends span:nth-child(2) { color: var(--muted); }
+.colorbar .ends span:last-child { color: var(--for); }
+
+/* ---------- sections ---------- */
+main section { padding: clamp(2.5rem, 6vw, 4rem) 0 0; }
+h2 {
+  font: 700 1.65rem/1.15 var(--sans);
+  letter-spacing: -0.012em;
+  margin: 0 0 1rem;
+}
+p { margin: 0 0 1rem; }
+p:last-child { margin-bottom: 0; }
+
+figure { margin: 1.75rem 0 0; }
+.plate {
+  background: var(--plate);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: clamp(0.5rem, 1.5vw, 1rem);
+}
+.plate img { display: block; width: 100%; height: auto; }
+figcaption {
+  font: 400 0.95rem/1.5 var(--serif);
+  color: var(--muted);
+  margin-top: 0.7rem;
+  max-width: var(--text);
+}
+.teaser { margin-top: 2.25rem; }
+
+/* stage strip scrolls sideways on phones instead of shrinking to illegibility */
+.strip { overflow-x: auto; }
+.strip img { min-width: 44rem; }
+
+/* ---------- method ---------- */
+.primitives { list-style: none; padding: 0; margin: 1.5rem 0 0; display: grid; gap: 0.9rem; }
+.primitives li { display: grid; grid-template-columns: 2.6rem 1fr; gap: 0.25rem 1rem; align-items: baseline; }
+.primitives b {
+  font: 700 1rem/1 var(--sans);
+  border-left: 4px solid currentColor;
+  padding: 0.15rem 0 0.15rem 0.5rem;
+}
+.primitives .p1 b { color: var(--p1); }
+.primitives .p2 b { color: var(--p2); }
+.primitives .p3 b { color: var(--p3); }
+.primitives .p4 b { color: var(--p4); }
+.primitives strong { font-family: var(--sans); font-weight: 600; }
+
+/* ---------- results ---------- */
+.table-scroll { overflow-x: auto; margin-top: 1.5rem; }
+table { border-collapse: collapse; width: 100%; min-width: 34rem; font: 400 1rem/1.4 var(--sans); font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 0.65rem 1rem 0.65rem 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 600; color: var(--muted); font-size: 0.92rem; }
+td.hilrp { font-weight: 700; color: var(--for); }
+td small { display: block; color: var(--muted); font-weight: 400; font-size: 0.82rem; }
+
+/* ---------- gallery ---------- */
+.gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.25rem 1.75rem; align-items: start; margin-top: 0.5rem; }
+.gallery figure { margin: 0; }
+@media (max-width: 760px) { .gallery { grid-template-columns: 1fr; } }
+
+/* ---------- code ---------- */
+pre {
+  font: 400 0.9rem/1.6 var(--mono);
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 1rem 1.15rem;
+  overflow-x: auto;
+  margin: 1rem 0 0;
+  tab-size: 4;
+}
+code { font-family: var(--mono); font-size: 0.92em; }
+.code { max-width: 60rem; }
+pre .c { color: var(--muted); }
+
+.limits { margin: 1rem 0 0; padding-left: 1.2rem; }
+.limits li { margin-bottom: 0.7rem; }
+
+.cite { position: relative; }
+.copy {
+  position: absolute; top: 0.6rem; right: 0.6rem;
+  font: 600 0.85rem/1 var(--sans);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+}
+.copy:hover { background: var(--ink); color: var(--paper); }
+.cite pre { padding-top: 3rem; white-space: pre-wrap; word-break: break-word; }
+
+footer { padding: 4rem 0 3rem; color: var(--muted); font: 400 0.95rem/1.5 var(--sans); }
+footer p { margin: 0; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* ---------- tutorial page ---------- */
+.topbar {
+  display: flex; align-items: baseline; justify-content: space-between;
+  flex-wrap: wrap; gap: 0.75rem 1.5rem;
+  padding: 1.25rem 0; border-bottom: 1px solid var(--rule);
+}
+.topbar .home { font: 700 1.05rem/1 var(--sans); color: var(--ink); text-decoration: none; }
+.topbar ul { display: flex; flex-wrap: wrap; gap: 0.6rem 1.4rem; list-style: none; margin: 0; padding: 0; font: 500 0.98rem/1 var(--sans); }
+.topbar ul a { color: var(--ink); text-decoration: none; }
+.topbar ul a:hover { text-decoration: underline; }
+.topbar ul a[aria-current="page"] { color: var(--for); }
+
+.intro { padding: clamp(2rem, 5vw, 3.5rem) 0 0; }
+.lede { font-size: 1.2rem; color: var(--muted); margin: 1rem 0 0; }
+
+.toc { margin: 1.75rem 0 0; }
+.toc ol {
+  margin: 0; padding: 0 0 0 1.4rem;
+  columns: 2 16rem; column-gap: 2.5rem;
+  font: 500 1rem/1.5 var(--sans);
+}
+.toc li { break-inside: avoid; padding: 0.15rem 0; }
+
+.step h2 { display: flex; align-items: baseline; gap: 0.75rem; }
+.step h2 .n {
+  flex: none;
+  display: inline-grid; place-items: center;
+  width: 1.9rem; height: 1.9rem;
+  border-radius: 999px;
+  background: var(--ink); color: var(--paper);
+  font: 700 0.95rem/1 var(--sans);
+  transform: translateY(-0.12rem);
+}
+.step h3 { font: 600 1.1rem/1.3 var(--sans); margin: 1.75rem 0 0.5rem; }
+
+.snippet { position: relative; }
+/* the button gets its own strip above the first line, so it never covers code */
+.snippet pre { padding-top: 2.75rem; }
+
+/* printed output: no panel, a rule on the left, so it never reads as code to type */
+pre.out {
+  background: transparent;
+  border: 0; border-left: 3px solid var(--rule); border-radius: 0;
+  color: var(--muted);
+  padding: 0.25rem 0 0.25rem 1rem;
+  margin-top: 0.75rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.keys { min-width: 0; margin-top: 1rem; }
+.keys td:first-child { white-space: nowrap; }
+.keys code { font-size: 0.88rem; }
+
+.api { margin: 1.25rem 0 0; }
+.api dt { margin-top: 1.4rem; }
+.api dt code {
+  font: 500 0.92rem/1.5 var(--mono);
+  background: var(--panel); border: 1px solid var(--rule); border-radius: 4px;
+  padding: 0.2rem 0.45rem;
+  display: inline-block; max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.api dd { margin: 0.45rem 0 0; }

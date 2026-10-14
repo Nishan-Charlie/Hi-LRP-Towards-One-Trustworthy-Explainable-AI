@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HiLRP tutorial</title>
+<meta name="description" content="A step-by-step tutorial for the hilrp Python library: install it, explain a Vision Transformer's prediction, visualize relevance at every resolution, read the conservation trace, and use it on any supported timm backbone.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="HiLRP tutorial">
+<meta property="og:description" content="Explain a Vision Transformer's prediction with the hilrp library, step by step.">
+<meta property="og:url" content="https://nishan-charlie.github.io/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/tutorial.html">
+<meta property="og:image" content="https://nishan-charlie.github.io/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/assets/tutorial_stages.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='8' height='8' fill='%23c0303a'/%3E%3Crect x='8' width='8' height='8' fill='%23f2c4c6'/%3E%3Crect y='8' width='8' height='8' fill='%23c6d4ec'/%3E%3Crect x='8' y='8' width='8' height='8' fill='%232c5aa0'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+
+<header class="wrap topbar">
+  <a class="home" href="index.html">HiLRP</a>
+  <nav aria-label="Site">
+    <ul>
+      <li><a href="index.html">Project page</a></li>
+      <li><a href="tutorial.html" aria-current="page">Tutorial</a></li>
+      <li><a href="https://arxiv.org/abs/2609.01282">Paper</a></li>
+      <li><a href="https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI">Code</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <div class="intro measure">
+    <h1>Tutorial</h1>
+    <p class="lede">Explain a Vision Transformer's prediction with the <code>hilrp</code> library, from installing it to comparing it fairly against other methods. Every snippet runs as written, in order, and the output shown under it is what it prints.</p>
+    <nav class="toc" aria-label="Steps">
+      <ol>
+        <li><a href="#install">Install</a></li>
+        <li><a href="#load">Load a model and an image</a></li>
+        <li><a href="#explain">Explain a prediction</a></li>
+        <li><a href="#visualize">Visualize the map</a></li>
+        <li><a href="#stages">One map per resolution stage</a></li>
+        <li><a href="#trace">Read the conservation trace</a></li>
+        <li><a href="#backbones">Use any supported backbone</a></li>
+        <li><a href="#options">Options</a></li>
+        <li><a href="#compare">Compare against other methods safely</a></li>
+        <li><a href="#beyond">Explain something other than a class</a></li>
+      </ol>
+      <p style="margin-top:0.75rem;font:500 1rem/1.5 var(--sans)">Then the <a href="#api">API reference</a>.</p>
+    </nav>
+  </div>
+
+  <section class="step" id="install" aria-labelledby="install-title">
+    <div class="measure">
+      <h2 id="install-title"><span class="n" aria-hidden="true">1</span>Install</h2>
+      <p>HiLRP needs Python 3.11.11 or newer and PyTorch 2.1 or newer. One command installs the library and its attribution backend, <code>lxt</code> and <code>zennit</code>.</p>
+    </div>
+    <div class="code">
+<pre data-copy><code>pip install "hilrp @ git+https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI.git"</code></pre>
+    </div>
+    <div class="measure">
+      <p style="margin-top:1rem">On Windows, set <code>PYTHONUTF8=1</code> first, or the metadata step of <code>lxt</code> fails with a <code>UnicodeDecodeError</code>. Check the install:</p>
+    </div>
+    <div class="code">
+<pre data-copy><code>import hilrp
+
+print(hilrp.__version__)
+print(hilrp.supported_architectures())</code></pre>
+<pre class="out" aria-label="Output"><code>0.2.0
+{'swin': ('swin',), 'pvt_v2': ('pvt',), 'maxvit': ('maxvit', 'maxxvit'), 'mobilevit': ('mobilevit',), 'efficientvit': ('efficientvit',), 'vit': ('vit', 'deit', 'beit')}</code></pre>
+    </div>
+  </section>
+
+  <section class="step" id="load" aria-labelledby="load-title">
+    <div class="measure">
+      <h2 id="load-title"><span class="n" aria-hidden="true">2</span>Load a model and an image</h2>
+      <p>HiLRP works on unmodified timm models. Preprocess the image the way the model expects; timm reads that from the model itself. Any RGB photo works. This one is the cat used in the rest of the tutorial.</p>
+    </div>
+    <div class="code">
+<pre data-copy><code>import urllib.request
+import timm, torch
+from PIL import Image
+
+urllib.request.urlretrieve(
+    "https://raw.githubusercontent.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/main/images/cat.jpg",
+    "cat.jpg")
+
+model = timm.create_model("swin_tiny_patch4_window7_224", pretrained=True).eval()
+config = timm.data.resolve_data_config({}, model=model)
+transform = timm.data.create_transform(**config)
+
+image = Image.open("cat.jpg").convert("RGB")
+x = transform(image).unsqueeze(0)
+print(x.shape)</code></pre>
+<pre class="out" aria-label="Output"><code>torch.Size([1, 3, 224, 224])</code></pre>
+    </div>
+  </section>
+
+  <section class="step" id="explain" aria-labelledby="explain-title">
+    <div class="measure">
+      <h2 id="explain-title"><span class="n" aria-hidden="true">3</span>Explain a prediction</h2>
+      <p>One call, one forward and one backward pass. There is no sampling, so the same input always gives the same map. By default HiLRP explains the predicted class; pass <code>target</code> to explain any other.</p>
+    </div>
+    <div class="code">
+<pre data-copy><code>res = hilrp.attribute(model, x)
+print(res["target"], round(res["logit"], 2))
+
+egyptian_cat = hilrp.attribute(model, x, target=285)
+print(egyptian_cat["target"])</code></pre>
+<pre class="out" aria-label="Output"><code>281 8.06
+285</code></pre>
+    </div>
+    <div class="measure">
+      <p style="margin-top:1rem">Class 281 is <i>tabby cat</i>. The result is a dictionary:</p>
+      <div class="table-scroll">
+        <table class="keys">
+          <thead><tr><th scope="col">Key</th><th scope="col">What it holds</th></tr></thead>
+          <tbody>
+            <tr><td><code>target</code>, <code>logit</code></td><td>The explained class and its logit.</td></tr>
+            <tr><td><code>pixel_map</code></td><td>A <code>[H, W]</code> tensor of signed relevance at the input pixels. Positive values are evidence for the class, negative values evidence against it.</td></tr>
+            <tr><td><code>stage_sums</code></td><td>The conservation trace: <code>(capture, sum of relevance / logit)</code> from the input side to the head.</td></tr>
+            <tr><td><code>stage_maps</code></td><td>Swin only: <code>(capture, [h, w] map)</code>, one relevance map per resolution stage.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" id="visualize" aria-labelledby="visualize-title">
+    <div class="measure">
+      <h2 id="visualize-title"><span class="n" aria-hidden="true">4</span>Visualize the map</h2>
+      <p>Relevance is heavy-tailed: a few pixels can carry a large share of it, so a plain min-max colour scale washes the map out. <code>show_relevance</code> clips at the 99th percentile of the absolute value and draws it on a diverging scale centred at zero. Show the image the model actually saw, which is the centre crop, not the original photo.</p>
+    </div>
+    <div class="code">
+<pre data-copy><code>import matplotlib.pyplot as plt
+
+mean = torch.tensor(config["mean"]).view(3, 1, 1)
+std = torch.tensor(config["std"]).view(3, 1, 1)
+seen = (x[0] * std + mean).clamp(0, 1).permute(1, 2, 0)
+
+fig, (left, right) = plt.subplots(1, 2, figsize=(7, 3.6))
+left.imshow(seen)
+left.set_title("input", fontsize=8)
+left.axis("off")
+hilrp.show_relevance(right, res["pixel_map"], title="HiLRP, tabby cat")
+fig.savefig("cat_hilrp.png", dpi=160, bbox_inches="tight")</code></pre>
+    </div>
+    <figure>
+      <div class="plate" style="max-width:34rem">
+        <img src="assets/tutorial_visualize.jpg" width="899" height="453" loading="lazy"
+             alt="The centre-cropped cat photo next to its HiLRP relevance map, with relevance tracing the cat's face, stripes and outline">
+      </div>
+      <figcaption>The figure this step writes. Red is evidence for <i>tabby cat</i>, blue is evidence against it.</figcaption>
+    </figure>
+    <div class="measure">
+      <p style="margin-top:1.5rem">To draw it yourself, <code>hilrp.normalize_for_display(res["pixel_map"])</code> returns the clipped array and the value to use as the colour limit.</p>
+    </div>
+  </section>
+
+  <section class="step" id="stages" aria-labelledby="stages-title">
+    <div class="measure">
+      <h2 id="stages-title"><span class="n" aria-hidden="true">5</span>One map per resolution stage</h2>
+      <p>HiLRP tracks relevance at every interface of the network, so on Swin the call you already made also returns a map at each stage. Nothing is recomputed.</p>
+    </div>
+    <div class="code">
+<pre data-copy><code>fig, axes = plt.subplots(1, len(res["stage_maps"]), figsize=(13, 2.8))
+for ax, (capture, stage_map) in zip(axes, res["stage_maps"]):
+    hilrp.show_relevance(ax, stage_map, title=capture)
+    print(capture, tuple(stage_map.shape))
+fig.savefig("cat_stages.png", dpi=160, bbox_inches="tight")</code></pre>
+<pre class="out" aria-label="Output"><code>tokens_56 (56, 56)
+stage1_in_28 (28, 28)
+stage2_in_14 (14, 14)
+stage3_in_7 (7, 7)
+final_7 (7, 7)</code></pre>
+    </div>
+    <figure>
+      <div class="plate strip">
+        <img src="assets/tutorial_stages.jpg" width="1644" height="337" loading="lazy"
+             alt="HiLRP relevance for the cat at the 56, 28, 14 and 7 token stages of Swin-T">
+      </div>
+      <figcaption>Fine stages show texture and parts; coarse stages show the object.</figcaption>
+    </figure>
+  </section>
+
+  <section class="step" id="trace" aria-labelledby="trace-title">
+    <div class="measure">
+      <h2 id="trace-title"><span class="n" aria-hidden="true">6</span>Read the conservation trace</h2>
+      <p><code>stage_sums</code> says how much of the logit the relevance at each capture accounts for. 1.00 means it sums exactly to the logit.</p>
+    </div>
+    <div class="code">
+<pre data-copy><code>for capture, ratio in res["stage_sums"]:
+    print(f"{capture:14s} {ratio:+.2f}")
+print(f"{'pixels':14s} {res['pixel_map'].sum().item() / res['logit']:+.2f}")</code></pre>
+<pre class="out" aria-label="Output"><code>tokens_56      +1.07
+stage1_in_28   +1.03
+stage2_in_14   +1.10
+stage3_in_7    +1.26
+final_7        +1.00
+pixels         +0.77</code></pre>
+    </div>
+    <div class="measure">
+      <p style="margin-top:1rem">Use the trace as a diagnostic, not a score. On Swin and PVT-v2 the rules conserve exactly when the weights have no biases, so any gap on a trained model is what its biases absorb. On MaxViT, MobileViT-v2, EfficientViT and plain ViTs the sum drifts with depth; the measured values per backbone are in <a href="https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/blob/main/docs/RESULTS.md#limitations">RESULTS.md</a>.</p>
+    </div>
+  </section>
+
+  <section class="step" id="backbones" aria-labelledby="backbones-title">
+    <div class="measure">
+      <h2 id="backbones-title"><span class="n" aria-hidden="true">7</span>Use any supported backbone</h2>
+      <p>The call does not change. <code>hilrp.attribute</code> reads the architecture from the timm model and picks the rules for it. Each model gets its own preprocessing: MobileViT-v2, for one, expects a 256-pixel input.</p>
+    </div>
+    <div class="code">
+<pre data-copy><code>for name in ["pvt_v2_b2", "maxvit_small_tf_224", "mobilevitv2_100", "efficientvit_b2", "deit_base_patch16_224"]:
+    other = timm.create_model(name, pretrained=True).eval()
+    other_x = timm.data.create_transform(**timm.data.resolve_data_config({}, model=other))(image).unsqueeze(0)
+    out = hilrp.attribute(other, other_x)
+    print(f"{name:22s} class {out['target']}  map {tuple(out['pixel_map'].shape)}")</code></pre>
+<pre class="out" aria-label="Output"><code>pvt_v2_b2              class 281  map (224, 224)
+maxvit_small_tf_224    class 285  map (224, 224)
+mobilevitv2_100        class 281  map (256, 256)
+efficientvit_b2        class 281  map (224, 224)
+deit_base_patch16_224  class 281  map (224, 224)</code></pre>
+    </div>
+    <div class="measure">
+      <div class="table-scroll">
+        <table class="keys">
+          <thead><tr><th scope="col">Family</th><th scope="col">Attention</th><th scope="col">Checked on</th></tr></thead>
+          <tbody>
+            <tr><td>Swin</td><td>windowed and shifted, patch merging</td><td><code>swin_tiny</code>, <code>swin_base</code></td></tr>
+            <tr><td>PVT-v2</td><td>spatial reduction</td><td><code>pvt_v2_b0</code>, <code>pvt_v2_b2</code></td></tr>
+            <tr><td>MaxViT</td><td>multi-axis</td><td><code>maxvit_tiny_tf_224</code>, <code>maxvit_small_tf_224</code></td></tr>
+            <tr><td>MobileViT-v2</td><td>separable, convolution hybrid</td><td><code>mobilevitv2_050</code>, <code>mobilevitv2_100</code></td></tr>
+            <tr><td>EfficientViT (MIT)</td><td>linear</td><td><code>efficientvit_b0</code>, <code>b1</code>, <code>b2</code></td></tr>
+            <tr><td>ViT, DeiT</td><td>global self-attention</td><td><code>vit_tiny</code>, <code>vit_base</code>, <code>deit_base</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:1rem">CNNs are out of scope: <code>hilrp.attribute</code> on a ResNet raises a <code>ValueError</code> that lists the supported name prefixes.</p>
+    </div>
+  </section>
+
+  <section class="step" id="options" aria-labelledby="options-title">
+    <div class="measure">
+      <h2 id="options-title"><span class="n" aria-hidden="true">8</span>Options</h2>
+      <p>Keyword arguments go straight to the rules for that architecture family.</p>
+    </div>
+    <div class="code">
+<pre data-copy><code>hilrp.attribute(model, x, gamma=0.25)          # gamma rule on Linear and Conv2d layers (the default)
+hilrp.attribute(model, x, conv_gamma=0.05)     # a separate gamma for convolutions
+hilrp.attribute(model, x, attn_mode="attnlrp") # Swin and ViT only: AttnLRP rules inside attention
+hilrp.attribute(model, x, arch="swin_tiny_patch4_window7_224")  # if the model has no timm config</code></pre>
+    </div>
+    <div class="measure">
+      <p style="margin-top:1rem">The default <code>attn_mode="cp"</code> treats the attention matrix as fixed weights and is the conserving choice. <code>"attnlrp"</code> is there as a diagnostic.</p>
+    </div>
+  </section>
+
+  <section class="step" id="compare" aria-labelledby="compare-title">
+    <div class="measure">
+      <h2 id="compare-title"><span class="n" aria-hidden="true">9</span>Compare against other methods safely</h2>
+      <p>HiLRP installs its rules by patching classes such as <code>nn.LayerNorm</code>, <code>nn.GELU</code> and the timm attention blocks. The patches apply to the whole Python process and are never undone. Forward passes give the same numbers as before, but gradients do not, so a gradient-based method you run <em>after</em> HiLRP is no longer the method you meant to compare against.</p>
+      <p>The session above is already patched. In a fresh session, compute every other method first:</p>
+    </div>
+    <div class="code">
+<pre data-copy><code>import timm, torch, hilrp
+from PIL import Image
+
+model = timm.create_model("swin_tiny_patch4_window7_224", pretrained=True).eval()
+transform = timm.data.create_transform(**timm.data.resolve_data_config({}, model=model))
+x = transform(Image.open("cat.jpg").convert("RGB")).unsqueeze(0)
+print(hilrp.patched_ports())
+
+# 1. any other gradient-based method, on the unpatched model
+x_grad = x.clone().requires_grad_(True)
+model(x_grad)[0, 281].backward()
+saliency = x_grad.grad.abs().sum(1)[0]
+
+# 2. HiLRP last: the process is patched from here on
+res = hilrp.attribute(model, x)
+print(hilrp.patched_ports())</code></pre>
+<pre class="out" aria-label="Output"><code>[]
+['hilrp.swin_lxt']</code></pre>
+    </div>
+    <div class="measure">
+      <p style="margin-top:1rem">Or run each method in its own process. The benchmark in the repository enforces this: it rejects any run that mixes HiLRP with another method.</p>
+    </div>
+  </section>
+
+  <section class="step" id="beyond" aria-labelledby="beyond-title">
+    <div class="measure">
+      <h2 id="beyond-title"><span class="n" aria-hidden="true">10</span>Explain something other than a class</h2>
+      <p>The backward pass can start from any differentiable scalar. A self-supervised model has no classifier, so explain how similar it finds the image to a mirrored view of itself:</p>
+    </div>
+    <div class="code">
+<pre data-copy><code>from hilrp.vit_lxt import attribute_ssl_similarity
+
+dino = timm.create_model("vit_base_patch16_224.dino", pretrained=True).eval()
+dino_x = timm.data.create_transform(**timm.data.resolve_data_config({}, model=dino))(image).unsqueeze(0)
+
+out = attribute_ssl_similarity(dino, dino_x, x_ref=torch.flip(dino_x, dims=[3]))
+print(round(out["similarity"], 3), tuple(out["pixel_map"].shape))</code></pre>
+<pre class="out" aria-label="Output"><code>0.996 (224, 224)</code></pre>
+    </div>
+    <div class="measure">
+      <p style="margin-top:1rem">For CLIP, <code>hilrp.clip_lxt.attribute_clip_image_text</code> explains the similarity between an image and a caption with the same rules. The repository's <a href="https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/blob/main/scripts/hilrp/clip_demo.py">clip_demo.py</a> is a complete example.</p>
+    </div>
+  </section>
+
+  <section id="api" aria-labelledby="api-title">
+    <div class="measure">
+      <h2 id="api-title">API reference</h2>
+      <p>Everything below is importable from <code>hilrp</code> unless a module is named.</p>
+      <dl class="api">
+        <dt><code>hilrp.attribute(model, x, target=None, *, arch=None, **kwargs)</code></dt>
+        <dd>Explain one prediction of a supported timm model in one backward pass. <code>x</code> is a <code>[1, 3, H, W]</code> batch, normalized as the model expects. Returns the dictionary described in <a href="#explain">step 3</a>. The keyword arguments are those in <a href="#options">step 8</a>.</dd>
+
+        <dt><code>hilrp.attributor_for(arch)</code></dt>
+        <dd>The attribution function for a timm architecture name, for example <code>"pvt_v2_b2"</code>. Raises <code>ValueError</code> for an unsupported architecture, and <code>ImportError</code> with the install command if the backend is missing.</dd>
+
+        <dt><code>hilrp.supported_architectures()</code></dt>
+        <dd>A dictionary from each supported family to the timm name prefixes it covers.</dd>
+
+        <dt><code>hilrp.patched_ports()</code></dt>
+        <dd>The families whose patches are live in this process. An empty list means no other method has been affected yet.</dd>
+
+        <dt><code>hilrp.show_relevance(ax, pixel_map, title=None, percentile=99.0, smooth_sigma=0.0, cmap="bwr")</code></dt>
+        <dd>Draw a relevance map on a matplotlib axis with robust clipping. Returns the axis.</dd>
+
+        <dt><code>hilrp.normalize_for_display(pixel_map, percentile=99.0, smooth_sigma=0.0)</code></dt>
+        <dd>Return <code>(clipped_map, vmax)</code> for drawing it yourself with <code>vmin=-vmax, vmax=vmax</code>. Smoothing is for display only and needs <code>scipy</code>.</dd>
+
+        <dt><code>hilrp.vit_lxt.attribute_ssl_similarity(model, x, x_ref, gamma=0.25, conv_gamma=None)</code></dt>
+        <dd>Label-free attribution for a ViT: which evidence in <code>x</code> supports the similarity of its class token to that of <code>x_ref</code>. Returns <code>similarity</code>, <code>pixel_map</code> and <code>stage_sums</code>.</dd>
+
+        <dt><code>hilrp.clip_lxt.attribute_clip_image_text(model, image, text_embed, gamma=0.25)</code></dt>
+        <dd>Attribute an open_clip model's image-text similarity to the pixels. <code>text_embed</code> is a precomputed, L2-normalized and detached text embedding. Returns <code>similarity</code> and <code>pixel_map</code>.</dd>
+      </dl>
+    </div>
+  </section>
+
+</main>
+
+<footer class="wrap">
+  <p>Code released under the MIT license. Questions and bug reports: <a href="https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/issues">GitHub issues</a>.</p>
+</footer>
+
+<script src="site.js"></script>
+</body>
+</html>
