@@ -65,7 +65,7 @@ dev = ["pytest", "build", "twine"]
 all = ["hilrp[bench,dev]"]
 
 [project.urls]
-Homepage = "https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI"
+Homepage = "https://nishan-charlie.github.io/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/"
 Documentation = "https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI#tutorial"
 Repository = "https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI"
 Issues = "https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/issues"

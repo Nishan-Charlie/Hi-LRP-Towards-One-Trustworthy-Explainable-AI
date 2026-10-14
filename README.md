@@ -1,18 +1,19 @@
 # HiLRP
 
-### Toward One Trustworthy Explanation for Any Vision Transformer: Conservation-Valid Attribution via Attention Primitives
+### Toward One Trustworthy Explanation for Vision Transformer: Conservation-Valid Attribution via Attention Primitives
 
-**Nishankar Sathiyamohan** · Department of Computer Engineering, University of Peradeniya
+Nishankar Sathiyamohan, Pubudu Sanjeewani, Asanka Perera, Selvarajah Thuseethan
 
 <p align="left">
-  <img alt="paper" src="https://img.shields.io/badge/paper-under%20review-lightgrey">
+  <a href="https://nishan-charlie.github.io/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/"><img alt="project page" src="https://img.shields.io/badge/project-page-c0303a"></a>
+  <a href="https://arxiv.org/abs/2609.01282"><img alt="arXiv" src="https://img.shields.io/badge/arXiv-2609.01282-b31b1b"></a>
   <a href="https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/actions/workflows/conservation-tests.yml"><img alt="tests" src="https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/actions/workflows/conservation-tests.yml/badge.svg"></a>
   <img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-blue">
   <img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-2.1%2B-ee4c2c">
   <img alt="license" src="https://img.shields.io/badge/license-MIT-green">
 </p>
 
-Official PyTorch implementation of **HiLRP**, a relevance-propagation method that explains
+**[Project page](https://nishan-charlie.github.io/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/)** · Official PyTorch implementation of **HiLRP**, a relevance-propagation method that explains
 hierarchical and hybrid Vision Transformers in a single backward pass, and of the benchmark
 used to evaluate it.
 

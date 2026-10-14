@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HiLRP: Toward One Trustworthy Explanation for Vision Transformer</title>
+<meta name="description" content="HiLRP explains hierarchical and hybrid Vision Transformers in one backward pass, with relevance maps at the pixels and at every resolution stage. Paper, code and a pip-installable library.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="HiLRP: Toward One Trustworthy Explanation for Vision Transformer">
+<meta property="og:description" content="Conservation-valid attribution via attention primitives. One backward pass, maps at every resolution, any supported timm backbone.">
+<meta property="og:url" content="https://nishan-charlie.github.io/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/">
+<meta property="og:image" content="https://nishan-charlie.github.io/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/assets/hero_architecture_comparison.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='8' height='8' fill='%23c0303a'/%3E%3Crect x='8' width='8' height='8' fill='%23f2c4c6'/%3E%3Crect y='8' width='8' height='8' fill='%23c6d4ec'/%3E%3Crect x='8' y='8' width='8' height='8' fill='%232c5aa0'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+  /* Tokens. The two accents are the ends of HiLRP's diverging relevance scale:
+     blue is evidence against the class, red is evidence for it. */
+  :root {
+    --paper: #fcfdfe;
+    --ink: #18202c;
+    --muted: #5b6676;
+    --rule: #dce2ea;
+    --panel: #f1f4f8;
+    --plate: #ffffff;
+    --against: #2c5aa0;
+    --for: #c0303a;
+    --p1: #6c8ebf;
+    --p2: #d79b00;
+    --p3: #9673a6;
+    --p4: #82b366;
+    --sans: "Schibsted Grotesk", "Segoe UI", system-ui, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    --text: 42rem;
+    --wide: 70rem;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #121822;
+      --ink: #e6ebf2;
+      --muted: #9aa6b6;
+      --rule: #2a3442;
+      --panel: #1a2230;
+      --against: #7fa6e8;
+      --for: #f0646c;
+      color-scheme: dark;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 400 1.125rem/1.62 var(--serif);
+    font-optical-sizing: auto;
+  }
+  a { color: var(--against); text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 2px solid var(--for); outline-offset: 3px; border-radius: 2px; }
+
+  .wrap { width: min(var(--wide), 100% - 2.5rem); margin-inline: auto; }
+  .measure { max-width: var(--text); }
+
+  /* ---------- header ---------- */
+  header { padding: clamp(2.5rem, 7vw, 5rem) 0 0; }
+  .name {
+    font: 700 1rem/1 var(--sans);
+    letter-spacing: 0.01em;
+    margin: 0 0 1.25rem;
+  }
+  h1 {
+    font: 700 clamp(2.1rem, 5.2vw, 3.6rem)/1.04 var(--sans);
+    letter-spacing: -0.022em;
+    margin: 0;
+    max-width: 22ch;
+  }
+  .subtitle {
+    font: 500 clamp(1.15rem, 2.2vw, 1.45rem)/1.3 var(--sans);
+    color: var(--muted);
+    margin: 0.9rem 0 0;
+    max-width: 46ch;
+  }
+  .authors {
+    font: 400 1.05rem/1.5 var(--sans);
+    margin: 1.75rem 0 0;
+  }
+  .authors span { white-space: nowrap; }
+  .links { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 1.5rem 0 0; padding: 0; list-style: none; }
+  .links a {
+    display: inline-block;
+    font: 600 0.95rem/1 var(--sans);
+    color: var(--ink);
+    text-decoration: none;
+    border: 1.5px solid var(--ink);
+    border-radius: 999px;
+    padding: 0.62rem 1.05rem;
+  }
+  .links a:hover { background: var(--ink); color: var(--paper); }
+
+  /* Legend for the maps drawn on HiLRP's own diverging scale. */
+  .colorbar { margin: 0.9rem 0 0; }
+  .colorbar .bar {
+    height: 0.55rem;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #2c5aa0 0%, #8fb0de 28%, #ffffff 50%, #eaa0a4 72%, #c0303a 100%);
+    box-shadow: inset 0 0 0 1px var(--rule);
+  }
+  .colorbar .ends {
+    display: flex;
+    justify-content: space-between;
+    font: 500 0.9rem/1 var(--sans);
+    margin-top: 0.55rem;
+  }
+  .colorbar .ends span:first-child { color: var(--against); }
+  .colorbar .ends span:nth-child(2) { color: var(--muted); }
+  .colorbar .ends span:last-child { color: var(--for); }
+
+  /* ---------- sections ---------- */
+  main section { padding: clamp(2.5rem, 6vw, 4rem) 0 0; }
+  h2 {
+    font: 700 1.65rem/1.15 var(--sans);
+    letter-spacing: -0.012em;
+    margin: 0 0 1rem;
+  }
+  p { margin: 0 0 1rem; }
+  p:last-child { margin-bottom: 0; }
+
+  figure { margin: 1.75rem 0 0; }
+  .plate {
+    background: var(--plate);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: clamp(0.5rem, 1.5vw, 1rem);
+  }
+  .plate img { display: block; width: 100%; height: auto; }
+  figcaption {
+    font: 400 0.95rem/1.5 var(--serif);
+    color: var(--muted);
+    margin-top: 0.7rem;
+    max-width: var(--text);
+  }
+  .teaser { margin-top: 2.25rem; }
+
+  /* stage strip scrolls sideways on phones instead of shrinking to illegibility */
+  .strip { overflow-x: auto; }
+  .strip img { min-width: 44rem; }
+
+  /* ---------- method ---------- */
+  .primitives { list-style: none; padding: 0; margin: 1.5rem 0 0; display: grid; gap: 0.9rem; }
+  .primitives li { display: grid; grid-template-columns: 2.6rem 1fr; gap: 0.25rem 1rem; align-items: baseline; }
+  .primitives b {
+    font: 700 1rem/1 var(--sans);
+    border-left: 4px solid currentColor;
+    padding: 0.15rem 0 0.15rem 0.5rem;
+  }
+  .primitives .p1 b { color: var(--p1); }
+  .primitives .p2 b { color: var(--p2); }
+  .primitives .p3 b { color: var(--p3); }
+  .primitives .p4 b { color: var(--p4); }
+  .primitives strong { font-family: var(--sans); font-weight: 600; }
+
+  /* ---------- results ---------- */
+  .table-scroll { overflow-x: auto; margin-top: 1.5rem; }
+  table { border-collapse: collapse; width: 100%; min-width: 34rem; font: 400 1rem/1.4 var(--sans); font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 0.65rem 1rem 0.65rem 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font-weight: 600; color: var(--muted); font-size: 0.92rem; }
+  td.hilrp { font-weight: 700; color: var(--for); }
+  td small { display: block; color: var(--muted); font-weight: 400; font-size: 0.82rem; }
+
+  /* ---------- gallery ---------- */
+  .gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.25rem 1.75rem; align-items: start; margin-top: 0.5rem; }
+  .gallery figure { margin: 0; }
+  @media (max-width: 760px) { .gallery { grid-template-columns: 1fr; } }
+
+  /* ---------- code ---------- */
+  pre {
+    font: 400 0.9rem/1.6 var(--mono);
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 1rem 1.15rem;
+    overflow-x: auto;
+    margin: 1rem 0 0;
+    tab-size: 4;
+  }
+  code { font-family: var(--mono); font-size: 0.92em; }
+  .code { max-width: 60rem; }
+  pre .c { color: var(--muted); }
+
+  .limits { margin: 1rem 0 0; padding-left: 1.2rem; }
+  .limits li { margin-bottom: 0.7rem; }
+
+  .cite { position: relative; }
+  .copy {
+    position: absolute; top: 0.6rem; right: 0.6rem;
+    font: 600 0.85rem/1 var(--sans);
+    color: var(--ink);
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    border-radius: 999px;
+    padding: 0.45rem 0.8rem;
+    cursor: pointer;
+  }
+  .copy:hover { background: var(--ink); color: var(--paper); }
+  .cite pre { padding-top: 3rem; white-space: pre-wrap; word-break: break-word; }
+
+  footer { padding: 4rem 0 3rem; color: var(--muted); font: 400 0.95rem/1.5 var(--sans); }
+  footer p { margin: 0; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <p class="name">HiLRP</p>
+  <h1>Toward One Trustworthy Explanation for Vision Transformer</h1>
+  <p class="subtitle">Conservation-valid attribution via attention primitives</p>
+  <p class="authors">
+    <span>Nishankar Sathiyamohan</span>,
+    <span>Pubudu Sanjeewani</span>,
+    <span>Asanka Perera</span>,
+    <span>Selvarajah Thuseethan</span>
+  </p>
+  <ul class="links">
+    <li><a href="https://arxiv.org/abs/2609.01282">Paper on arXiv</a></li>
+    <li><a href="https://arxiv.org/pdf/2609.01282">PDF</a></li>
+    <li><a href="https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI">Code</a></li>
+    <li><a href="#use">Install</a></li>
+    <li><a href="#cite">Cite</a></li>
+  </ul>
+</header>
+
+<main class="wrap">
+
+  <figure class="teaser">
+    <div class="plate">
+      <img src="assets/hero_architecture_comparison.jpg" width="1400" height="885"
+           alt="Attribution maps for one image on Swin-B, PVT-v2-b2, EfficientViT-B2 and MobileViT-v2, comparing HiLRP with Grad-CAM, Grad-CAM++, Integrated Gradients and SmoothGrad">
+    </div>
+    <figcaption>One image, four backbones. Grad-CAM and Grad-CAM++ stay coherent on Swin, PVT and MobileViT but lose the object on EfficientViT-B2. HiLRP stays on the eyes and facial markings on all four.</figcaption>
+  </figure>
+
+  <section aria-labelledby="overview">
+    <div class="measure">
+      <h2 id="overview">Overview</h2>
+      <p>Vision Transformer design has fragmented. Each new backbone recombines convolutional stems, windowed, linear or multi-axis attention, patch merging and spatial reduction, and each recombination breaks an assumption that some attribution method relies on.</p>
+      <p>HiLRP starts from the observation that the attention and resolution-reduction operators of current ViTs compose four operation classes, and that each class admits one relevance rule that conserves. A backbone is then covered by construction instead of by a per-architecture derivation, and the same backward pass yields a signed relevance map at the input pixels and at every resolution stage.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="resolution">
+    <div class="measure">
+      <h2 id="resolution">One pass, every resolution</h2>
+      <p>Relevance is tracked at every interface of the network, so the backward pass that explains the pixels also explains each stage. Fine stages show texture and parts; coarse stages show the object.</p>
+    </div>
+    <figure>
+      <div class="plate strip">
+        <img src="assets/quickstart_swin_cat.jpg" width="2912" height="464"
+             alt="An input photo of a cat, then HiLRP relevance at the pixels and at the 56, 28, 14 and 7 token stages of Swin-T">
+      </div>
+      <div class="colorbar" role="img" aria-label="Colour scale of these maps: blue is evidence against the class, white is zero, red is evidence for the class.">
+        <div class="bar"></div>
+        <div class="ends" aria-hidden="true"><span>Evidence against</span><span>0</span><span>Evidence for</span></div>
+      </div>
+      <figcaption>Swin-T on one image: the input, relevance at the pixels, then at the 56×56, 28×28, 14×14 and 7×7 token grids. All six maps come from a single call.</figcaption>
+    </figure>
+  </section>
+
+  <section aria-labelledby="method">
+    <div class="measure">
+      <h2 id="method">Method</h2>
+      <p>Rather than derive a new rule for each architecture, HiLRP decomposes attention and resolution reduction into four primitives. Each has one conserving rule, so any arrangement of them is covered.</p>
+      <ul class="primitives">
+        <li class="p1"><b>P1</b><span><strong>Linear map.</strong> Q/K/V and output projections, MLPs, convolutions, pooling. Epsilon or gamma rule.</span></li>
+        <li class="p2"><b>P2</b><span><strong>Bilinear mix.</strong> QKᵀ, A·V, linear-attention products. Uniform split, or detach one factor as a gate.</span></li>
+        <li class="p3"><b>P3</b><span><strong>Normalize or gate.</strong> Softmax, LayerNorm, linear-attention denominators. Detach the denominator: identity rule.</span></li>
+        <li class="p4"><b>P4</b><span><strong>Reindex.</strong> Heads, windows, cyclic shifts, patch merging. A permutation, so it conserves exactly.</span></li>
+      </ul>
+    </div>
+    <figure>
+      <div class="plate">
+        <img src="assets/method_pipeline.png" width="1400" height="607" loading="lazy"
+             alt="The HiLRP backward pass over a hierarchical ViT, with panels for one attention block, the patch-merging rule, and the four conserving primitives">
+      </div>
+      <figcaption>The backward pass over a hierarchical ViT: relevance takes the value path inside attention, splits exactly through patch merging, and reaches the pixels through the patch-embedding convolution. Proofs and the full coverage table are in <a href="https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/blob/main/docs/METHOD.md">METHOD.md</a>.</figcaption>
+    </figure>
+  </section>
+
+  <section aria-labelledby="results">
+    <div class="measure">
+      <h2 id="results">Results</h2>
+      <p>Pointing Game on 1000 images per dataset, scored per image on the same images for both methods, with 95% bootstrap intervals and a paired McNemar test.</p>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">Backbone</th><th scope="col">Dataset</th><th scope="col">HiLRP</th><th scope="col">Grad-CAM</th><th scope="col">Paired McNemar</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>EfficientViT-B2</td><td>ImageNet-S</td><td class="hilrp">0.936<small>[0.921, 0.950]</small></td><td>0.518<small>[0.486, 0.549]</small></td><td>p = 2.1e-104</td></tr>
+          <tr><td>PVT-v2-b2</td><td>ImageNet-S</td><td class="hilrp">0.958<small>[0.945, 0.970]</small></td><td>0.846<small>[0.823, 0.868]</small></td><td>p = 1.3e-24</td></tr>
+          <tr><td>EfficientViT-B2</td><td>VOC 2007</td><td class="hilrp">0.820<small>[0.795, 0.843]</small></td><td>0.582<small>[0.551, 0.612]</small></td><td>p = 3.3e-41</td></tr>
+          <tr><td>PVT-v2-b2</td><td>VOC 2007</td><td class="hilrp">0.865<small>[0.844, 0.886]</small></td><td>0.621<small>[0.591, 0.650]</small></td><td>p = 5.7e-48</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="measure">
+      <p style="margin-top:1.25rem">HiLRP is not best everywhere: Grad-CAM saturates the Pointing Game on Swin and MobileViT-v2. On EfficientViT, Grad-CAM stays low at every target layer we tried, so its failure there is not a layer artifact, though its cause is not established. The 14-method, 10-architecture benchmark and the provenance of every number are in <a href="https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI/blob/main/docs/RESULTS.md">RESULTS.md</a>.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="findings">
+    <div class="measure"><h2 id="findings">What the maps show</h2></div>
+    <div class="gallery">
+      <figure>
+        <div class="plate"><img src="assets/stage_localization.jpg" width="1400" height="1095" loading="lazy"
+             alt="HiLRP relevance at the pixels, the tokens and stages 1 to 3 of a hierarchical ViT for several images"></div>
+        <figcaption>Relevance at the pixels, the tokens and stages 1 to 3, from one backward pass.</figcaption>
+      </figure>
+      <figure>
+        <div class="plate"><img src="assets/cam_upsampling_artifact.jpg" width="1400" height="866" loading="lazy"
+             alt="CAM maps on hierarchical backbones showing square artifacts from a 7 by 7 grid upsampled 32 times"></div>
+        <figcaption>On hierarchical backbones a CAM map is a 7×7 grid upsampled 32×. That is where its square blocks come from.</figcaption>
+      </figure>
+      <figure>
+        <div class="plate"><img src="assets/sanity_check.jpg" width="1400" height="833" loading="lazy"
+             alt="Parameter-randomization sanity check: HiLRP maps degrade as model weights are randomized from the head down"></div>
+        <figcaption>Parameter randomization: agreement with the intact map falls as weights are destroyed from the head down, so the maps depend on the model, not only the image.</figcaption>
+      </figure>
+      <figure>
+        <div class="plate"><img src="assets/rq2_pretraining_objectives.jpg" width="1400" height="814" loading="lazy"
+             alt="Relevance maps for a frozen ViT-B under supervised, DINO, DINOv2, DINOv2 with registers, and MAE pretraining"></div>
+        <figcaption>A frozen ViT-B under five pretraining objectives, each explained through its own label-free scalar. The objective, not the architecture, shapes the map.</figcaption>
+      </figure>
+      <figure>
+        <div class="plate"><img src="assets/qualitative_gallery.jpg" width="1400" height="1702" loading="lazy"
+             alt="HiLRP compared with Grad-CAM, Grad-CAM++ and Integrated Gradients across six ImageNet classes"></div>
+        <figcaption>HiLRP against Grad-CAM, Grad-CAM++ and Integrated Gradients across six classes. HiLRP traces object structure; CAM gives a block and Integrated Gradients gives high-frequency noise.</figcaption>
+      </figure>
+      <figure>
+        <div class="plate"><img src="assets/clip_multimodal.jpg" width="1400" height="1895" loading="lazy"
+             alt="Text-conditioned relevance on the CLIP image tower for a matching caption and an unrelated caption"></div>
+        <figcaption>CLIP image-text similarity explained with the same rules: relevance on the image tower for a matching caption and for an unrelated one.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="use" aria-labelledby="use-title">
+    <div class="measure">
+      <h2 id="use-title">Use it</h2>
+      <p>HiLRP is a pip package for Python 3.11.11 or newer. It works on unmodified timm models: Swin, PVT-v2, MaxViT, MobileViT-v2, EfficientViT, ViT and DeiT.</p>
+    </div>
+    <div class="code">
+<pre><code>pip install "hilrp @ git+https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI.git"</code></pre>
+<pre><code>import timm, hilrp
+from PIL import Image
+
+model = timm.create_model("swin_tiny_patch4_window7_224", pretrained=True).eval()
+config = timm.data.resolve_data_config({}, model=model)
+transform = timm.data.create_transform(**config)
+x = transform(Image.open("cat.jpg").convert("RGB")).unsqueeze(0)
+
+res = hilrp.attribute(model, x)       <span class="c"># one backward pass</span>
+res["pixel_map"]                      <span class="c"># [224, 224] signed relevance</span>
+res["stage_maps"]                     <span class="c"># one map per resolution stage (Swin)</span></code></pre>
+    </div>
+    <div class="measure">
+      <p style="margin-top:1rem">The <a href="https://github.com/Nishan-Charlie/Hi-LRP-Towards-One-Trustworthy-Explainable-AI#tutorial">tutorial</a> covers visualization, the conservation trace, other backbones, label-free models, and how to compare against other methods in the same process.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="limits">
+    <div class="measure">
+      <h2 id="limits">Limitations</h2>
+      <ul class="limits">
+        <li>Conservation is proved for the rules and holds exactly on Swin and PVT-v2 when the weights are bias-free. On trained MaxViT, MobileViT-v2, EfficientViT and plain ViTs the relevance sum drifts with depth and is a measured quantity. No backbone conserves all the way to the pixels.</li>
+        <li>The rules are installed as process-wide patches. Compute any other gradient-based method first, or in a separate process.</li>
+        <li>CNNs are not supported. Cross-attention decoders and deformable attention are covered by the rules but not yet tested on trained weights.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="cite" aria-labelledby="cite-title">
+    <div class="measure">
+      <h2 id="cite-title">Cite</h2>
+      <div class="cite">
+        <button class="copy" type="button" data-target="bibtex">Copy BibTeX</button>
+<pre id="bibtex"><code>@article{nishankar2026hilrp,
+  title={HiLRP: Toward One Trustworthy Explanation for Vision Transformer: Conservation-Valid Attribution via Attention Primitives},
+  author={Nishankar, Sathiyamohan and Sanjeewani, Pubudu and Perera, Asanka and Thuseethan, Selvarajah},
+  journal={arXiv preprint arXiv:2609.01282},
+  year={2026}
+}</code></pre>
+        <p class="sr-status" aria-live="polite" style="position:absolute;left:-9999px"></p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="wrap">
+  <p>Code released under the MIT license. Model weights come from timm and carry their own licenses.</p>
+</footer>
+
+<script>
+  document.querySelectorAll(".copy").forEach(function (button) {
+    button.addEventListener("click", function () {
+      var text = document.getElementById(button.dataset.target).innerText;
+      var status = button.parentElement.querySelector(".sr-status");
+      function done(label) {
+        button.textContent = label;
+        if (status) status.textContent = label;
+        setTimeout(function () { button.textContent = "Copy BibTeX"; }, 2000);
+      }
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(function () { done("Copied"); }, function () { done("Copy failed: select the text instead"); });
+      } else {
+        var area = document.createElement("textarea");
+        area.value = text; document.body.appendChild(area); area.select();
+        try { document.execCommand("copy"); done("Copied"); } catch (e) { done("Copy failed: select the text instead"); }
+        area.remove();
+      }
+    });
+  });
+</script>
+</body>
+</html>
