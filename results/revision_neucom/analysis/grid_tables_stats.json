@@ -1,0 +1,136 @@
+{
+ "PG": {
+  "chi2": 35.2,
+  "p": 0.00011513704683905772,
+  "p_bonf": 0.0005756852341952886,
+  "best": "smoothgrad",
+  "best_rank": 3.19,
+  "cd": 5.34,
+  "beyond_cd": [
+   "saliency",
+   "input_x_gradient"
+  ],
+  "mean_ranks": {
+   "saliency": 9.31,
+   "integrated_gradients": 7.69,
+   "input_x_gradient": 9.38,
+   "smoothgrad": 3.19,
+   "vargrad": 4.38,
+   "gradient_shap": 7.31,
+   "grad_cam": 4.06,
+   "grad_cam_plus_plus": 4.75,
+   "occlusion": 4.5,
+   "rise": 6.75,
+   "lime": 4.69
+  }
+ },
+ "MS": {
+  "chi2": 40.0,
+  "p": 1.6635270117839438e-05,
+  "p_bonf": 8.317635058919719e-05,
+  "best": "rise",
+  "best_rank": 2.5,
+  "cd": 5.34,
+  "beyond_cd": [
+   "gradient_shap",
+   "lime"
+  ],
+  "mean_ranks": {
+   "saliency": 5.5,
+   "integrated_gradients": 7.0,
+   "input_x_gradient": 7.5,
+   "smoothgrad": 2.75,
+   "vargrad": 6.88,
+   "gradient_shap": 8.38,
+   "grad_cam": 3.75,
+   "grad_cam_plus_plus": 5.5,
+   "occlusion": 6.12,
+   "rise": 2.5,
+   "lime": 10.12
+  }
+ },
+ "FC": {
+  "chi2": 7.6,
+  "p": 0.6643081674359618,
+  "p_bonf": 1.0,
+  "best": "integrated_gradients",
+  "best_rank": 4.25,
+  "cd": 5.34,
+  "beyond_cd": [],
+  "mean_ranks": {
+   "saliency": 6.25,
+   "integrated_gradients": 4.25,
+   "input_x_gradient": 5.75,
+   "smoothgrad": 6.0,
+   "vargrad": 7.88,
+   "gradient_shap": 6.38,
+   "grad_cam": 5.0,
+   "grad_cam_plus_plus": 5.62,
+   "occlusion": 5.25,
+   "rise": 7.38,
+   "lime": 6.25
+  }
+ },
+ "FE": {
+  "chi2": 21.3,
+  "p": 0.018837888204066226,
+  "p_bonf": 0.09418944102033114,
+  "best": "saliency",
+  "best_rank": 2.25,
+  "cd": 5.34,
+  "beyond_cd": [
+   "lime"
+  ],
+  "mean_ranks": {
+   "saliency": 2.25,
+   "integrated_gradients": 6.25,
+   "input_x_gradient": 5.5,
+   "smoothgrad": 6.88,
+   "vargrad": 7.5,
+   "gradient_shap": 6.5,
+   "grad_cam": 5.5,
+   "grad_cam_plus_plus": 6.88,
+   "occlusion": 5.75,
+   "rise": 4.25,
+   "lime": 8.75
+  }
+ },
+ "SP": {
+  "chi2": 61.4,
+  "p": 1.940181972694811e-09,
+  "p_bonf": 9.700909863474055e-09,
+  "best": "lime",
+  "best_rank": 1.12,
+  "cd": 5.34,
+  "beyond_cd": [
+   "saliency",
+   "smoothgrad",
+   "occlusion",
+   "rise"
+  ],
+  "mean_ranks": {
+   "saliency": 7.62,
+   "integrated_gradients": 4.75,
+   "input_x_gradient": 3.0,
+   "smoothgrad": 9.88,
+   "vargrad": 4.5,
+   "gradient_shap": 4.75,
+   "grad_cam": 5.62,
+   "grad_cam_plus_plus": 5.88,
+   "occlusion": 7.88,
+   "rise": 11.0,
+   "lime": 1.12
+  }
+ },
+ "transfer": {
+  "mean_spearman": 0.35999666474705067,
+  "ci": [
+   0.21680475171911737,
+   0.5116591098226344
+  ],
+  "null_mean": -6.606973728315868e-06,
+  "null_sd": 0.05931204225503285,
+  "p_perm": 9.999000099990002e-05,
+  "cnn_vs_effb2": 0.1451628316974494
+ }
+}

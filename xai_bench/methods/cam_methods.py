@@ -34,10 +34,25 @@ def _generic_gradcam(model_wrapper, inputs: torch.Tensor, target: int,
     inputs = inputs.clone().detach().requires_grad_(True)
     model.zero_grad(set_to_none=True)
 
-    feat = model.forward_features(inputs)
-    feat.retain_grad()
-    out = model.forward_head(feat)
-    out[0, target].backward()
+    if cam_format == "tokens_cls":
+        # A class-token head reads only token 0 of forward_features, so the spatial
+        # tokens of that output get zero gradient. Read the last block's input norm
+        # instead (the standard pytorch-grad-cam ViT target, as in the paper and the
+        # June full_benchmark_100 run).
+        inner = model.model if hasattr(model, "in_scale") else model
+        store = {}
+        hook = inner.blocks[-1].norm1.register_forward_hook(
+            lambda m, i, o: store.__setitem__("A", o))
+        out = model(inputs)
+        hook.remove()
+        feat = store["A"]
+        feat.retain_grad()
+        out[0, target].backward()
+    else:
+        feat = model.forward_features(inputs)
+        feat.retain_grad()
+        out = model.forward_head(feat)
+        out[0, target].backward()
 
     A = _to_nchw(feat, cam_format)
     G = _to_nchw(feat.grad, cam_format)
