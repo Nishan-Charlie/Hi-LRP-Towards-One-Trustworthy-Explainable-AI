@@ -233,7 +233,7 @@ def _heat(mp):
 def assemble():
     """Benchmark version: no HiLRP column. Failure instances are explicit:
     attempted-but-failed cells (Captum LRP on every transformer) are rendered
-    as 'does not run', and the documented localization collapses (Grad-CAM /
+    as 'Does not run', and the documented localization collapses (Grad-CAM /
     Grad-CAM++ on linear attention, rollout on ViT) get a red border."""
     import matplotlib
     matplotlib.use("Agg")
@@ -269,12 +269,16 @@ def assemble():
     for r, name in enumerate(MODELS):
         ax[r, 0].text(-0.12, 0.5, ROWLABEL[name], rotation=90, va="center",
                       ha="center", transform=ax[r, 0].transAxes,
-                      fontsize=13, fontweight="bold")
+                      fontsize=18, fontweight="bold")
         for c, key in enumerate(cols):
             a = ax[r, c]
             a.axis("off")
             fp = os.path.join(TMP, f"{name}__{key}.npy")
-            if os.path.exists(fp):
+            # Attention-native methods are defined only on the isotropic ViT-B/16.
+            # The naive generic-LXT maps written by run_attnlrp_hier() for the other
+            # backbones are not AttnLRP and are never drawn (NEUCOM revision R1.1/R3.3).
+            undefined = key in ("attention_rollout", "attnlrp") and name != "vit_base_patch16_224"
+            if os.path.exists(fp) and not undefined:
                 h = _heat(np.load(fp))
                 a.imshow(gray)
                 a.imshow(h, cmap="turbo", alpha=np.clip(h * 1.1, 0, 1))
@@ -282,21 +286,21 @@ def assemble():
                     a.add_patch(plt.Rectangle((0.012, 0.012), 0.976, 0.976,
                                 transform=a.transAxes, fill=False,
                                 edgecolor="#C1121F", linewidth=3.0))
-            elif f"{name}__{key}" in fails:
+            elif f"{name}__{key}" in fails and not undefined:
                 a.imshow(np.full((SIZE, SIZE, 3), [0.98, 0.92, 0.92]))
-                a.text(0.5, 0.5, "does not\nrun", transform=a.transAxes,
-                       ha="center", va="center", fontsize=12,
+                a.text(0.5, 0.5, "Does not\nrun", transform=a.transAxes,
+                       ha="center", va="center", fontsize=17,
                        color="#8B1A1A", fontweight="bold")
                 a.add_patch(plt.Rectangle((0.012, 0.012), 0.976, 0.976,
                             transform=a.transAxes, fill=False,
                             edgecolor="#C1121F", linewidth=1.2))
             else:
                 a.imshow(np.full((SIZE, SIZE, 3), 0.93))
-                a.text(0.5, 0.5, "n/a", transform=a.transAxes, ha="center",
-                       va="center", fontsize=12, color="0.45")
+                a.text(0.5, 0.5, "N/A", transform=a.transAxes, ha="center",
+                       va="center", fontsize=18, color="0.45")
         if r == 0:
             for c, t in enumerate(titles):
-                ax[0, c].set_title(t, fontsize=13, fontweight="bold")
+                ax[0, c].set_title(t, fontsize=16, fontweight="bold")
     fig.subplots_adjust(wspace=0.03, hspace=0.03, left=0.02, right=0.995,
                         top=0.96, bottom=0.005)
     fig.savefig(OUT, dpi=160, bbox_inches="tight")

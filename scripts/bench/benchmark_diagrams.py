@@ -32,7 +32,7 @@ METHODS = [
     ("gradient_shap", "GradientSHAP", "Gradient"),
     ("grad_cam", "Grad-CAM", "CAM"),
     ("grad_cam_plus_plus", "Grad-CAM++", "CAM"),
-    ("attention_rollout", "Attn Rollout", "Attention"),
+    ("attention_rollout", "Attention Rollout", "Attention"),
     ("attnlrp", "AttnLRP", "Attention"),
     ("occlusion", "Occlusion", "Perturb."),
     ("rise", "RISE", "Perturb."),
@@ -50,42 +50,18 @@ MODELS = [
 ]
 
 
-# GradientSHAP rerun (2026-07-14): updated values from results_tables_generated.tex;
-# the CSV still holds the old partial run, so the table row overrides it wholesale.
-GRADIENTSHAP = {
-    "pointing_game_mean": {
-        "resnet50": .92, "vit_base_patch16_224": .70,
-        "swin_base_patch4_window7_224": .73, "pvt_v2_b2": .70,
-        "maxvit_small_tf_224": .65, "mobilevitv2_100": .88,
-        "efficientvit_b1": .86, "efficientvit_b2": .84},
-    "faithfulness_correlation_mean": {
-        "resnet50": -.014, "vit_base_patch16_224": .018,
-        "swin_base_patch4_window7_224": .005, "pvt_v2_b2": .050,
-        "maxvit_small_tf_224": .030, "mobilevitv2_100": -.010,
-        "efficientvit_b1": -.020, "efficientvit_b2": .015},
-}
-
-
-RESULTS_CSV = os.path.join("benchmark_results", "all_results_sofar.csv")
-
-
 def load():
-    rows = [r for r in csv.DictReader(open(RESULTS_CSV)) if r["model"] and r["method"]]
-    d = {}
-    for r in rows:
-        prev = d.get(r["model"], {}).get(r["method"])
-        if prev is not None and "rerun" in prev["source_run"] and "rerun" not in r["source_run"]:
-            continue
-        d.setdefault(r["model"], {})[r["method"]] = r
+    """Same grid as benchmark_figures.py (stored results with the NEUCOM revision runs
+    overlaid: native-statistics ViT-B/16 row and the GradientSHAP fill; attention-native
+    methods only on ViT-B/16). col is '<metric>_mean' or '<metric>_std'."""
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import benchmark_figures as bf
+    getters = {"mean": bf.load("mean"), "std": bf.load("std")}
 
     def get(model, method, col):
-        if method == "gradient_shap" and col in GRADIENTSHAP:
-            return GRADIENTSHAP[col].get(model)
-        r = d.get(model, {}).get(method)
-        if not r:
-            return None
-        v = r.get(col, "")
-        return float(v) if v not in ("", "nan", None) else None
+        metric, stat = col.rsplit("_", 1)
+        return getters[stat](model, method, metric)
     return get
 
 
@@ -205,10 +181,11 @@ def fig_attnlrp_flow():
 
 # ── 3. Pointing-Game rank slopegraph across backbone families ────────────────
 def fig_rankflip(get):
-    cols = [("resnet50", "RN-50\n(CNN)"),
-            ("vit_base_patch16_224", "ViT-B/16\n(isotropic)"),
-            ("swin_base_patch4_window7_224", "Swin-B\n(hierarch.)"),
-            ("efficientvit_b2", "EffViT-B2\n(linear)")]
+    cols = [("resnet50", "RN-50\nCNN"),
+            ("vit_base_patch16_224", "ViT-B/16\nIsotropic"),
+            ("swin_base_patch4_window7_224", "Swin-B\nHierarch."),
+            ("efficientvit_b2", "EffViT-B2\nLinear")]
+    short = {"integrated_gradients": "Int. Grad", "gradient_shap": "GradSHAP"}
     meths = [(k, lab, fam) for k, lab, fam in METHODS
              if k not in ("attention_rollout", "attnlrp")]
     pg = {k: [get(m, k, "pointing_game_mean") for m, _ in cols] for k, _, _ in meths}
@@ -223,21 +200,22 @@ def fig_rankflip(get):
     fig, ax = plt.subplots(figsize=(3.5, 3.6))
     x = np.arange(len(cols))
     for k, lab, fam in meths:
+        lab = short.get(k, lab)
         c = FAMILY_COLORS[fam]
         cam = fam == "CAM"
         ax.plot(x, ranks[k], color=c, lw=2.4 if cam else 1.1,
                 alpha=1.0 if cam else 0.55, zorder=3 if cam else 2,
                 marker="o", ms=4 if cam else 2.6, mec="white", mew=0.6)
-        ax.text(-0.14, ranks[k][0], lab, ha="right", va="center", fontsize=6.4,
+        ax.text(-0.14, ranks[k][0], lab, ha="right", va="center", fontsize=8,
                 color="#222", fontweight="bold" if cam else "normal")
         ax.text(len(cols) - 0.86, ranks[k][-1], lab, ha="left", va="center",
-                fontsize=6.4, color="#222", fontweight="bold" if cam else "normal")
+                fontsize=8, color="#222", fontweight="bold" if cam else "normal")
     ax.set_xticks(x)
-    ax.set_xticklabels([lab for _, lab in cols], fontsize=6.8)
-    ax.set_xlim(-1.35, len(cols) - 1 + 1.35)
+    ax.set_xticklabels([lab for _, lab in cols], fontsize=8)
+    ax.set_xlim(-1.45, len(cols) - 1 + 1.45)
     ax.set_ylim(len(meths) + 0.5, 0.5)
     ax.set_yticks([])
-    ax.set_ylabel("Pointing-Game rank (top = best)", fontsize=8)
+    ax.set_title("Pointing Game rank (top = best)", fontsize=9.5)
     for s in ("top", "right", "left"):
         ax.spines[s].set_visible(False)
     ax.spines["bottom"].set_color("#bbb")
@@ -275,13 +253,13 @@ def fig_fc_noise(get):
                 ax.scatter(v, y, s=14, color=FAMILY_COLORS[fam], alpha=0.85,
                            edgecolor="white", lw=0.4, zorder=3)
     ax.set_yticks(ys)
-    ax.set_yticklabels(labels, fontsize=7)
+    ax.set_yticklabels(labels, fontsize=8.5)
     ax.set_xlim(-0.30, 0.30)
     ax.set_ylim(0.3, len(meths) + 0.7)
-    ax.tick_params(axis="x", labelsize=7)
-    ax.set_xlabel("Faithfulness Correlation (mean per backbone)", fontsize=8)
+    ax.tick_params(axis="x", labelsize=8.5)
+    ax.set_xlabel("Faithfulness Correlation (mean per backbone)", fontsize=9.5)
     ax.text(band + 0.008, len(meths) + 0.45,
-            f"$\\pm${band:.2f} median per-image std", fontsize=6.3,
+            f"$\\pm${band:.2f}: median\nper-image SD", fontsize=8,
             color="#777", ha="left", va="center")
     for s in ("top", "right", "left"):
         ax.spines[s].set_visible(False)

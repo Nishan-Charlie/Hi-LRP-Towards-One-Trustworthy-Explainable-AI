@@ -3,6 +3,7 @@ import torch
 from captum.attr import IntegratedGradients, Saliency, NoiseTunnel, InputXGradient
 
 from xai_bench.registry import METHODS
+from xai_bench.utils import chunked_gradients  # noqa: F401  (no-op unless XAI_GRAD_CHUNK is set)
 
 
 class CaptumMethodWrapper:
