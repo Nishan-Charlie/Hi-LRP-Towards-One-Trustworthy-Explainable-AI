@@ -19,7 +19,7 @@ import time
 
 import torch
 
-from common import OUT, DEVICE, load_data, evaluation_seed, set_seed, MODELS, METHODS
+from common import OUT, DEVICE, load_data, evaluation_seed, set_seed, MODELS, METHODS, record_failure
 
 model_name = sys.argv[1]
 N = int(sys.argv[2])
@@ -89,6 +89,7 @@ for meth in methods:
                 fh.flush()
                 raise SystemExit(f"CUDA fault, exiting for a clean retry: {str(e)[:120]}")
             print(f"  FAIL {meth} idx={d['idx']}: {str(e)[:120]}", flush=True)
+            record_failure("time_methods", model_name, meth, d["idx"], e)
             continue
         dt = (time.perf_counter() - t0) * 1000
         w.writerow(dict(model=model_name, method=meth, idx=d["idx"], time_ms=round(dt, 2), gpu=gpu))

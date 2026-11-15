@@ -24,7 +24,7 @@ import torch
 
 from common import (OUT, DEVICE, load_data, load_model, signed_attribution, protocol_maps,
                     bbox_pg, ebpg, dense_pg, is_degenerate, evaluation_seed, set_seed, METHODS,
-                    SIGNED_METHODS)
+                    SIGNED_METHODS, record_failure)
 
 model_name = sys.argv[1]
 N = int(sys.argv[2])
@@ -83,6 +83,7 @@ for meth in methods:
                     fh.flush()
                     raise SystemExit(f"CUDA fault, exiting for a clean retry: {str(e)[:120]}")
                 print(f"  FAIL {meth} idx={d['idx']}: {str(e)[:120]}", flush=True)
+                record_failure("loc", model_name, meth, d["idx"], e, target_mode=mode)
                 torch.cuda.empty_cache()
                 continue
             dt = (time.time() - t0) * 1000

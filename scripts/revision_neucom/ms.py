@@ -20,7 +20,7 @@ import numpy as np
 import torch
 
 from common import (OUT, DEVICE, load_data, load_model, signed_attribution, cam_map,
-                    evaluation_seed, set_seed, METHODS)
+                    evaluation_seed, set_seed, METHODS, record_failure)
 
 model_name, N = sys.argv[1], int(sys.argv[2])
 seeds = [int(s) for s in sys.argv[3].split(",")]
@@ -86,6 +86,7 @@ for meth in methods:
                     fh.flush()
                     raise SystemExit(f"CUDA fault, exiting for a clean retry: {str(e)[:120]}")
                 print(f"  FAIL {meth} seed={seed} idx={d['idx']}: {str(e)[:120]}", flush=True)
+                record_failure("ms", model_name, meth, d["idx"], e, seed=seed)
                 torch.cuda.empty_cache()
                 continue
             row["time_ms"] = round((time.time() - t0) * 1000, 1)

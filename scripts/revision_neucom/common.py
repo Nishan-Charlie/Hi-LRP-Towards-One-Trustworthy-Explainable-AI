@@ -6,6 +6,7 @@ Every attribution here is computed exactly as in the benchmark registry
 post-processing protocols (abs / positive-only / signed) can be scored from the
 same attribution. ``to_registry_map`` reproduces the registry output exactly.
 """
+import csv
 import os
 import sys
 import zlib
@@ -55,6 +56,22 @@ LIME_PPE = int(os.environ.get("LIME_PPE", "25"))  # LIME forward passes per batc
 def evaluation_seed(seed, model_name, method_name, image_idx):
     """Same derivation as xai_bench.runner.evaluation_seed."""
     return zlib.crc32(f"{seed}|{model_name}|{method_name}|{image_idx}".encode())
+
+
+FAILURES_CSV = os.path.join(OUT, "failures.csv")
+
+
+def record_failure(script, model, method, idx, error, seed="", target_mode=""):
+    """Log one failed (image, method) evaluation to results/revision_neucom/failures.csv,
+    so a skipped image is counted rather than only printed. The scripts retry missing
+    images on the next call; an entry whose image later appears in the script's output
+    was retried successfully."""
+    new = not os.path.exists(FAILURES_CSV)
+    with open(FAILURES_CSV, "a", newline="") as f:
+        w = csv.writer(f)
+        if new:
+            w.writerow(["script", "model", "method", "seed", "idx", "target_mode", "error"])
+        w.writerow([script, model, method, seed, idx, target_mode, str(error)[:300]])
 
 
 def load_data(n=1000):

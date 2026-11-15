@@ -20,6 +20,21 @@ def _to_nchw(feat: torch.Tensor, cam_format: str) -> torch.Tensor:
     raise ValueError(f"unknown cam_format '{cam_format}'")
 
 
+def _check_spatial_gradient(G: torch.Tensor, model_wrapper) -> None:
+    """Refuse a CAM whose target layer received no gradient at any spatial position.
+
+    Such a map is identically zero for a reason that has nothing to do with the
+    image: the target layer is not on the path from the spatial features to the
+    class score. Reading ``forward_features`` of a class-token ViT is the known
+    case (the head reads token 0 only), which silently blanked ViT Grad-CAM in the
+    bench from July to November 2026. Raising turns that into a recorded failure."""
+    if not bool((G != 0).any()):
+        raise RuntimeError(
+            f"Grad-CAM target layer of {getattr(model_wrapper, 'model_name', 'model')} "
+            f"(cam_format={getattr(model_wrapper, 'cam_format', '?')}) receives zero gradient "
+            f"at every spatial position; the CAM would be identically zero. Check the target layer.")
+
+
 def _generic_gradcam(model_wrapper, inputs: torch.Tensor, target: int,
                      plus_plus: bool = False) -> torch.Tensor:
     """Architecture-agnostic Grad-CAM / Grad-CAM++.
@@ -38,7 +53,9 @@ def _generic_gradcam(model_wrapper, inputs: torch.Tensor, target: int,
         # A class-token head reads only token 0 of forward_features, so the spatial
         # tokens of that output get zero gradient. Read the last block's input norm
         # instead (the standard pytorch-grad-cam ViT target, as in the paper and the
-        # June full_benchmark_100 run).
+        # June full_benchmark_100 run). From 1 July to 11 November 2026 this branch
+        # was missing and ViT Grad-CAM read forward_features; no result in the
+        # revised manuscript comes from that code (see _check_spatial_gradient).
         inner = model.model if hasattr(model, "in_scale") else model
         store = {}
         hook = inner.blocks[-1].norm1.register_forward_hook(
@@ -56,6 +73,7 @@ def _generic_gradcam(model_wrapper, inputs: torch.Tensor, target: int,
 
     A = _to_nchw(feat, cam_format)
     G = _to_nchw(feat.grad, cam_format)
+    _check_spatial_gradient(G, model_wrapper)
 
     if not plus_plus:
         weights = G.mean(dim=(2, 3), keepdim=True)
