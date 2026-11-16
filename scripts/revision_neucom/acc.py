@@ -9,8 +9,7 @@ import csv
 import sys
 
 import torch
-
-from common import OUT, DEVICE, MAIN_MODELS, MAIN_GRID_N, load_data, load_model, n_params
+from common import DEVICE, MAIN_GRID_N, MAIN_MODELS, OUT, load_data, load_model, n_params
 
 EXTRA = sys.argv[1:]  # optional extra timm names (capacity study)
 
@@ -25,7 +24,7 @@ def run_model(name, data, bs=50, raw=False):
         x = torch.stack([d["image"] for d in chunk]).to(DEVICE)
         p = torch.softmax(model(x).float(), dim=1).cpu()
         top5 = p.topk(5, dim=1).indices
-        for d, pi, t5 in zip(chunk, p, top5):
+        for d, pi, t5 in zip(chunk, p, top5, strict=True):
             pred = int(pi.argmax())
             rows.append(dict(model=name + ("@imagenet_norm" if raw else ""), idx=d["idx"], label=d["label"],
                              pred=pred, correct=int(pred == d["label"]), top5=int(d["label"] in t5.tolist()),

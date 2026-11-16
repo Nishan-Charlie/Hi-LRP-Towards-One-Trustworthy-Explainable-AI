@@ -8,10 +8,9 @@ scripts/bench/benchmark_figures.py for the Pareto figure) and prints the table r
 import glob
 import os
 
-import pandas as pd
-
 import common  # noqa: F401  (cwd -> repo root)
-from common import OUT, MAIN_MODELS, SHORT
+import pandas as pd
+from common import MAIN_MODELS, OUT, SHORT
 
 A = os.path.join(OUT, "analysis")
 os.makedirs(A, exist_ok=True)

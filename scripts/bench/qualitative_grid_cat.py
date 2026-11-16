@@ -80,8 +80,8 @@ def _map2d(m):
 
 
 def get_wrapper(name):
-    from xai_bench.registry import MODELS as REG
     from xai_bench.models.timm_models import create_timm_model
+    from xai_bench.registry import MODELS as REG
     try:
         return REG.get(name)()
     except Exception:
@@ -116,6 +116,7 @@ def run_baselines(only=None):
     batches of RISE/LIME on the 8GB card poisons the allocator for everything
     after it, so isolation + a CPU retry keeps every cell recoverable."""
     import gc
+
     from xai_bench.registry import METHODS
     device = "cuda" if torch.cuda.is_available() else "cpu"
     x_cpu = preprocess_imagenet()
@@ -178,6 +179,7 @@ def _targets():
 
 def run_hilrp():
     import timm
+
     from xai_bench.methods.hilrp_method import _dispatch
     device = "cuda" if torch.cuda.is_available() else "cpu"
     targets = _targets()
@@ -193,7 +195,8 @@ def run_hilrp():
 
 def run_attnlrp_hier():
     import timm
-    from xai_bench.methods.attnlrp_method import _naive_patch_once, _attribute_naive
+
+    from xai_bench.methods.attnlrp_method import _attribute_naive, _naive_patch_once
     _naive_patch_once()
     device = "cuda" if torch.cuda.is_available() else "cpu"
     targets = _targets()
@@ -209,6 +212,7 @@ def run_attnlrp_hier():
 
 def run_attnlrp_vit():
     import timm
+
     from hilrp.vit_lxt import attribute_vit
     device = "cuda" if torch.cuda.is_available() else "cpu"
     targets = _targets()

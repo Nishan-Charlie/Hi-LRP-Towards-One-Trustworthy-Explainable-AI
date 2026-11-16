@@ -1,17 +1,16 @@
-import os
+import datetime
 import json
 import math
+import os
 import time
 import zlib
-import datetime
-from typing import Dict, Any
 
 import torch
 from tqdm import tqdm
 
 from xai_bench import isolation, scoring
 from xai_bench.config import RunConfig
-from xai_bench.registry import MODELS, METHODS, DATASETS, METRICS
+from xai_bench.registry import DATASETS, METHODS, METRICS, MODELS
 from xai_bench.utils.seed import set_seed
 
 
@@ -41,13 +40,13 @@ class BenchmarkRunner:
         self.config = config
         self.device = torch.device(config.resolved_device())
         os.makedirs(self.config.output_dir, exist_ok=True)
-        
+
         if not self.config.run_name:
             self.config.run_name = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            
+
         self.run_dir = os.path.join(self.config.output_dir, self.config.run_name)
         os.makedirs(self.run_dir, exist_ok=True)
-        
+
         # Save config
         with open(os.path.join(self.run_dir, "config.json"), "w") as f:
             json.dump(self.config.to_dict(), f, indent=2)
@@ -140,7 +139,7 @@ class BenchmarkRunner:
         if os.path.exists(results_file):
             print(f"Resuming from existing results.json in {self.run_dir}")
             try:
-                with open(results_file, "r") as f:
+                with open(results_file) as f:
                     results = json.load(f)
                 # Failed evaluations are recorded, not dropped; a resumed run retries
                 # them (a CUDA OOM or a crash mid-image is usually transient).
@@ -178,7 +177,7 @@ class BenchmarkRunner:
                     if self.config.limit_methods_to_supported:
                         print(f"    Skipping {method_name}: {model_name} has no global CLS-token attention")
                         continue
-                        
+
                 method_fn = METHODS.get(method_name)
                 try:
                     method = method_fn(model_wrapper=model_wrapper, model=model_wrapper.model)
@@ -237,12 +236,14 @@ class BenchmarkRunner:
                             torch.cuda.empty_cache()
                         continue
 
-                    def explain_func(model, inputs, targets, **kwargs):
+                    # Quantus calls this with keyword arguments; the current method is
+                    # bound explicitly so the closure cannot see a later loop value
+                    def explain_func(model, inputs, targets, _method=method, **kwargs):
                         device = next(model.parameters()).device
                         inputs_t = torch.tensor(inputs, device=device, dtype=torch.float32)
                         target_t = targets[0].item() if hasattr(targets, '__len__') else targets
                         # detach: CAM/attention methods return grad-requiring tensors
-                        return method(inputs_t, target=target_t).detach().cpu().numpy()
+                        return _method(inputs_t, target=target_t).detach().cpu().numpy()
 
                     # A constant map carries no information and every metric is
                     # undefined on it; it is flagged here and scored in summary.csv
@@ -319,7 +320,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run XAI benchmark")
     parser.add_argument("--config", type=str, required=True, help="Path to config YAML")
     args = parser.parse_args()
-    
+
     config = RunConfig.from_yaml(args.config)
     runner = BenchmarkRunner(config)
     runner.run()

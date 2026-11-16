@@ -10,14 +10,16 @@ Colorblind-safe palettes: RdBu (diverging), YlOrRd+LogNorm (sequential), Okabe-I
 AttnLRP rows come from the dedicated attnlrp_grid_hier / attnlrp_grid_vit runs (n=100,
 appended to the CSV); cost per method is from tab:cost. \\nd cells are drawn as hatched gray.
 """
+import csv
 import os
 import sys
-import csv
-import numpy as np
+
 import matplotlib
+import numpy as np
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.colors import TwoSlopeNorm, LogNorm
+from matplotlib.colors import LogNorm, TwoSlopeNorm
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from xai_bench.scoring import cell_statistic  # noqa: E402  (median for MS, mean otherwise)
@@ -211,7 +213,7 @@ def fig_robustness(get):
     _heat(ax, np.where(np.isinf(M), vmax, M), "YlOrRd", norm,
           lambda v: f"{v:.1f}" if v >= 1 else f"{v:.2f}",
           "Max-Sensitivity across architectures (median, lower is better)", "Max-Sensitivity (log)",
-          labels={(i, j): r"$\infty$" for i, j in zip(*np.where(np.isinf(M)))})
+          labels=dict.fromkeys(zip(*np.where(np.isinf(M)), strict=True), r"$\infty$"))
     fig.tight_layout()
     fig.savefig("figures/bench/bench_robustness.pdf", bbox_inches="tight")
     fig.savefig("figures/bench/bench_robustness.png", dpi=150, bbox_inches="tight")

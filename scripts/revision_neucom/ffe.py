@@ -15,8 +15,7 @@ import sys
 import numpy as np
 import quantus
 import torch
-
-from common import OUT, DEVICE, load_data, load_model, evaluation_seed, set_seed
+from common import DEVICE, OUT, evaluation_seed, load_data, load_model, set_seed
 
 model_name, N = sys.argv[1], int(sys.argv[2])
 methods = sys.argv[3].split(",")
@@ -53,7 +52,7 @@ for meth in methods:
                     print("fail", meth, proto, mname, str(e)[:150])
                     res[mname] = [np.nan] * int(ok.sum())
             j = 0
-            for i, o in zip(b, ok):
+            for i, o in zip(b, ok, strict=True):
                 rows.append(dict(model=model_name, method=meth, protocol=proto, idx=i,
                                  fc=res["fc"][j] if o else np.nan, fe=res["fe"][j] if o else np.nan))
                 j += int(o)

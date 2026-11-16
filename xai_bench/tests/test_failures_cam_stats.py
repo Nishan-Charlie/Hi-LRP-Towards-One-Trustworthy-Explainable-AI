@@ -22,7 +22,6 @@ Input statistics
 All models are tiny and randomly initialised: no download, CPU only.
 """
 import json
-import os
 
 import pandas as pd
 import pytest

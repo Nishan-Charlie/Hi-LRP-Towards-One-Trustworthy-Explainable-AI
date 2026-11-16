@@ -42,7 +42,7 @@ for metric, tab in T.items():
     beyond = [names[i] for i in range(k) if R[i] - R[best] > cd]
     out[metric] = dict(chi2=round(chi2, 1), p=float(p), p_bonf=min(1.0, float(p) * len(T)),
                        best=names[best], best_rank=round(float(R[best]), 2), cd=round(cd, 2),
-                       beyond_cd=beyond, mean_ranks={m: round(float(r), 2) for m, r in zip(names, R)})
+                       beyond_cd=beyond, mean_ranks={m: round(float(r), 2) for m, r in zip(names, R, strict=True)})
     print(f"{metric}: chi2={chi2:.1f} p={p:.2e} pBonf={min(1, p * len(T)):.2e} best={names[best]}"
           f"({R[best]:.2f}) CD={cd:.2f} beyond={beyond}")
 

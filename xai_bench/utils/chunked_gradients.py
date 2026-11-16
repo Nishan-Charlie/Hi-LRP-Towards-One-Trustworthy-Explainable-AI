@@ -10,9 +10,9 @@ is unchanged up to floating-point rounding. Off (a no-op) unless the variable is
 """
 import os
 
-import torch
 import captum._utils.gradient as _gradient
 import captum.attr._utils.attribution as _attribution
+import torch
 
 _ORIGINAL = _gradient.compute_gradients
 

@@ -12,13 +12,13 @@ import json
 import os
 
 import matplotlib
+
 matplotlib.use("Agg")
+import common  # noqa: F401
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
-import common  # noqa: F401
-from analyze_revision import NAME, HEAD, FAMILY
+from analyze_revision import HEAD, NAME
 
 R = os.path.join("results", "revision_neucom")
 FIG = os.path.join("figures", "revision")

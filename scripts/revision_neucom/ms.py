@@ -18,9 +18,18 @@ import time
 
 import numpy as np
 import torch
-
-from common import (OUT, DEVICE, load_data, load_model, signed_attribution, cam_map,
-                    evaluation_seed, set_seed, METHODS, record_failure)
+from common import (
+    DEVICE,
+    METHODS,
+    OUT,
+    cam_map,
+    evaluation_seed,
+    load_data,
+    load_model,
+    record_failure,
+    set_seed,
+    signed_attribution,
+)
 
 model_name, N = sys.argv[1], int(sys.argv[2])
 seeds = [int(s) for s in sys.argv[3].split(",")]
@@ -84,7 +93,7 @@ for meth in methods:
             except RuntimeError as e:
                 if "CUDA error" in str(e) or "illegal" in str(e) or "CUBLAS" in str(e):
                     fh.flush()
-                    raise SystemExit(f"CUDA fault, exiting for a clean retry: {str(e)[:120]}")
+                    raise SystemExit(f"CUDA fault, exiting for a clean retry: {str(e)[:120]}") from e
                 print(f"  FAIL {meth} seed={seed} idx={d['idx']}: {str(e)[:120]}", flush=True)
                 record_failure("ms", model_name, meth, d["idx"], e, seed=seed)
                 torch.cuda.empty_cache()

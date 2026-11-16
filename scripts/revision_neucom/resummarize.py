@@ -10,6 +10,7 @@ import sys
 from types import SimpleNamespace
 
 import common  # noqa: F401  (cwd -> repo root)
+
 from xai_bench.runner import BenchmarkRunner  # noqa: E402
 
 for run in sys.argv[1:]:

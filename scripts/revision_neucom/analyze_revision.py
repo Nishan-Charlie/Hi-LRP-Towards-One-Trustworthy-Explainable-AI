@@ -11,12 +11,12 @@ import json
 import os
 import warnings
 
+import common  # noqa: F401  (cwd -> repo root)
 import numpy as np
 import pandas as pd
+from common import MAIN_MODELS, SHORT
 from scipy import stats
 
-import common  # noqa: F401  (cwd -> repo root)
-from common import MAIN_MODELS, SHORT
 from xai_bench import scoring  # noqa: E402  (every image is scored; see xai_bench/scoring.py)
 
 warnings.filterwarnings("ignore")
@@ -156,7 +156,7 @@ if loc_files:
             # bold every cell that ties the column maximum at the printed precision
             best.append(np.isfinite(vals[j]) and f2(vals[j]) == f2(max(col)))
         dag = "$^{\\dagger}$" if me in ("integrated_gradients", "occlusion", "rise", "lime") else ""
-        cells = [("\\best{" + f2(v) + "}" if b else f2(v)) if np.isfinite(v) else "\\nd" for v, b in zip(vals, best)]
+        cells = [("\\best{" + f2(v) + "}" if b else f2(v)) if np.isfinite(v) else "\\nd" for v, b in zip(vals, best, strict=True)]
         lines.append(f"{MLAB[me]}{dag} & " + " & ".join(cells) + " \\\\")
     save_tex("tab_ebpg_all.tex", "\n".join(lines))
 
@@ -182,7 +182,8 @@ if loc_files:
         ks = [k for k in tp if k[0] == mo]
         if not ks:
             continue
-        mean = lambda key: np.nanmean([tp[k][key] for k in ks])
+        def mean(key, ks=ks):
+            return np.nanmean([tp[k][key] for k in ks])
         rk = {}
         for key in ("ebpg_gt", "ebpg_pred", "ebpg_correct", "pg_gt", "pg_pred", "pg_correct"):
             rk[key] = [tp[k][key] for k in ks]
@@ -229,7 +230,8 @@ if loc_files:
         ks = [k for k in norm if k[0] == me]
         if not ks:
             continue
-        av = lambda key: np.nanmean([norm[k].get(key, np.nan) for k in ks])
+        def av(key, ks=ks):
+            return np.nanmean([norm[k].get(key, np.nan) for k in ks])
         lines.append(f"{MLAB[me]} ({len(ks)}) & " + " & ".join(
             f2(av(f"{c}_{p}"), 3 if c in ('fc', 'fe') else 2) for c in ("bboxpg", "ebpg", "fc", "fe") for p in ("abs", "pos", "signed")) + " \\\\")
     save_tex("tab_normalisation.tex", "\n".join(lines))
@@ -390,7 +392,8 @@ if loc_files:
         X_full = np.column_stack([np.ones(len(d)), Xf, d.logp.astype(float).values])
         X_fam = np.column_stack([np.ones(len(d)), Xf])
         X_cap = np.column_stack([np.ones(len(d)), d.logp.astype(float).values])
-        rss = lambda X: float(np.sum((yv - X @ np.linalg.lstsq(X, yv, rcond=None)[0]) ** 2))
+        def rss(X, yv=yv):
+            return float(np.sum((yv - X @ np.linalg.lstsq(X, yv, rcond=None)[0]) ** 2))
         tss = float(np.sum((yv - yv.mean()) ** 2))
         r_full, r_fam, r_cap = rss(X_full), rss(X_fam), rss(X_cap)
         df_res = len(d) - X_full.shape[1]

@@ -24,8 +24,7 @@ import sys
 
 import numpy as np
 import torch
-
-from common import OUT, DEVICE, load_data, load_model, cam_map
+from common import DEVICE, OUT, cam_map, load_data, load_model
 
 model_name, N = sys.argv[1], int(sys.argv[2])
 data = load_data(N)
@@ -58,5 +57,6 @@ with open(out, "w", newline="") as f:
     w.writeheader()
     w.writerows(rows)
 import pandas as pd
+
 df = pd.DataFrame(rows)
 print(model_name, df.drop(columns=["model", "idx"]).median().round(4).to_dict(), "cam_zero_rate", df.cam_zero.mean())

@@ -5,8 +5,9 @@ columns added. Writes LaTeX to paper/results_tables_generated.tex.
 Reuses the loader/labels from benchmark_figures.py so tables and figures agree.
 """
 import os
+
 import numpy as np
-from benchmark_figures import load, grid, MODELS, METHODS  # same corrected data
+from benchmark_figures import METHODS, MODELS, grid, load  # same corrected data
 
 FAM_ORDER = ["CNN", "Isotropic", "Hierarch.", "Multi-axis", "Hybrid", "Linear"]
 FAM_LABEL = {"CNN": "CNN", "Isotropic": "Isotropic", "Hierarch.": "Hierarchical",
@@ -57,7 +58,7 @@ def table(get, metric, dec, better, caption, label):
         col = M[:, j]
         vals = col[~np.isnan(col)]
         best.append(None if len(vals) == 0 else (vals.max() if better == "max" else vals.min()))
-    lines = [f"\\begin{{table*}}[t]", "  \\centering", f"  \\caption{{{caption}}}",
+    lines = ["\\begin{table*}[t]", "  \\centering", f"  \\caption{{{caption}}}",
              f"  \\label{{{label}}}", "  \\setlength{\\tabcolsep}{4pt}",
              "  \\begin{tabular}{l cc cc cc cc}", "    \\toprule", "    " + header(), "    \\midrule"]
     for fi, (fam, mks) in enumerate(METHFAM):

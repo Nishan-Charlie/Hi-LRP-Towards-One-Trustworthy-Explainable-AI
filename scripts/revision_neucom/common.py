@@ -9,8 +9,8 @@ same attribution. ``to_registry_map`` reproduces the registry output exactly.
 import csv
 import os
 import sys
-import zlib
 import warnings
+import zlib
 
 warnings.filterwarnings("ignore")
 try:  # run below the user's own work on this shared laptop
@@ -26,12 +26,16 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-import xai_bench.methods, xai_bench.metrics, xai_bench.models, xai_bench.datasets  # noqa: F401,E402
-from xai_bench.registry import MODELS, METHODS  # noqa: E402
-from xai_bench.models.timm_models import create_timm_model, _infer_arch  # noqa: E402
+# importing the subpackages populates the registries (side effect, not a name)
+import xai_bench.datasets  # noqa: F401,E402
+import xai_bench.methods  # noqa: F401,E402
+import xai_bench.metrics  # noqa: F401,E402
+import xai_bench.models  # noqa: F401,E402
 from xai_bench.methods.cam_methods import _to_nchw  # noqa: E402
 from xai_bench.metrics.localization import _create_bbox_mask  # noqa: E402
-from xai_bench.utils.seed import set_seed  # noqa: E402
+from xai_bench.models.timm_models import create_timm_model  # noqa: E402
+from xai_bench.registry import METHODS, MODELS  # noqa: F401,E402  (re-exported to the scripts)
+from xai_bench.utils.seed import set_seed  # noqa: F401,E402  (re-exported to the scripts)
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 OUT = os.path.join("results", "revision_neucom")
@@ -173,7 +177,8 @@ def signed_attribution(method, mw, x, target, registry_fn=None):
     """Return the 2-D map BEFORE the registry's final abs(): signed for IG, IxG,
     GradientSHAP, Occlusion, LIME and AttnLRP; non-negative by construction for the
     others (Saliency |grad|, SmoothGrad of |grad|, VarGrad, CAM, Rollout, RISE)."""
-    from captum.attr import IntegratedGradients, InputXGradient, GradientShap, Occlusion, Lime
+    from captum.attr import GradientShap, InputXGradient, IntegratedGradients, Lime, Occlusion
+
     from xai_bench.methods.captum_methods import _grid_feature_mask
     model = mw.model
     t = int(target)
