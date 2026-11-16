@@ -39,7 +39,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
-          pip install timm numpy pytest
+          pip install timm numpy pandas pytest
 
       - name: Run the conservation / coverage / equivariance suite
         # No `pip install -e .`: the repo root is on sys.path under `python -m`,
