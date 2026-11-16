@@ -154,7 +154,7 @@ def test_a_constant_map_is_flagged_and_kept(tmp_path, stub_bench):
     assert s["n_evaluations"] == N_IMAGES and s["n_constant_maps"] == 1 and s["stub_good_undefined"] == 1
 
 
-def test_constant_maps_score_zero_credit_and_ms_takes_the_worst_value():
+def test_constant_maps_score_zero_credit_and_an_undefined_ms_is_unbounded():
     from xai_bench import scoring
     df = pd.DataFrame({"model": ["m"] * 4 + ["n"] * 2, "method": ["x"] * 6, "error": [None] * 6,
                        "degenerate_map": [False, False, True, True, False, True],
@@ -165,8 +165,14 @@ def test_constant_maps_score_zero_credit_and_ms_takes_the_worst_value():
     s = scoring.score(df, ["pointing_game", "sparseness", "max_sensitivity", "relevance_rank_accuracy"])
     assert s.pointing_game.tolist() == [1, 0, 0, 0, 1, 0]
     assert s.sparseness.tolist() == [0.6, 0.4, 0, 0, 0.5, 0]
-    assert s.max_sensitivity.tolist() == [0.5, 2.0, 2.0, 2.0, 0.1, 0.1]   # worst of its own group
+    inf = float("inf")
+    assert s.max_sensitivity.tolist() == [0.5, 2.0, inf, inf, 0.1, inf]   # failure = unbounded
     assert s.relevance_rank_accuracy.isna().sum() == 3                    # not covered: undefined
+    assert scoring.cell_statistic("max_sensitivity") == "median"
+    assert scoring.cell_statistic("pointing_game") == "mean"
+    # the median counts the failures without letting them set the value
+    assert s[s.model == "m"].max_sensitivity.median() == inf          # 2 of 4 failed
+    assert s.max_sensitivity.iloc[[0, 1, 2]].median() == 2.0          # 1 of 3 failed
 
 
 def test_localisation_and_multiseed_columns_follow_the_same_rule():
@@ -176,7 +182,7 @@ def test_localisation_and_multiseed_columns_follow_the_same_rule():
                        "msK": [0.2, None, 0.9]})
     s = scoring.score(df, ["ebpg_abs", "bboxpg_pos", "msK"], constant_col="degenerate")
     assert s.ebpg_abs.tolist() == [0.4, 0.0, 0.6] and s.bboxpg_pos.tolist() == [1.0, 0.0, 0.0]
-    assert s.msK.tolist() == [0.2, 0.9, 0.9]
+    assert s.msK.tolist() == [0.2, float("inf"), 0.9]
 
 
 def test_is_constant_map():

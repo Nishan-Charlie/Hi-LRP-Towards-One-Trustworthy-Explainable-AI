@@ -14,9 +14,12 @@ scored instead, so every cell averages every image:
 * no information earns no credit: a constant map scores 0 on the Pointing Game,
   the energy-based Pointing Game, Faithfulness Correlation, Faithfulness Estimate
   and Sparseness;
-* Max-Sensitivity, unbounded when the reference map is zero (and undefined when a
-  method returns constant maps for the perturbed inputs), takes the largest value
-  the method reaches on that backbone, a finite worst case.
+* Max-Sensitivity is unbounded when the reference map is zero, and undefined when
+  the method returns non-finite maps for the perturbed inputs; such an image is a
+  robustness failure and scores +inf. Because MS is unbounded and heavy-tailed, its
+  cell statistic is the median (CELL_STATISTIC), which counts every image, failures
+  included, without letting one extreme image set the value; a cell whose median is
+  +inf means the method fails on at least half of the images.
 
 Undefined values that are not caused by the explanation (an image without a
 bounding box, for example) are left undefined and counted separately.
@@ -30,8 +33,14 @@ import torch
 #: localization columns of scripts/revision_neucom/loc.py)
 ZERO_CREDIT = ("pointing_game", "faithfulness_correlation", "faithfulness_estimate",
                "sparseness", "ebpg", "bboxpg", "densepg")
-#: metrics on which an undefined value takes the worst value of its group
-WORST_OBSERVED = ("max_sensitivity", "ms")
+#: unbounded metrics (lower is better) on which an undefined value is a failure: +inf
+UNBOUNDED = ("max_sensitivity", "ms")
+#: statistic that summarises a (backbone, method) cell; "mean" when not listed
+CELL_STATISTIC = {"max_sensitivity": "median"}
+
+
+def cell_statistic(metric: str) -> str:
+    return CELL_STATISTIC.get(metric, "mean")
 
 
 def is_constant_map(a) -> bool:
@@ -44,7 +53,7 @@ def is_constant_map(a) -> bool:
 
 def _base(metric: str) -> str:
     """'ebpg_abs' -> 'ebpg', 'max_sensitivity' -> 'max_sensitivity', 'ms3' -> 'ms'."""
-    for name in ZERO_CREDIT + WORST_OBSERVED:
+    for name in ZERO_CREDIT + UNBOUNDED:
         if metric == name or metric.startswith(name + "_") or (name == "ms" and metric[:2] == "ms"):
             return name
     return metric
@@ -67,12 +76,11 @@ def score(df, metrics, group=("model", "method"), constant_col="degenerate_map",
     for m in metrics:
         if m not in out.columns:
             continue
-        out[m] = pd.to_numeric(out[m], errors="coerce").replace([np.inf, -np.inf], np.nan)
         base = _base(m)
         if base in ZERO_CREDIT:
+            out[m] = pd.to_numeric(out[m], errors="coerce").replace([np.inf, -np.inf], np.nan)
             out.loc[const, m] = 0.0
-        elif base in WORST_OBSERVED:
-            worst = out.groupby(list(group))[m].transform("max")
-            undefined = out[m].isna() & ok
-            out.loc[undefined, m] = worst[undefined]
+        elif base in UNBOUNDED:
+            out[m] = pd.to_numeric(out[m], errors="coerce")
+            out.loc[(out[m].isna() | const) & ok, m] = np.inf
     return out

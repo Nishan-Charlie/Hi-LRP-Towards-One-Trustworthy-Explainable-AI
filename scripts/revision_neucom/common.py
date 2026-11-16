@@ -75,11 +75,8 @@ def record_failure(script, model, method, idx, error, seed="", target_mode=""):
 
 
 def load_data(n=1000):
-    # Self-produced local cache; safe load first, as in scripts/bench/ebpg_eval.py.
-    try:
-        imgs = torch.load("data/ImageNetS/cache_validation_1000_v2.pt", weights_only=True)
-    except Exception:
-        imgs = torch.load("data/ImageNetS/cache_validation_1000_v2.pt", weights_only=False)
+    # Self-produced local cache of tensors, ints and strings: the safe loader suffices.
+    imgs = torch.load("data/ImageNetS/cache_validation_1000_v2.pt", weights_only=True)
     masks = torch.load("data/ImageNetS/cache_masks_1000.pt", weights_only=True)
     out = []
     for i in range(min(n, len(imgs))):

@@ -17,6 +17,7 @@ from scipy import stats
 
 import common  # noqa: F401  (cwd -> repo root)
 from common import MAIN_MODELS, SHORT
+from xai_bench import scoring  # noqa: E402  (every image is scored; see xai_bench/scoring.py)
 
 warnings.filterwarnings("ignore")
 R = os.path.join("results", "revision_neucom")
@@ -70,6 +71,8 @@ HEAD = {"resnet18": "GAP+linear", "resnet50": "GAP+linear", "resnet101": "GAP+li
 
 
 def f2(x, d=2):
+    if x is not None and isinstance(x, float) and x == np.inf:
+        return "$\\infty$"   # an MS median over images of which at least half failed
     return "--" if x is None or (isinstance(x, float) and not np.isfinite(x)) else f"{x:.{d}f}"
 
 
@@ -94,6 +97,29 @@ loc_files = [f for f in glob.glob(os.path.join(R, "loc_*.csv"))]
 if loc_files:
     L = pd.concat([pd.read_csv(f) for f in loc_files], ignore_index=True)
     L = L.drop_duplicates(["model", "method", "idx", "target_mode"], keep="last")
+    # Every image is scored (xai_bench.scoring): a map that is constant, or becomes
+    # constant under the positive-evidence protocol, gets no localization credit.
+    # Before, EBPG and dense PG left such images out (undefined), and the bbox PG,
+    # which follows Quantus ("hit if ANY max-valued pixel lies in the box"), counted
+    # a constant map as a hit because every pixel ties for the maximum.
+    # A map is constant under protocol p exactly when its dense PG is undefined
+    # (dense_pg returns NaN for a constant or non-finite map), or when loc.py
+    # flagged the signed map itself as degenerate. Images without a box keep an
+    # undefined bbox PG (not the method's doing).
+    has_box = L.idx.map(L.groupby("idx").bboxpg_abs.apply(lambda s: bool(s.notna().any()))).astype(bool)
+    has_mask = L.idx.map(L.groupby("idx").ebpg_abs.apply(lambda s: bool(s.notna().any()))).astype(bool)
+    zero_filled = {}
+    for p in ("abs", "pos", "signed"):
+        const = (L.degenerate == 1) | (L[f"densepg_{p}"].isna() & has_mask)
+        for c, avail in ((f"ebpg_{p}", has_mask), (f"densepg_{p}", has_mask), (f"bboxpg_{p}", has_box)):
+            sel = const & avail
+            zero_filled[c] = dict(was_undefined=int((sel & L[c].isna()).sum()),
+                                  was_hit=int((sel & (L[c] > 0)).sum()))
+            L.loc[sel, c] = 0.0
+    S["loc_constant_scored"] = zero_filled
+    S["loc_constant_maps_gt"] = {f"{mo}|{me}": int(d.degenerate.sum())
+                                 for (mo, me), d in L[L.target_mode == "gt"].groupby(["model", "method"])
+                                 if d.degenerate.sum() > 0}
     gt = L[L.target_mode == "gt"].set_index(["model", "method", "idx"])
     pr = L[L.target_mode == "pred"].set_index(["model", "method", "idx"])
     # 'pred' protocol: predicted-class row when misclassified, otherwise the identical gt row
@@ -228,30 +254,41 @@ if ms_files:
     full = [c for c in scols if MS[c].notna().any()]
     MS["k"] = MS[scols].notna().sum(axis=1)
     MS["msK"] = MS[scols].max(axis=1)
+    # Every image is scored (xai_bench.scoring): MS is undefined when the reference
+    # map is constant (zero norm) or the perturbed maps are non-finite; such an image
+    # is a robustness failure and scores +inf. MS cells are medians, which count
+    # every image, failures included, without letting one extreme value set them.
+    S["ms_undefined_scored"] = {f"{mo}|{me}": int(d.msK.isna().sum())
+                                for (mo, me), d in MS.groupby(["model", "method"]) if d.msK.isna().any()}
+    MS = scoring.score(MS, ["ms3", "msK"], group=("model", "method"), constant_col="degenerate")
     out = {}
     for (mo, me), d in MS.groupby(["model", "method"]):
         per_seed3 = d.groupby("seed").ms3.mean()
         per_seedK = d.groupby("seed").msK.mean()
+        per_seed_med3 = d.groupby("seed").ms3.median()
         out[f"{mo}|{me}"] = dict(n_img=int(d.idx.nunique()), seeds=int(d.seed.nunique()), K=int(d.k.max()),
                                  mean3=float(d.ms3.mean()), med3=float(d.ms3.median()),
                                  meanK=float(d.msK.mean()), medK=float(d.msK.median()),
                                  p90K=float(d.msK.quantile(0.9)), maxK=float(d.msK.max()),
                                  seed_mean3_min=float(per_seed3.min()), seed_mean3_max=float(per_seed3.max()),
                                  seed_meanK_min=float(per_seedK.min()), seed_meanK_max=float(per_seedK.max()),
-                                 seed_med3=[float(x) for x in d.groupby("seed").ms3.median()],
-                                 degenerate=float(d.degenerate.mean()), nan=float(d.msK.isna().mean()))
+                                 seed_med3=[float(x) for x in per_seed_med3],
+                                 seed_med3_min=float(per_seed_med3.min()), seed_med3_max=float(per_seed_med3.max()),
+                                 degenerate=float(d.degenerate.mean()),
+                                 failed=float(np.isinf(d.msK).mean()))
     S["ms"] = out
-    # rank stability of methods across seeds (mean MS@3, the original statistic, and median MS@K)
+    # rank stability of methods across seeds (median MS@3, the statistic of Table MS,
+    # and median MS@K); failures are +inf, so a mean would tie every failing method
     stab = {}
     for mo in MS.model.unique():
-        for stat_, col in (("mean3", "ms3"), ("medK", "msK")):
-            piv = MS[MS.model == mo].groupby(["method", "seed"])[col].agg("mean" if stat_ == "mean3" else "median").unstack()
+        for stat_, col in (("med3", "ms3"), ("medK", "msK")):
+            piv = MS[MS.model == mo].groupby(["method", "seed"])[col].agg("median").unstack()
             piv = piv.dropna()
             if piv.shape[0] >= 4 and piv.shape[1] >= 2:
                 rs = [stats.spearmanr(piv[a], piv[b])[0] for a, b in itertools.combinations(piv.columns, 2)]
                 stab[f"{mo}|{stat_}"] = float(np.mean(rs))
     S["ms_seed_rank_stability"] = stab
-    # table: median MS@10 [seed range of the mean MS@3] for main backbones
+    # table: median MS@10 [seed range of the median MS@3, the statistic of Table MS]
     lines = []
     for me in ["saliency", "input_x_gradient", "smoothgrad", "vargrad", "gradient_shap", "grad_cam",
                "grad_cam_plus_plus", "grad_cam_plus_plus_stab", "attention_rollout", "attnlrp",
@@ -262,7 +299,9 @@ if ms_files:
             if o is None:
                 cells.append("\\nd")
             else:
-                cells.append(f"{f2(o['medK'])} \\scriptsize{{({f2(o['seed_mean3_min'], 1)}--{f2(o['seed_mean3_max'], 1)})}}")
+                lo, hi = f2(o['seed_med3_min']), f2(o['seed_med3_max'])
+                rng_ = lo if lo == hi else f"{lo}--{hi}"
+                cells.append(f"{f2(o['medK'])} \\scriptsize{{({rng_})}}")
         if all(c == "\\nd" for c in cells):
             continue
         lines.append(f"{MLAB[me]} & " + " & ".join(cells) + " \\\\")
@@ -293,7 +332,7 @@ if gc_files:
             rho_all = stats.spearmanr(J.core_min, J.msK, nan_policy="omit")[0]
             within = {mo: float(stats.spearmanr(d.core_min, d.msK, nan_policy="omit")[0])
                       for mo, d in J.groupby("model") if len(d) > 20 and d.core_min.std() > 0}
-            near = J[J.core_min < 0.5].msK.dropna()  # NaN = all-zero map, MS undefined
+            near = J[J.core_min < 0.5].msK.dropna()  # all-zero maps already scored (+inf)
             far = J[J.core_min >= 0.5].msK.dropna()
             S["mechanism_assoc"] = dict(rho_pooled=float(rho_all), rho_within=within, n=len(J),
                                         med_ms_near=float(near.median()) if len(near) else None,
@@ -343,6 +382,10 @@ if loc_files:
         if len(d) < 8:
             continue
         yv = d[y].astype(float).values
+        if y.startswith("ms_"):
+            # MS medians are unbounded (+inf when a CAM fails on at least half the
+            # images): fit the rank-transformed response, failures ranked worst
+            yv = stats.rankdata(yv)
         Xf = pd.get_dummies(d.family, drop_first=True).astype(float).values
         X_full = np.column_stack([np.ones(len(d)), Xf, d.logp.astype(float).values])
         X_fam = np.column_stack([np.ones(len(d)), Xf])

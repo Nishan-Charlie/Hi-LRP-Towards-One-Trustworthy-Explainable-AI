@@ -61,8 +61,12 @@ class BenchmarkRunner:
           n_failed            rows whose attribution raised (kept in results.json
                               with an "error" field; retried when the run resumes)
           n_constant_maps     rows whose attribution map is constant
-          <metric>_mean/std   over every successful row, constant maps scored as in
-          <metric>_count      xai_bench.scoring (no image is dropped)
+          <metric>_mean/median/std/count
+                              over every successful row, constant maps and
+                              undefined values scored as in xai_bench.scoring (no
+                              image is dropped); the paper reports
+                              scoring.cell_statistic(metric) (the median for MS,
+                              whose failures score +inf, the mean otherwise)
           <metric>_mean_defined / <metric>_undefined
                               the raw mean over the rows where the metric is
                               defined, and the number of rows where it is not
@@ -97,7 +101,7 @@ class BenchmarkRunner:
             for m in metric_cols:
                 raw[m] = pd.to_numeric(raw[m], errors="coerce").replace([math.inf, -math.inf], math.nan)
             scored = scoring.score(ok, metric_cols, group=keys)
-            agg = scored.groupby(keys)[metric_cols].agg(["mean", "std", "count"])
+            agg = scored.groupby(keys)[metric_cols].agg(["mean", "median", "std", "count"])
             agg.columns = [f"{metric}_{stat}" for metric, stat in agg.columns]
             graw = raw.groupby(keys)
             for m in metric_cols:

@@ -11,12 +11,16 @@ AttnLRP rows come from the dedicated attnlrp_grid_hier / attnlrp_grid_vit runs (
 appended to the CSV); cost per method is from tab:cost. \\nd cells are drawn as hatched gray.
 """
 import os
+import sys
 import csv
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm, LogNorm
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from xai_bench.scoring import cell_statistic  # noqa: E402  (median for MS, mean otherwise)
 
 os.makedirs("figures", exist_ok=True)
 PRIOR = 0.61  # random-point Pointing prior on this eval set
@@ -84,10 +88,18 @@ ISOTROPIC = {"vit_base_patch16_224"}
 # attnlrp_grid_vit run already used the native statistics.
 VIT_NATIVE_SUMMARY = os.path.join("results", "revision_vit_native", "summary.csv")
 
+# NEUCOM revision: the whole grid re-run under per-evaluation seeds with every image
+# scored (configs/revision_grid_seeded*.yaml, xai_bench/scoring.py). When present,
+# these rows replace every other source; each cell is the cell_statistic of its
+# metric over all images (the median for Max-Sensitivity, the mean otherwise).
+SEEDED_SUMMARIES = [os.path.join("results", r, "summary.csv") for r in
+                    ("revision_grid_seeded", "revision_grid_seeded_attnlrp", "revision_grid_seeded_50")]
+
 
 def load_rows():
-    """{model: {method: summary row}} for the five-metric grid, with the revision runs
-    (native-statistics ViT-B/16 row, GradientSHAP fill) overlaid on the stored results."""
+    """{model: {method: summary row}} for the five-metric grid: the seeded re-run when
+    present, otherwise the stored results with the earlier revision runs
+    (native-statistics ViT-B/16 row, GradientSHAP fill) overlaid."""
     rows = [r for r in csv.DictReader(open(RESULTS_CSV)) if r["model"] and r["method"]]
     d = {}
     for r in rows:
@@ -104,10 +116,19 @@ def load_rows():
     if os.path.exists(GRADSHAP_FILL_SUMMARY):
         for r in csv.DictReader(open(GRADSHAP_FILL_SUMMARY)):
             d.setdefault(r["model"], {})[r["method"]] = dict(r, source_run="revision_gradshap_fill")
+    for path in SEEDED_SUMMARIES:
+        if os.path.exists(path):
+            run = os.path.basename(os.path.dirname(path))
+            for r in csv.DictReader(open(path)):
+                d.setdefault(r["model"], {})[r["method"]] = dict(r, source_run=run)
     return d
 
 
-def load(stat="mean"):
+def load(stat=None):
+    """get(model, method, metric) -> the value of a grid cell. stat=None takes each
+    metric's cell statistic (median for MS, mean otherwise; rows without a median,
+    from the older runs, fall back to the mean). A Max-Sensitivity cell can be +inf:
+    the method fails on at least half the images."""
     d = load_rows()
 
     def get(model, method, metric):
@@ -116,7 +137,10 @@ def load(stat="mean"):
         r = d.get(model, {}).get(method)
         if not r:
             return None
-        v = r.get(f"{metric}_{stat}", "")
+        s = stat or cell_statistic(metric)
+        v = r.get(f"{metric}_{s}", "")
+        if v in ("", None) and stat is None:
+            v = r.get(f"{metric}_mean", "")
         return float(v) if v not in ("", "nan", None) else None
     return get
 
@@ -131,7 +155,7 @@ def grid(get, metric):
     return M
 
 
-def _heat(ax, M, cmap, norm, fmt, title, cbar_label):
+def _heat(ax, M, cmap, norm, fmt, title, cbar_label, labels=None):
     ax.set_facecolor("white")
     im = ax.imshow(M, cmap=cmap, norm=norm, aspect="auto")
     for i in range(M.shape[0]):
@@ -143,7 +167,8 @@ def _heat(ax, M, cmap, norm, fmt, title, cbar_label):
             else:
                 r, g, b, _ = im.cmap(im.norm(M[i, j]))
                 lum = 0.299 * r + 0.587 * g + 0.114 * b
-                ax.text(j, i, fmt(M[i, j]), ha="center", va="center", fontsize=10,
+                text = (labels or {}).get((i, j), fmt(M[i, j]))
+                ax.text(j, i, text, ha="center", va="center", fontsize=10,
                         color="white" if lum < 0.5 else "#222")
     ax.set_xticks(range(len(MODELS)))
     ax.set_xticklabels([m[1] for m in MODELS], rotation=35, ha="right", fontsize=12)
@@ -178,9 +203,15 @@ def fig_localization(get):
 def fig_robustness(get):
     M = grid(get, "max_sensitivity")
     fig, ax = plt.subplots(figsize=(6.6, 5.4))
-    norm = LogNorm(vmin=0.05, vmax=100)
-    _heat(ax, M, "YlOrRd", norm, lambda v: f"{v:.1f}" if v >= 1 else f"{v:.2f}",
-          "Max-Sensitivity across architectures (lower is better)", "Max-Sensitivity (log)")
+    finite = M[np.isfinite(M)]
+    vmax = max(20.0, float(finite.max()) * 1.2) if finite.size else 20.0
+    norm = LogNorm(vmin=0.05, vmax=vmax)
+    # an infinite median (the method fails on at least half the images) takes the
+    # darkest color and is labelled with the infinity sign
+    _heat(ax, np.where(np.isinf(M), vmax, M), "YlOrRd", norm,
+          lambda v: f"{v:.1f}" if v >= 1 else f"{v:.2f}",
+          "Max-Sensitivity across architectures (median, lower is better)", "Max-Sensitivity (log)",
+          labels={(i, j): r"$\infty$" for i, j in zip(*np.where(np.isinf(M)))})
     fig.tight_layout()
     fig.savefig("figures/bench/bench_robustness.pdf", bbox_inches="tight")
     fig.savefig("figures/bench/bench_robustness.png", dpi=150, bbox_inches="tight")

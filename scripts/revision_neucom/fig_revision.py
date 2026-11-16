@@ -59,20 +59,29 @@ ax[0].legend(handles=handles, fontsize=11, frameon=False, loc="lower left", titl
 
 x = np.arange(len(ms_models))
 w = 0.27
+TOP = 40.0   # an infinite median (the method fails on at least half the images) is drawn to here
+inf_at = set()
 for j, (key, lab, col) in enumerate(() if not ms_models else (("ms_grad_cam_med", "Grad-CAM", "#888888"),
                                      ("ms_grad_cam_plus_plus_med", "Grad-CAM++", "#C1121F"),
-                                     ("ms_grad_cam_plus_plus_stab_med", r"Grad-CAM++, $|2+S_k g|\geq 1$", "#0072B2"))):
-    vals = [mech[m].get(key, np.nan) for m in ms_models]
-    ax[1].bar(x + (j - 1) * w, vals, w, color=col, label=lab)
+                                     ("ms_grad_cam_plus_plus_stab_med", r"Grad-CAM++, bounded", "#0072B2"))):
+    vals = np.array([mech[m].get(key, np.nan) for m in ms_models], dtype=float)
+    fin = np.where(np.isinf(vals), np.nan, vals)
+    ax[1].bar(x + (j - 1) * w, fin, w, color=col, label=lab)
+    for k in np.flatnonzero(np.isinf(vals)):
+        ax[1].bar(x[k] + (j - 1) * w, TOP, w, color="white", edgecolor=col, hatch="////", lw=0.8)
+        inf_at.add(int(k))
+for k in inf_at:   # one label per backbone: median unbounded (fails on at least half the images)
+    ax[1].text(x[k] + w / 2, TOP * 1.08, r"$\infty$", ha="center", va="bottom", fontsize=13)
 if ms_models:
     ax[1].set_yscale("log")
+    ax[1].set_ylim(top=TOP * 1.9)
     ax[1].set_yticks([0.1, 0.2, 0.5, 1, 2, 5, 10, 20])
     ax[1].yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter("%g"))
     ax[1].yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
     ax[1].set_ylabel("Max-Sensitivity, median\n(3 seeds, 10 perturbations)")
     ax[1].set_xticks(x)
     ax[1].set_xticklabels([NAME.get(m, m) for m in ms_models], rotation=60, ha="right", fontsize=11.5)
-    ax[1].legend(fontsize=11, frameon=False, loc="upper left")
+    ax[1].legend(fontsize=10.5, frameon=False, loc="upper left", bbox_to_anchor=(0.0, 0.93))
     ax[1].set_title("(b) Max-Sensitivity of the CAM methods", fontsize=13)
 for a in ax:
     for s in ("top", "right"):

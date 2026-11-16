@@ -43,6 +43,8 @@ def header():
 def fmt(v, dec):
     if v is None or (isinstance(v, float) and np.isnan(v)):
         return "\\nd"
+    if v == np.inf:
+        return "$\\infty$"   # MS median: the method fails on at least half the images
     return f"{v:.{dec}f}"
 
 
@@ -82,7 +84,7 @@ if __name__ == "__main__":
          "Localization Family: Pointing Game (PG $\\uparrow$). CAM methods stay strong on CNN, isotropic, hierarchical, and multi-axis backbones but collapse on the linear-attention EfficientViT variants (Grad-CAM $0.55$, Grad-CAM++ $0.44$--$0.56$).",
          "tab:pg"),
         ("max_sensitivity", 3, "min",
-         "Robustness Family: Max-Sensitivity (MS $\\downarrow$). Gradient and CAM methods stable on CNNs spike by orders of magnitude on transformers (VarGrad $73.5$ on Swin-B, Grad-CAM++ $17.18$ on ViT-B/16).",
+         "Robustness Family: Max-Sensitivity (MS $\\downarrow$), median over all images; an image on which the method returns a constant or non-finite map counts as unbounded, and $\\infty$ marks a method that fails on at least half the images.",
          "tab:ms"),
         ("faithfulness_correlation", 3, "max",
          "Faithfulness Family: Faithfulness Correlation (FC $\\uparrow$). Values cluster near zero across the grid, so at this scale the metric behaves as statistical noise rather than a quality signal.",
