@@ -1,0 +1,59 @@
+# NEUCOM revision: seeded re-run of the five-metric grid (Tables PG, FC, FE, MS,
+# SP), part 2 of 2: the six other backbones on the first 50 images, as in the paper.
+# Part 1 (revision_grid_seeded.yaml): RN-50 and ViT-B/16 on the first 100.
+#
+# Replaces the unseeded June/July rows (full_benchmark_100, vit_suite_10,
+# baselines_pvt, rerun_mobilevitv2) and the November ViT-B/16 row on the same
+# images. Every (model, method, image) evaluation is reseeded
+# (xai_bench.runner.evaluation_seed); failures are recorded, not dropped;
+# constant maps are flagged and scored by xai_bench.scoring; timing is
+# GPU-synchronized. ViT-B/16 receives its native input statistics and its CAM is
+# read from blocks[-1].norm1. Same methods, metrics and budgets as the paper.
+# AttnLRP (ViT-B/16 only) runs in its own process: revision_grid_seeded_attnlrp.yaml.
+
+models:
+  - "swin_base_patch4_window7_224"
+  - "pvt_v2_b2"
+  - "maxvit_small_tf_224"
+  - "mobilevitv2_100"
+  - "efficientvit_b1"
+  - "efficientvit_b2"
+
+methods:
+  - "saliency"
+  - "integrated_gradients"
+  - "smoothgrad"
+  - "input_x_gradient"
+  - "vargrad"
+  - "gradient_shap"
+  - "grad_cam"
+  - "grad_cam_plus_plus"
+  - "attention_rollout" # skipped: no global class token on these backbones
+  - "lime"
+  - "occlusion"
+  - "rise"
+
+metrics:
+  - "faithfulness_correlation"
+  - "faithfulness_estimate"
+  - "pointing_game"
+  - "max_sensitivity"
+  - "sparseness"
+
+metric_kwargs:
+  faithfulness_correlation:
+    { nr_runs: 20, subset_size: 224, return_aggregate: false }
+  faithfulness_estimate: { features_in_step: 448, return_aggregate: false }
+  max_sensitivity: { nr_samples: 3, lower_bound: 0.2 }
+
+dataset: "imagenets_cached"
+dataset_kwargs:
+  { cache_path: "data/ImageNetS/cache_validation_100.pt", num_samples: 100 }
+num_images: 50
+seeds: [0]
+device: "auto"
+input_size: 224
+output_dir: "results"
+run_name: "revision_grid_seeded_50"
+save_saliency: false
+limit_methods_to_supported: true

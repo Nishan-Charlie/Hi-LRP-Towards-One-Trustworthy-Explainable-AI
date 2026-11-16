@@ -9,7 +9,7 @@ from typing import Dict, Any
 import torch
 from tqdm import tqdm
 
-from xai_bench import isolation
+from xai_bench import isolation, scoring
 from xai_bench.config import RunConfig
 from xai_bench.registry import MODELS, METHODS, DATASETS, METRICS
 from xai_bench.utils.seed import set_seed
@@ -60,11 +60,14 @@ class BenchmarkRunner:
           n_evaluations       rows attempted (images x seeds)
           n_failed            rows whose attribution raised (kept in results.json
                               with an "error" field; retried when the run resumes)
-          <metric>_mean/std   over the rows where the metric is defined
-          <metric>_count      number of rows where the metric is defined
-          <metric>_undefined  successful rows where it is not (e.g. a constant map)
-          time_ms_*           attribution time, GPU-synchronized
-        so a cell averaged over fewer images than were run is visible, not silent."""
+          n_constant_maps     rows whose attribution map is constant
+          <metric>_mean/std   over every successful row, constant maps scored as in
+          <metric>_count      xai_bench.scoring (no image is dropped)
+          <metric>_mean_defined / <metric>_undefined
+                              the raw mean over the rows where the metric is
+                              defined, and the number of rows where it is not
+          time_ms_*, peak_gpu_mb_*   attribution cost, GPU-synchronized
+        results.json keeps the raw values (None where undefined)."""
         if not results:
             return
         try:
@@ -85,19 +88,26 @@ class BenchmarkRunner:
         summary = df.groupby(keys).size().rename("n_evaluations").to_frame()
         summary["n_failed"] = failed.groupby([df[k] for k in keys]).sum().astype(int)
 
+        if "degenerate_map" in ok.columns and len(ok):
+            summary["n_constant_maps"] = ok["degenerate_map"].eq(True) \
+                .groupby([ok[k] for k in keys]).sum().astype(int)
         metric_cols = [m for m in self.config.metrics if m in df.columns]
         if metric_cols and len(ok):
-            vals = ok[keys + metric_cols].copy()
+            raw = ok[keys + metric_cols].copy()
             for m in metric_cols:
-                vals[m] = pd.to_numeric(vals[m], errors="coerce")
-            agg = vals.groupby(keys)[metric_cols].agg(["mean", "std", "count"])
+                raw[m] = pd.to_numeric(raw[m], errors="coerce").replace([math.inf, -math.inf], math.nan)
+            scored = scoring.score(ok, metric_cols, group=keys)
+            agg = scored.groupby(keys)[metric_cols].agg(["mean", "std", "count"])
             agg.columns = [f"{metric}_{stat}" for metric, stat in agg.columns]
+            graw = raw.groupby(keys)
             for m in metric_cols:
-                agg[f"{m}_undefined"] = vals[m].isna().groupby([vals[k] for k in keys]).sum().astype(int)
+                agg[f"{m}_mean_defined"] = graw[m].mean()
+                agg[f"{m}_undefined"] = graw[m].apply(lambda s: int(s.isna().sum()))
             summary = summary.join(agg, how="left")
-        if "time_ms" in ok.columns and len(ok):
-            t = pd.to_numeric(ok["time_ms"], errors="coerce").groupby([ok[k] for k in keys])
-            summary = summary.join(t.agg(["mean", "median", "std"]).add_prefix("time_ms_"), how="left")
+        for cost in ("time_ms", "peak_gpu_mb"):
+            if cost in ok.columns and len(ok):
+                t = pd.to_numeric(ok[cost], errors="coerce").groupby([ok[k] for k in keys])
+                summary = summary.join(t.agg(["mean", "median", "std"]).add_prefix(f"{cost}_"), how="left")
         summary.reset_index().to_csv(os.path.join(self.run_dir, "summary.csv"), index=False)
         print(f"  CSV updated: {len(df)} rows ({int(failed.sum())} failed) -> "
               f"{os.path.join(self.run_dir, 'results.csv')}")
@@ -197,6 +207,8 @@ class BenchmarkRunner:
                     # failures.json instead of disappearing from the averages.
                     try:
                         batch_img = img.unsqueeze(0) if img.dim() == 3 else img
+                        if self.device.type == "cuda":
+                            torch.cuda.reset_peak_memory_stats(self.device)
                         _sync(self.device)
                         t0 = time.perf_counter()
                         attr = method(batch_img, target=target)
@@ -206,6 +218,8 @@ class BenchmarkRunner:
                             attr = attr.detach()
                         _sync(self.device)
                         row["time_ms"] = (time.perf_counter() - t0) * 1000
+                        if self.device.type == "cuda":
+                            row["peak_gpu_mb"] = torch.cuda.max_memory_allocated(self.device) / 2 ** 20
                     except Exception as e:
                         row["error"] = _error_text(e)
                         row["time_ms"] = None
@@ -226,10 +240,18 @@ class BenchmarkRunner:
                         # detach: CAM/attention methods return grad-requiring tensors
                         return method(inputs_t, target=target_t).detach().cpu().numpy()
 
+                    # A constant map carries no information and every metric is
+                    # undefined on it; it is flagged here and scored in summary.csv
+                    # (xai_bench.scoring), not computed and not dropped.
+                    row["degenerate_map"] = scoring.is_constant_map(attr[0])
+
                     # Metrics, each on its own: one failing metric no longer drops the
                     # others. A failed metric is None and its reason is kept.
                     metric_errors = {}
                     for metric_name in self.config.metrics:
+                        if row["degenerate_map"]:
+                            row[metric_name] = None
+                            continue
                         metric_fn = METRICS.get(metric_name)
                         try:
                             val = metric_fn(
@@ -246,8 +268,8 @@ class BenchmarkRunner:
                             val = None
                         try:
                             val = float(val)
-                            if math.isnan(val):
-                                val = None   # undefined (e.g. constant map): counted in summary.csv
+                            if not math.isfinite(val):
+                                val = None   # undefined: counted and scored in summary.csv
                         except (TypeError, ValueError):
                             pass
                         row[metric_name] = val

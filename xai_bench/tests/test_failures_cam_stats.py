@@ -36,6 +36,8 @@ from xai_bench.runner import BenchmarkRunner
 
 N_IMAGES = 3
 FAIL_ON = {"image": 1}          # image index the flaky method fails on (None: never)
+CONSTANT_ON = {"image": None}   # image index on which it returns a constant map
+MAP_SUM = float(torch.arange(64).sum())
 
 
 class _StubWrapper:
@@ -50,7 +52,9 @@ def _flaky_method(model_wrapper, model=None, **kwargs):
     def method(inputs, target):
         if FAIL_ON["image"] is not None and float(inputs.flatten()[0]) == FAIL_ON["image"]:
             raise RuntimeError("CUDA out of memory (simulated)")
-        return torch.ones(1, 8, 8)
+        if CONSTANT_ON["image"] is not None and float(inputs.flatten()[0]) == CONSTANT_ON["image"]:
+            return torch.zeros(1, 8, 8)
+        return torch.arange(64, dtype=torch.float32).reshape(1, 8, 8)
     return method
 
 
@@ -74,6 +78,7 @@ def _dataset(**kwargs):
 @pytest.fixture
 def stub_bench():
     FAIL_ON["image"] = 1
+    CONSTANT_ON["image"] = None
     entries = [(MODELS, "stub_model", _StubWrapper), (METHODS, "stub_flaky", _flaky_method),
                (METHODS, "stub_broken", _broken_setup), (DATASETS, "stub_data", _dataset),
                (METRICS, "stub_good", _good_metric), (METRICS, "stub_bad", _bad_metric)]
@@ -121,7 +126,7 @@ def test_a_resumed_run_retries_failed_images(tmp_path, stub_bench):
 def test_a_failing_metric_keeps_the_other_metrics(tmp_path, stub_bench):
     FAIL_ON["image"] = None
     rows, summary, _ = _run(tmp_path, "a", metrics=("stub_good", "stub_bad"))
-    assert all(r["stub_good"] == 64.0 and r["stub_bad"] is None for r in rows)
+    assert all(r["stub_good"] == MAP_SUM and r["stub_bad"] is None for r in rows)
     assert all("ZeroDivisionError" in r["metric_errors"]["stub_bad"] for r in rows)
     assert summary.iloc[0]["stub_bad_undefined"] == N_IMAGES
 
@@ -136,6 +141,49 @@ def test_attribution_time_is_recorded_and_summarised(tmp_path, stub_bench):
     rows, summary, _ = _run(tmp_path, "a")
     assert all(r["time_ms"] >= 0 for r in rows if not r.get("error"))
     assert summary.iloc[0]["time_ms_mean"] >= 0 and "time_ms_median" in summary.columns
+
+
+# ------------------------------------------------------------------ constant maps
+def test_a_constant_map_is_flagged_and_kept(tmp_path, stub_bench):
+    FAIL_ON["image"], CONSTANT_ON["image"] = None, 2
+    rows, summary, _ = _run(tmp_path, "a")
+    flags = {r["image_idx"]: r["degenerate_map"] for r in rows}
+    assert flags == {0: False, 1: False, 2: True}
+    assert [r["stub_good"] for r in rows if r["image_idx"] == 2] == [None]   # raw: undefined
+    s = summary.iloc[0]
+    assert s["n_evaluations"] == N_IMAGES and s["n_constant_maps"] == 1 and s["stub_good_undefined"] == 1
+
+
+def test_constant_maps_score_zero_credit_and_ms_takes_the_worst_value():
+    from xai_bench import scoring
+    df = pd.DataFrame({"model": ["m"] * 4 + ["n"] * 2, "method": ["x"] * 6, "error": [None] * 6,
+                       "degenerate_map": [False, False, True, True, False, True],
+                       "pointing_game": [1.0, 0.0, None, None, 1.0, None],
+                       "sparseness": [0.6, 0.4, None, None, 0.5, None],
+                       "max_sensitivity": [0.5, 2.0, None, None, 0.1, None],
+                       "relevance_rank_accuracy": [0.3, 0.4, None, None, 0.2, None]})
+    s = scoring.score(df, ["pointing_game", "sparseness", "max_sensitivity", "relevance_rank_accuracy"])
+    assert s.pointing_game.tolist() == [1, 0, 0, 0, 1, 0]
+    assert s.sparseness.tolist() == [0.6, 0.4, 0, 0, 0.5, 0]
+    assert s.max_sensitivity.tolist() == [0.5, 2.0, 2.0, 2.0, 0.1, 0.1]   # worst of its own group
+    assert s.relevance_rank_accuracy.isna().sum() == 3                    # not covered: undefined
+
+
+def test_localisation_and_multiseed_columns_follow_the_same_rule():
+    from xai_bench import scoring
+    df = pd.DataFrame({"model": ["m"] * 3, "method": ["x"] * 3, "degenerate": [0, 1, 0],
+                       "ebpg_abs": [0.4, None, 0.6], "bboxpg_pos": [1.0, None, 0.0],
+                       "msK": [0.2, None, 0.9]})
+    s = scoring.score(df, ["ebpg_abs", "bboxpg_pos", "msK"], constant_col="degenerate")
+    assert s.ebpg_abs.tolist() == [0.4, 0.0, 0.6] and s.bboxpg_pos.tolist() == [1.0, 0.0, 0.0]
+    assert s.msK.tolist() == [0.2, 0.9, 0.9]
+
+
+def test_is_constant_map():
+    from xai_bench import scoring
+    assert scoring.is_constant_map(torch.zeros(4, 4)) and scoring.is_constant_map(torch.full((4, 4), 3.0))
+    assert scoring.is_constant_map(torch.tensor([[1.0, float("nan")]]))
+    assert not scoring.is_constant_map(torch.arange(4.0))
 
 
 # ------------------------------------------------------------------ Grad-CAM on ViT
