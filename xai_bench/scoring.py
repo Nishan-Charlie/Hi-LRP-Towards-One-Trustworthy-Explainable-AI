@@ -26,8 +26,9 @@ bounding box, for example) are left undefined and counted separately.
 """
 from __future__ import annotations
 
-import numpy as np
-import torch
+# numpy, pandas and torch are imported where they are used, so that the results
+# scripts (scripts/build_results.py, which runs without torch in CI) can read the
+# cell statistic from this module.
 
 #: metrics on which a constant map scores 0 (bench metric names and the
 #: localization columns of scripts/revision_neucom/loc.py)
@@ -45,6 +46,9 @@ def cell_statistic(metric: str) -> str:
 
 def is_constant_map(a) -> bool:
     """True for a map with a non-finite entry or with a single value everywhere."""
+    import numpy as np
+    import torch
+
     if isinstance(a, torch.Tensor):
         return bool((not torch.isfinite(a).all()) or float(a.max() - a.min()) == 0.0)
     a = np.asarray(a, dtype=float)
@@ -66,6 +70,7 @@ def score(df, metrics, group=("model", "method"), constant_col="degenerate_map",
     ``failed_col`` (an attribution that raised) are left untouched, they are
     failures to be retried, not scores.
     """
+    import numpy as np
     import pandas as pd
 
     out = df.copy()

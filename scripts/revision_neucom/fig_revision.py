@@ -94,29 +94,59 @@ print("wrote gcpp_mechanism")
 # ---------------------------------------------------------------- capacity figure
 cap = S.get("capacity", {})
 n_extra = sum(1 for m, v in cap.items() if m not in common.MAIN_MODELS and np.isfinite(v.get("ebpg_grad_cam") or np.nan))
+# Label offsets (points) where two backbones of similar size and score would overlap.
+_E, _M = "ebpg_grad_cam", "ms_grad_cam_plus_plus_med"
+CAP_OFFSET = {(_E, "resnet18"): (-40, 8), (_E, "deit_small_patch16_224"): (-38, 6),
+              (_E, "convnext_tiny"): (5, -12), (_E, "mobilevitv2_200"): (-80, 5),
+              (_E, "resnet50"): (6, 4), (_E, "maxvit_tiny_tf_224"): (5, -13),
+              (_E, "vit_small_patch16_224"): (-54, -10), (_E, "swin_tiny_patch4_window7_224"): (5, 3),
+              (_M, "resnet18"): (-22, 7), (_M, "resnet50"): (-20, 10), (_M, "mobilevitv2_200"): (-30, 13),
+              (_M, "pvt_v2_b2"): (-12, -15), (_M, "swin_tiny_patch4_window7_224"): (5, 4),
+              (_M, "resnet101"): (4, -15), (_M, "pvt_v2_b4"): (-12, 7),
+              (_M, "deit_small_patch16_224"): (5, -13), (_M, "convnext_tiny"): (5, -4),
+              (_M, "deit_base_patch16_224"): (6, 3), (_M, "convnext_base"): (4, -13),
+              (_M, "maxvit_tiny_tf_224"): (-64, -15), (_M, "maxvit_small_tf_224"): (-30, -15)}
+CAP_TOP = 40.0   # an infinite median (fails on at least half the images) is drawn at this level
 if cap and n_extra >= 4:
-    fig, ax = plt.subplots(1, 2, figsize=(9.5, 3.8))
+    fig, ax = plt.subplots(1, 2, figsize=(11.5, 4.6))
     for k, (key, lab) in enumerate((("ebpg_grad_cam", "Grad-CAM EBPG (dense mask)"),
                                     ("ms_grad_cam_plus_plus_med", "Grad-CAM++ Max-Sensitivity (median)"))):
         for fam, col in FAM_COL.items():
-            pts = sorted([(v["params"], v.get(key)) for m, v in cap.items() if v["family"] == fam
-                          and v.get(key) is not None and np.isfinite(v.get(key))])
-            if not pts:
-                continue
-            ax[k].plot([p[0] for p in pts], [p[1] for p in pts], "-o", color=col, ms=5, lw=1.2, label=fam)
+            pts = sorted([(v["params"], v[key]) for m, v in cap.items() if v["family"] == fam
+                          and v.get(key) is not None and not np.isnan(v[key])])
+            fin = [p for p in pts if np.isfinite(p[1])]
+            if fin:
+                ax[k].plot([p[0] for p in fin], [p[1] for p in fin], "-o", color=col, ms=6, lw=1.4,
+                           label=fam if k == 0 else None)
+            inf = [p for p in pts if np.isinf(p[1])]
+            if inf:   # open markers on the infinity line, not dropped from a log axis
+                ax[k].plot([p[0] for p in inf], [CAP_TOP] * len(inf), "o", mfc="white", mec=col, mew=1.6, ms=7)
         for m, v in cap.items():
-            if v.get(key) is not None and np.isfinite(v.get(key)):
-                ax[k].annotate(NAME.get(m, m), (v["params"], v[key]), fontsize=8, xytext=(3, 3), textcoords="offset points")
+            val = v.get(key)
+            if val is None or np.isnan(val):
+                continue
+            y = CAP_TOP if np.isinf(val) else val
+            ax[k].annotate(NAME.get(m, m), (v["params"], y), fontsize=10,
+                           xytext=CAP_OFFSET.get((key, m), (4, 4)), textcoords="offset points")
         ax[k].set_xscale("log")
         if key.startswith("ms_"):
             ax[k].set_yscale("log")
+            if any(np.isinf(v.get(key) or 0) for v in cap.values()):
+                ax[k].axhline(CAP_TOP, ls=":", lw=0.9, color="#999")
+                ax[k].text(0.01, CAP_TOP * 1.25, r"$\infty$: fails on at least half the images",
+                           transform=ax[k].get_yaxis_transform(), ha="left", fontsize=10, color="#555")
+                ax[k].set_ylim(top=CAP_TOP * 2.2)
+            ax[k].yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter("%g"))
         ax[k].set_xlabel("Parameters (M, log scale)")
         ax[k].set_ylabel(lab)
         ax[k].axvspan(18, 32, color="#eeeeee", zorder=0)
         for s in ("top", "right"):
             ax[k].spines[s].set_visible(False)
     ax[0].axhline(S.get("mask_area", {}).get("n1000", np.nan), ls="--", lw=0.8, color="#999")
-    ax[0].legend(fontsize=9.5, frameon=False, ncol=2)
+    ax[0].text(1.0, S.get("mask_area", {}).get("n1000", np.nan) - 0.012, "random map",
+               transform=ax[0].get_yaxis_transform(), ha="right", va="top", fontsize=10, color="#555")
+    fig.legend(*ax[0].get_legend_handles_labels(), loc="lower center", ncol=6, fontsize=11,
+               frameon=False, bbox_to_anchor=(0.5, -0.06))
     fig.tight_layout()
     fig.savefig(os.path.join(FIG, "capacity.pdf"), bbox_inches="tight")
     fig.savefig(os.path.join(FIG, "capacity.png"), dpi=160, bbox_inches="tight")

@@ -226,12 +226,12 @@ def fig_pareto(get):
     fig, ax = plt.subplots(figsize=(6.8, 4.3))
     # per-method label position to avoid collisions: (dx_points, dy_points, va, ha)
     L, R = (-7, 0, "center", "right"), (7, 0, "center", "left")
+    UP, DOWN = (0, 8, "bottom", "center"), (0, -8, "top", "center")
     LBL = {
-        "smoothgrad": L, "grad_cam": L, "vargrad": L, "attnlrp": R,
-        "gradient_shap": (0, -8, "top", "center"), "grad_cam_plus_plus": L, "saliency": R,
-        "input_x_gradient": L, "attention_rollout": R,
-        "integrated_gradients": (0, 8, "bottom", "center"), "rise": (0, 8, "bottom", "center"),
-        "lime": (0, 8, "bottom", "center"), "occlusion": (0, 8, "bottom", "center"),
+        "grad_cam": L, "smoothgrad": R, "vargrad": R, "attnlrp": L,
+        "gradient_shap": L, "grad_cam_plus_plus": R, "saliency": DOWN,
+        "input_x_gradient": L, "attention_rollout": R, "integrated_gradients": DOWN,
+        "rise": UP, "lime": UP, "occlusion": UP,
     }
     for i, (mk, lab, fam) in enumerate(METHODS):
         x, y = COST_MS[mk], mean_pg[i]
