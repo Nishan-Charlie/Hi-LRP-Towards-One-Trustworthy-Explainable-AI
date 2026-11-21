@@ -51,7 +51,7 @@ ax[0].text(len(order) - 0.5, 0.42, r"$|\alpha|>2$", color="#C1121F", ha="right",
 ax[0].set_yscale("log")
 ax[0].set_ylabel(r"$\min_{k,i,j:\,g>0}\;|2 + S_k\, g^k_{ij}|$ per image")
 ax[0].set_xticks(range(len(order)))
-ax[0].set_xticklabels([NAME.get(m, m) for m in order], rotation=60, ha="right", fontsize=11.5)
+ax[0].set_xticklabels([NAME.get(m, m) for m in order], rotation=90, ha="center", fontsize=10.5)
 ax[0].set_title("(a) Distance of the Grad-CAM++ weight from its pole", fontsize=13)
 handles = [plt.Line2D([0], [0], marker="o", ls="", color=c, label=HEAD_LABEL[h], markersize=6) for h, c in HEAD_COL.items()
            if any(HEAD.get(m) == h for m in order)]
@@ -80,7 +80,7 @@ if ms_models:
     ax[1].yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
     ax[1].set_ylabel("Max-Sensitivity, median\n(3 seeds, 10 perturbations)")
     ax[1].set_xticks(x)
-    ax[1].set_xticklabels([NAME.get(m, m) for m in ms_models], rotation=60, ha="right", fontsize=11.5)
+    ax[1].set_xticklabels([NAME.get(m, m) for m in ms_models], rotation=90, ha="center", fontsize=10.5)
     ax[1].legend(fontsize=10.5, frameon=False, loc="upper left", bbox_to_anchor=(0.0, 0.93))
     ax[1].set_title("(b) Max-Sensitivity of the CAM methods", fontsize=13)
 for a in ax:

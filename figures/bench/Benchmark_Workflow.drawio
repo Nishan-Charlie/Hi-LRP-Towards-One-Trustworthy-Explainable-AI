@@ -28,7 +28,7 @@
         <mxCell id="24" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#315f3b;fontFamily=Times New Roman;strokeWidth=3;rounded=1;sketch=1;curveFitting=1;jiggle=2;" value="4. EVALUATION AND ANALYSIS" vertex="1">
           <mxGeometry height="30" width="385" x="1243.75" y="214" as="geometry" />
         </mxCell>
-        <mxCell id="28" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;strokeColor=light-dark(#B5739D,#495562);strokeWidth=3;fillColor=none;fontColor=#334155;fontSize=14;fontFamily=Times New Roman;rounded=1;sketch=1;curveFitting=1;jiggle=2;fontStyle=1" value="&lt;span&gt;Implementation Tools&lt;/span&gt;&lt;br&gt;Captum, pytorch-grad-cam&lt;br&gt;Custom attention hooks, Quantus" vertex="1">
+        <mxCell id="28" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;strokeColor=light-dark(#B5739D,#495562);strokeWidth=3;fillColor=none;fontColor=#334155;fontSize=14;fontFamily=Times New Roman;rounded=1;sketch=1;curveFitting=1;jiggle=2;fontStyle=1" value="&lt;span&gt;Implementation Tools&lt;/span&gt;&lt;br&gt;Captum, pytorch-grad-cam&lt;br&gt;LXT, custom attention hooks, Quantus" vertex="1">
           <mxGeometry height="120.5" width="320" x="60" y="699.5" as="geometry" />
         </mxCell>
         <mxCell id="29" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#9d6f82;strokeWidth=3;fillColor=none;fontFamily=Times New Roman;fontSize=14;sketch=1;curveFitting=1;jiggle=2;fontStyle=1" value="" vertex="1">
@@ -37,7 +37,7 @@
         <mxCell id="30" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#a7b4c3;strokeWidth=3;fillColor=none;fontColor=#334155;fontSize=14;fontStyle=1;fontFamily=Times New Roman;sketch=1;curveFitting=1;jiggle=2;" value="Common preprocessing&lt;br&gt;Resize and normalize to&amp;nbsp;&lt;div&gt;224 × 224&lt;/div&gt;" vertex="1">
           <mxGeometry height="65" width="245" x="497.5" y="315" as="geometry" />
         </mxCell>
-        <mxCell id="31" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#a7b4c3;strokeWidth=3;fillColor=none;fontColor=#334155;fontSize=14;fontStyle=1;fontFamily=Times New Roman;sketch=1;curveFitting=1;jiggle=2;" value="Pretrained model inference&#xa;Obtain predicted class and class logit" vertex="1">
+        <mxCell id="31" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#a7b4c3;strokeWidth=3;fillColor=none;fontColor=#334155;fontSize=14;fontStyle=1;fontFamily=Times New Roman;sketch=1;curveFitting=1;jiggle=2;" value="Pretrained model inference&#xa;Explain the ground-truth class logit" vertex="1">
           <mxGeometry height="68" width="240" x="500" y="407" as="geometry" />
         </mxCell>
         <mxCell id="32" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#a7b4c3;strokeWidth=3;fillColor=none;fontColor=#334155;fontSize=14;fontStyle=1;fontFamily=Times New Roman;sketch=1;curveFitting=1;jiggle=2;" value="Attribution generation&#xa;Apply each compatible method" vertex="1">
@@ -123,7 +123,7 @@
         <mxCell id="53" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;strokeColor=#7b8b7b;strokeWidth=3;fillColor=none;fontColor=#334155;fontSize=14;fontFamily=Times New Roman;rounded=1;sketch=1;curveFitting=1;jiggle=2;fontStyle=1" value="Per-image metric scores&#xa;FC, FE, PG, MS, SP" vertex="1">
           <mxGeometry height="92" width="215" x="930" y="541.5" as="geometry" />
         </mxCell>
-        <mxCell id="54" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;strokeColor=#7b8b7b;strokeWidth=3;fillColor=none;fontColor=#334155;fontSize=14;fontFamily=Times New Roman;rounded=1;sketch=1;curveFitting=1;jiggle=2;fontStyle=1" value="Runtime records and&#xa;aggregated mean ± standard deviation" vertex="1">
+        <mxCell id="54" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;strokeColor=#7b8b7b;strokeWidth=3;fillColor=none;fontColor=#334155;fontSize=14;fontFamily=Times New Roman;rounded=1;sketch=1;curveFitting=1;jiggle=2;fontStyle=1" value="Runtime records and&#xa;aggregated cell means and medians" vertex="1">
           <mxGeometry height="97" width="215" x="930" y="658" as="geometry" />
         </mxCell>
         <mxCell id="55" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=none;fillColor=none;fontFamily=Times New Roman;fontSize=14;strokeWidth=3;sketch=1;curveFitting=1;jiggle=2;fontStyle=1" value="" vertex="1">

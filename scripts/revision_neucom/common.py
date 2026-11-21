@@ -48,9 +48,9 @@ SHORT = {"resnet50": "RN-50", "vit_base_patch16_224": "ViT-B/16",
          "swin_base_patch4_window7_224": "Swin-B", "pvt_v2_b2": "PVT-v2",
          "maxvit_small_tf_224": "MaxViT-S", "mobilevitv2_100": "MobileViT",
          "efficientvit_b1": "EffViT-B1", "efficientvit_b2": "EffViT-B2"}
-# The main five-metric grid used the first 100 images for RN-50 and ViT-B/16 and the
-# first 50 for the other six backbones (see results/*/config.json).
-MAIN_GRID_N = {m: (100 if m in ("resnet50", "vit_base_patch16_224") else 50) for m in MAIN_MODELS}
+# The main five-metric grid uses the first 500 images of every backbone
+# (results/revision_grid_500; earlier: 100 for RN-50 and ViT-B/16, 50 for the others).
+MAIN_GRID_N = dict.fromkeys(MAIN_MODELS, 500)
 
 SIGNED_METHODS = {"integrated_gradients", "input_x_gradient", "gradient_shap",
                   "occlusion", "lime", "attnlrp"}
