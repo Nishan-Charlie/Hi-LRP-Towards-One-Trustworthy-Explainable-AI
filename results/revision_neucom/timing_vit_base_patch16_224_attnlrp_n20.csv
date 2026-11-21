@@ -1,0 +1,21 @@
+model,method,idx,time_ms,gpu
+vit_base_patch16_224,attnlrp,0,252.97,NVIDIA GeForce RTX 4070 Laptop GPU
+vit_base_patch16_224,attnlrp,50,209.8,NVIDIA GeForce RTX 4070 Laptop GPU
+vit_base_patch16_224,attnlrp,100,212.82,NVIDIA GeForce RTX 4070 Laptop GPU
+vit_base_patch16_224,attnlrp,150,196.65,NVIDIA GeForce RTX 4070 Laptop GPU
+vit_base_patch16_224,attnlrp,200,190.29,NVIDIA GeForce RTX 4070 Laptop GPU
+vit_base_patch16_224,attnlrp,250,207.32,NVIDIA GeForce RTX 4070 Laptop GPU
+vit_base_patch16_224,attnlrp,300,218.57,NVIDIA GeForce RTX 4070 Laptop GPU
+vit_base_patch16_224,attnlrp,350,197.22,NVIDIA GeForce RTX 4070 Laptop GPU
+vit_base_patch16_224,attnlrp,400,205.35,NVIDIA GeForce RTX 4070 Laptop GPU
+vit_base_patch16_224,attnlrp,450,200.85,NVIDIA GeForce RTX 4070 Laptop GPU
+vit_base_patch16_224,attnlrp,500,206.28,NVIDIA GeForce RTX 4070 Laptop GPU
+vit_base_patch16_224,attnlrp,550,197.09,NVIDIA GeForce RTX 4070 Laptop GPU
+vit_base_patch16_224,attnlrp,600,203.01,NVIDIA GeForce RTX 4070 Laptop GPU
+vit_base_patch16_224,attnlrp,650,204.98,NVIDIA GeForce RTX 4070 Laptop GPU
+vit_base_patch16_224,attnlrp,700,212.87,NVIDIA GeForce RTX 4070 Laptop GPU
+vit_base_patch16_224,attnlrp,750,209.45,NVIDIA GeForce RTX 4070 Laptop GPU
+vit_base_patch16_224,attnlrp,800,214.12,NVIDIA GeForce RTX 4070 Laptop GPU
+vit_base_patch16_224,attnlrp,850,203.87,NVIDIA GeForce RTX 4070 Laptop GPU
+vit_base_patch16_224,attnlrp,900,213.21,NVIDIA GeForce RTX 4070 Laptop GPU
+vit_base_patch16_224,attnlrp,950,219.56,NVIDIA GeForce RTX 4070 Laptop GPU

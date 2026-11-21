@@ -2,7 +2,7 @@
 (the single source of truth), including PVT-v2 and EfficientViT-B2.
 
 Produces (figures/):
-  bench_localization.pdf  Pointing-Game heatmap, diverging around the 0.61 random-point prior
+  bench_localization.pdf  Pointing-Game heatmap, diverging around the 0.53 random-point prior
   bench_robustness.pdf    Max-Sensitivity heatmap, log color (explosions = dark)
   bench_pareto.pdf        cost (log ms) vs mean Pointing, colored by method family
 
@@ -10,25 +10,31 @@ Colorblind-safe palettes: RdBu (diverging), YlOrRd+LogNorm (sequential), Okabe-I
 AttnLRP rows come from the dedicated attnlrp_grid_hier / attnlrp_grid_vit runs (n=100,
 appended to the CSV); cost per method is from tab:cost. \\nd cells are drawn as hatched gray.
 """
-import os
 import csv
-import numpy as np
+import os
+import sys
+
 import matplotlib
+import numpy as np
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.colors import TwoSlopeNorm, LogNorm
+from matplotlib.colors import LogNorm, TwoSlopeNorm
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from xai_bench.scoring import cell_statistic  # noqa: E402  (median for MS, mean otherwise)
 
 os.makedirs("figures", exist_ok=True)
-PRIOR = 0.61  # random-point Pointing prior on this eval set
+PRIOR = 0.53  # random-point Pointing prior: mean bounding-box area of the grid's 500 images
 
 # model CSV key -> (short label, family)
 MODELS = [
     ("resnet50", "RN-50", "CNN"),
-    ("vit_base_patch16_224", "ViT-B", "Isotropic"),
+    ("vit_base_patch16_224", "ViT-B/16", "Isotropic"),
     ("swin_base_patch4_window7_224", "Swin-B", "Hierarch."),
     ("pvt_v2_b2", "PVT-v2", "Hierarch."),
     ("maxvit_small_tf_224", "MaxViT-S", "Multi-axis"),
-    ("mobilevitv2_100", "MobViT", "Hybrid"),
+    ("mobilevitv2_100", "MobileViT", "Hybrid"),
     ("efficientvit_b1", "EffViT-B1", "Linear"),
     ("efficientvit_b2", "EffViT-B2", "Linear"),
 ]
@@ -57,24 +63,48 @@ COST_MS = {  # tab:cost, mean over backbones
     "attention_rollout": 41.0, "attnlrp": 57.4,
     "occlusion": 11011.1, "rise": 669.9, "lime": 1488.1,
 }
-# GradientSHAP rerun (2026-07-14): updated values from results_tables_generated.tex;
-# the CSV still holds the old partial run, so the table row overrides it wholesale.
-GRADIENTSHAP = {
-    "pointing_game":   {"resnet50": .92, "vit_base_patch16_224": .70,
-                        "swin_base_patch4_window7_224": .73, "pvt_v2_b2": .70,
-                        "maxvit_small_tf_224": .65, "mobilevitv2_100": .88,
-                        "efficientvit_b1": .86, "efficientvit_b2": .84},
-    "max_sensitivity": {"resnet50": .963, "vit_base_patch16_224": 1.420,
-                        "swin_base_patch4_window7_224": 1.610, "pvt_v2_b2": 1.250,
-                        "maxvit_small_tf_224": 1.400, "mobilevitv2_100": .950,
-                        "efficientvit_b1": 1.050, "efficientvit_b2": 1.120},
-}
-
+# NEUCOM revision: synchronized re-timing on the eight backbones (cost_table.py)
+_COST_CSV = os.path.join("results", "revision_neucom", "analysis", "cost_table.csv")
+if os.path.exists(_COST_CSV):
+    import csv as _csv
+    with open(_COST_CSV) as _f:
+        COST_MS.update({r["method"]: float(r["time_ms"]) for r in _csv.DictReader(_f)
+                        if r["method"] in COST_MS})
+# NEUCOM revision: GradientSHAP cells with no stored result (MaxViT-S, MobileViT-v2,
+# EffViT-B1/B2) come from configs/revision_gradshap_fill.yaml; every other cell is the
+# stored result. (The former hard-coded GradientSHAP row matched no stored run.)
+GRADSHAP_FILL_SUMMARY = os.path.join("results", "revision_gradshap_fill", "summary.csv")
 
 RESULTS_CSV = os.path.join("benchmark_results", "all_results_sofar.csv")
 
+# Attention-native methods are defined only on the isotropic ViT-B/16 (Section 5.3).
+# The CSV also holds AttnLRP rows from the naive generic-LXT fallback run
+# (attnlrp_grid_hier) on the six non-isotropic backbones; those are NOT AttnLRP and
+# must never be drawn (NEUCOM revision, R1.1/R3.3).
+ATTENTION_NATIVE = {"attention_rollout", "attnlrp"}
+ISOTROPIC = {"vit_base_patch16_224"}
 
-def load():
+# NEUCOM revision: the ViT-B/16 row of the grid is re-run with the model's native
+# input statistics (configs/revision_vit_native.yaml). When present, it replaces
+# the June full_benchmark_100 row for every method except AttnLRP, whose
+# attnlrp_grid_vit run already used the native statistics.
+VIT_NATIVE_SUMMARY = os.path.join("results", "revision_vit_native", "summary.csv")
+
+# NEUCOM revision: the whole grid re-run under per-evaluation seeds with every image
+# scored (configs/revision_grid_seeded*.yaml, xai_bench/scoring.py). When present,
+# these rows replace every other source; each cell is the cell_statistic of its
+# metric over all images (the median for Max-Sensitivity, the mean otherwise).
+SEEDED_SUMMARIES = [os.path.join("results", r, "summary.csv") for r in
+                    ("revision_grid_seeded", "revision_grid_seeded_attnlrp", "revision_grid_seeded_50",
+                     # the same evaluations extended to the first 500 images of every backbone
+                     # (configs/revision_grid_500*.yaml); listed last, so its rows take precedence
+                     "revision_grid_500")]
+
+
+def load_rows():
+    """{model: {method: summary row}} for the five-metric grid: the seeded re-run when
+    present, otherwise the stored results with the earlier revision runs
+    (native-statistics ViT-B/16 row, GradientSHAP fill) overlaid."""
     rows = [r for r in csv.DictReader(open(RESULTS_CSV)) if r["model"] and r["method"]]
     d = {}
     for r in rows:
@@ -84,13 +114,38 @@ def load():
         if prev is not None and "rerun" in prev["source_run"] and "rerun" not in r["source_run"]:
             continue
         d.setdefault(r["model"], {})[r["method"]] = r
+    if os.path.exists(VIT_NATIVE_SUMMARY):
+        for r in csv.DictReader(open(VIT_NATIVE_SUMMARY)):
+            if r["method"] != "attnlrp":
+                d.setdefault(r["model"], {})[r["method"]] = dict(r, source_run="revision_vit_native")
+    if os.path.exists(GRADSHAP_FILL_SUMMARY):
+        for r in csv.DictReader(open(GRADSHAP_FILL_SUMMARY)):
+            d.setdefault(r["model"], {})[r["method"]] = dict(r, source_run="revision_gradshap_fill")
+    for path in SEEDED_SUMMARIES:
+        if os.path.exists(path):
+            run = os.path.basename(os.path.dirname(path))
+            for r in csv.DictReader(open(path)):
+                d.setdefault(r["model"], {})[r["method"]] = dict(r, source_run=run)
+    return d
+
+
+def load(stat=None):
+    """get(model, method, metric) -> the value of a grid cell. stat=None takes each
+    metric's cell statistic (median for MS, mean otherwise; rows without a median,
+    from the older runs, fall back to the mean). A Max-Sensitivity cell can be +inf:
+    the method fails on at least half the images."""
+    d = load_rows()
+
     def get(model, method, metric):
-        if method == "gradient_shap" and metric in GRADIENTSHAP:
-            return GRADIENTSHAP[metric].get(model)
+        if method in ATTENTION_NATIVE and model not in ISOTROPIC:
+            return None                       # structurally undefined: hatched N/A
         r = d.get(model, {}).get(method)
         if not r:
             return None
-        v = r.get(metric + "_mean", "")
+        s = stat or cell_statistic(metric)
+        v = r.get(f"{metric}_{s}", "")
+        if v in ("", None) and stat is None:
+            v = r.get(f"{metric}_mean", "")
         return float(v) if v not in ("", "nan", None) else None
     return get
 
@@ -105,7 +160,7 @@ def grid(get, metric):
     return M
 
 
-def _heat(ax, M, cmap, norm, fmt, title, cbar_label):
+def _heat(ax, M, cmap, norm, fmt, title, cbar_label, labels=None):
     ax.set_facecolor("white")
     im = ax.imshow(M, cmap=cmap, norm=norm, aspect="auto")
     for i in range(M.shape[0]):
@@ -113,16 +168,17 @@ def _heat(ax, M, cmap, norm, fmt, title, cbar_label):
             if np.isnan(M[i, j]):
                 ax.add_patch(plt.Rectangle((j - .5, i - .5), 1, 1, facecolor="#e8e8e8",
                                            hatch="///", edgecolor="white", lw=0))
-                ax.text(j, i, "n/a", ha="center", va="center", fontsize=6, color="#999")
+                ax.text(j, i, "N/A", ha="center", va="center", fontsize=9, color="#888")
             else:
                 r, g, b, _ = im.cmap(im.norm(M[i, j]))
                 lum = 0.299 * r + 0.587 * g + 0.114 * b
-                ax.text(j, i, fmt(M[i, j]), ha="center", va="center", fontsize=6.5,
+                text = (labels or {}).get((i, j), fmt(M[i, j]))
+                ax.text(j, i, text, ha="center", va="center", fontsize=10,
                         color="white" if lum < 0.5 else "#222")
     ax.set_xticks(range(len(MODELS)))
-    ax.set_xticklabels([m[1] for m in MODELS], rotation=35, ha="right", fontsize=8)
+    ax.set_xticklabels([m[1] for m in MODELS], rotation=35, ha="right", fontsize=12)
     ax.set_yticks(range(len(METHODS)))
-    ax.set_yticklabels([m[1] for m in METHODS], fontsize=8)
+    ax.set_yticklabels([m[1] for m in METHODS], fontsize=12)
     for i, (_, _, fam) in enumerate(METHODS):  # family tick color
         ax.get_yticklabels()[i].set_color(FAMILY_COLORS[fam])
     ax.set_xticks(np.arange(-.5, len(MODELS), 1), minor=True)
@@ -131,10 +187,10 @@ def _heat(ax, M, cmap, norm, fmt, title, cbar_label):
     ax.tick_params(which="both", length=0)
     for s in ax.spines.values():
         s.set_visible(False)
-    ax.set_title(title, fontsize=10, pad=8)
+    ax.set_title(title, fontsize=13, pad=8)
     cb = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.03)
-    cb.set_label(cbar_label, fontsize=8)
-    cb.ax.tick_params(labelsize=7)
+    cb.set_label(cbar_label, fontsize=12)
+    cb.ax.tick_params(labelsize=11)
 
 
 def fig_localization(get):
@@ -152,9 +208,15 @@ def fig_localization(get):
 def fig_robustness(get):
     M = grid(get, "max_sensitivity")
     fig, ax = plt.subplots(figsize=(6.6, 5.4))
-    norm = LogNorm(vmin=0.05, vmax=100)
-    _heat(ax, M, "YlOrRd", norm, lambda v: f"{v:.1f}" if v >= 1 else f"{v:.2f}",
-          "Max-Sensitivity across architectures (lower is better)", "Max-Sensitivity (log)")
+    finite = M[np.isfinite(M)]
+    vmax = max(20.0, float(finite.max()) * 1.2) if finite.size else 20.0
+    norm = LogNorm(vmin=0.05, vmax=vmax)
+    # an infinite median (the method fails on at least half the images) takes the
+    # darkest color and is labelled with the infinity sign
+    _heat(ax, np.where(np.isinf(M), vmax, M), "YlOrRd", norm,
+          lambda v: f"{v:.1f}" if v >= 1 else f"{v:.2f}",
+          "Max-Sensitivity across architectures (median, lower is better)", "Max-Sensitivity (log)",
+          labels=dict.fromkeys(zip(*np.where(np.isinf(M)), strict=True), r"$\infty$"))
     fig.tight_layout()
     fig.savefig("figures/bench/bench_robustness.pdf", bbox_inches="tight")
     fig.savefig("figures/bench/bench_robustness.png", dpi=150, bbox_inches="tight")
@@ -165,31 +227,37 @@ def fig_pareto(get):
     PG = grid(get, "pointing_game")
     mean_pg = np.nanmean(PG, axis=1)
     fig, ax = plt.subplots(figsize=(6.8, 4.3))
-    # per-method label side to avoid collisions: (dy_points, va, ha)
+    # per-method label position to avoid collisions: (dx_points, dy_points, va, ha)
+    L, R = (-7, 0, "center", "right"), (7, 0, "center", "left")
+    UP, DOWN = (0, 8, "bottom", "center"), (0, -8, "top", "center")
     LBL = {
-        "smoothgrad": (-8, "top", "center"), "grad_cam": (8, "bottom", "center"),
-        "integrated_gradients": (-8, "top", "center"), "rise": (8, "bottom", "center"),
-        "saliency": (8, "bottom", "center"), "input_x_gradient": (-8, "top", "center"),
-        "grad_cam_plus_plus": (-8, "top", "center"), "vargrad": (8, "bottom", "center"),
-        "attnlrp": (8, "bottom", "center"), "attention_rollout": (-8, "top", "center"),
-        "occlusion": (7, "bottom", "right"), "lime": (8, "bottom", "center"),
-        "gradient_shap": (8, "bottom", "center"),
+        "grad_cam": L, "smoothgrad": R, "vargrad": R, "attnlrp": L,
+        "gradient_shap": L, "grad_cam_plus_plus": R, "saliency": DOWN,
+        "input_x_gradient": L, "attention_rollout": R, "integrated_gradients": DOWN,
+        "rise": UP, "lime": UP, "occlusion": UP,
     }
     for i, (mk, lab, fam) in enumerate(METHODS):
         x, y = COST_MS[mk], mean_pg[i]
-        ax.scatter(x, y, s=70, color=FAMILY_COLORS[fam], edgecolor="white", lw=1.2, zorder=3)
-        dy, va, ha = LBL.get(mk, (8, "bottom", "center"))
-        ax.annotate(lab, (x, y), textcoords="offset points", xytext=(0, dy),
-                    ha=ha, va=va, fontsize=7.5, color="#222")
+        # attention-native methods are defined on ViT-B/16 only: hollow marker, and the
+        # value is that single backbone's PG, not an eight-backbone mean
+        hollow = mk in ATTENTION_NATIVE
+        ax.scatter(x, y, s=70, facecolor="white" if hollow else FAMILY_COLORS[fam],
+                   edgecolor=FAMILY_COLORS[fam] if hollow else "white", lw=1.6 if hollow else 1.2, zorder=3)
+        dx, dy, va, ha = LBL.get(mk, (0, 8, "bottom", "center"))
+        ax.annotate(lab + ("$^{\\dagger}$" if hollow else ""), (x, y), textcoords="offset points",
+                    xytext=(dx, dy), ha=ha, va=va, fontsize=10.5, color="#222")
     ax.axhline(PRIOR, ls="--", lw=1, color="#999", zorder=1)
-    ax.text(11000, PRIOR + 0.004, "random prior", fontsize=7, color="#999", ha="right")
+    ax.text(20000, PRIOR + 0.004, "Random prior", fontsize=10, color="#888", ha="right")
     ax.set_xscale("log")
-    ax.set_xlabel("Cost per explanation (ms, log scale)", fontsize=9)
-    ax.set_ylabel("Mean Pointing Game (over 8 backbones)", fontsize=9)
-    ax.set_title("Cost vs. localization: no fidelity gain from expensive methods", fontsize=10)
-    handles = [plt.Line2D([0], [0], marker="o", ls="", color=c, label=f, markersize=8,
+    ax.set_xlim(5, 25000)
+    ax.set_ylim(min(0.6, np.nanmin(mean_pg) - 0.03), max(0.91, np.nanmax(mean_pg) + 0.03))
+    ax.tick_params(labelsize=11)
+    ax.set_xlabel("Cost per explanation (ms, log scale)", fontsize=12)
+    ax.set_ylabel("Mean Pointing Game\n(over applicable backbones)", fontsize=12)
+    ax.set_title("Cost vs. localization: no fidelity gain from expensive methods", fontsize=13)
+    handles = [plt.Line2D([0], [0], marker="o", ls="", color=c, label=f, markersize=9,
                           markeredgecolor="white") for f, c in FAMILY_COLORS.items()]
-    ax.legend(handles=handles, fontsize=8, frameon=False, loc="upper center",
+    ax.legend(handles=handles, fontsize=11, frameon=False, loc="upper center",
               bbox_to_anchor=(0.5, -0.16), ncol=4)
     ax.grid(True, which="both", axis="x", ls=":", lw=.5, color="#ddd")
     ax.set_axisbelow(True)

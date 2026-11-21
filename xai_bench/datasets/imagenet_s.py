@@ -72,7 +72,9 @@ class ImageNetSCached(Dataset):
             raise FileNotFoundError(
                 f"Cache not found: {cache_path}. Build it first with scripts/data/cache_imagenets.py"
             )
-        self.records = torch.load(cache_path, weights_only=False)
+        # The cache holds only tensors, ints, strings, lists and dicts, so the safe
+        # loader suffices; it never unpickles arbitrary objects from the configured path.
+        self.records = torch.load(cache_path, map_location="cpu", weights_only=True)
         if num_samples is not None:
             self.records = self.records[:num_samples]
         print(f"Loaded {len(self.records)} cached ImageNet-S samples from {cache_path}")

@@ -1,0 +1,14 @@
+method,time_ms,n_backbones,n_images
+attention_rollout,12.433499999999999,1,20
+saliency,27.123875,8,20
+input_x_gradient,27.827125,8,20
+grad_cam_plus_plus,35.107875,8,20
+grad_cam,35.9120625,8,20
+smoothgrad,135.37725,8,20
+vargrad,137.1050625,8,20
+gradient_shap,139.0318125,8,20
+attnlrp,208.814,1,20
+integrated_gradients,428.1159375,8,20
+lime,1344.426625,8,20
+rise,2236.2360625,8,20
+occlusion,9891.951187499999,8,20
