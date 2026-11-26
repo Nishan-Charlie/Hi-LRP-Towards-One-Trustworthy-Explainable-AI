@@ -1,0 +1,65 @@
+{
+  "models": [
+    "resnet50",
+    "vit_base_patch16_224",
+    "swin_base_patch4_window7_224",
+    "pvt_v2_b2",
+    "maxvit_small_tf_224",
+    "mobilevitv2_100",
+    "efficientvit_b1",
+    "efficientvit_b2"
+  ],
+  "methods": [
+    "saliency",
+    "integrated_gradients",
+    "smoothgrad",
+    "input_x_gradient",
+    "vargrad",
+    "gradient_shap",
+    "grad_cam",
+    "grad_cam_plus_plus",
+    "attention_rollout",
+    "lime",
+    "occlusion",
+    "rise",
+    "attnlrp"
+  ],
+  "metrics": [
+    "faithfulness_correlation",
+    "faithfulness_estimate",
+    "pointing_game",
+    "max_sensitivity",
+    "sparseness"
+  ],
+  "metric_kwargs": {
+    "faithfulness_correlation": {
+      "nr_runs": 20,
+      "subset_size": 224,
+      "return_aggregate": false
+    },
+    "faithfulness_estimate": {
+      "features_in_step": 448,
+      "return_aggregate": false
+    },
+    "max_sensitivity": {
+      "nr_samples": 3,
+      "lower_bound": 0.2
+    }
+  },
+  "dataset": "imagenets_cached",
+  "dataset_kwargs": {
+    "cache_path": "data/ImageNetS/cache_validation_1000_v2.pt",
+    "num_samples": 1000
+  },
+  "num_images": 1000,
+  "seeds": [
+    0
+  ],
+  "device": "auto",
+  "input_size": 224,
+  "output_dir": "results",
+  "run_name": "revision_grid_1000",
+  "save_saliency": false,
+  "limit_methods_to_supported": true,
+  "note": "merged from results/revision_grid_1000_shards (configs/revision_grid_1000.yaml and revision_grid_1000_attnlrp.yaml, split by scripts/revision_neucom/queue_500.py)"
+}

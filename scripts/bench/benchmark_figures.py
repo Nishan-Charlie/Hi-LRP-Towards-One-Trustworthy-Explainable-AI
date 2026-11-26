@@ -2,7 +2,7 @@
 (the single source of truth), including PVT-v2 and EfficientViT-B2.
 
 Produces (figures/):
-  bench_localization.pdf  Pointing-Game heatmap, diverging around the 0.53 random-point prior
+  bench_localization.pdf  Pointing-Game heatmap, diverging around the 0.55 random-point prior
   bench_robustness.pdf    Max-Sensitivity heatmap, log color (explosions = dark)
   bench_pareto.pdf        cost (log ms) vs mean Pointing, colored by method family
 
@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from xai_bench.scoring import cell_statistic  # noqa: E402  (median for MS, mean otherwise)
 
 os.makedirs("figures", exist_ok=True)
-PRIOR = 0.53  # random-point Pointing prior: mean bounding-box area of the grid's 500 images
+PRIOR = 0.55  # random-point Pointing prior: mean bounding-box area of the grid's 1,000 images
 
 # model CSV key -> (short label, family)
 MODELS = [
@@ -97,8 +97,9 @@ VIT_NATIVE_SUMMARY = os.path.join("results", "revision_vit_native", "summary.csv
 SEEDED_SUMMARIES = [os.path.join("results", r, "summary.csv") for r in
                     ("revision_grid_seeded", "revision_grid_seeded_attnlrp", "revision_grid_seeded_50",
                      # the same evaluations extended to the first 500 images of every backbone
-                     # (configs/revision_grid_500*.yaml); listed last, so its rows take precedence
-                     "revision_grid_500")]
+                     # (configs/revision_grid_500*.yaml), then to all 1,000 images
+                     # (configs/revision_grid_1000*.yaml); later runs' rows take precedence
+                     "revision_grid_500", "revision_grid_1000")]
 
 
 def load_rows():

@@ -2,8 +2,8 @@
 
 1. Localization on the 1,000 images: Spearman correlation between the method rankings on
    images 1-500 and 501-1,000 (class-ordered split: the halves share few classes), per backbone.
-2. Five-metric grid on the 500 images: Spearman correlation between the rankings on two
-   random halves of 250 images (median over 1,000 splits), per backbone and metric.
+2. Five-metric grid on the 1,000 images: Spearman correlation between the rankings on two
+   random halves of 500 images (median over 1,000 splits), per backbone and metric.
 Cells are scored as in the paper (xai_bench.scoring; MS cells are medians).
 
 usage: python scripts/revision_neucom/image_stability.py
@@ -42,9 +42,9 @@ for m, d in loc.groupby("model"):
 L = pd.DataFrame(rows)
 print(L.groupby("metric").rho.median().round(2).to_string())
 
-# ---- 2. grid, two random halves of the 500 images
+# ---- 2. grid, two random halves of the 1,000 images
 MET = ["pointing_game", "faithfulness_correlation", "faithfulness_estimate", "max_sensitivity", "sparseness"]
-g = score(pd.read_csv(os.path.join("results", "revision_grid_500", "results.csv")), MET)
+g = score(pd.read_csv(os.path.join("results", "revision_grid_1000", "results.csv")), MET)
 rows = []
 for m, d in g.groupby("model"):
     for met in MET:
