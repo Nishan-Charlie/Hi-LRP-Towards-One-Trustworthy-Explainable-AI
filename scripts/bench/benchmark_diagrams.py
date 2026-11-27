@@ -231,11 +231,11 @@ def fig_rankflip(get):
 
 # ── 4. Faithfulness Correlation vs the per-image noise band ─────────────────
 def fig_fc_noise(get):
-    meths = [(k, lab, fam) for k, lab, fam in METHODS if k != "attnlrp"]
-    stds = []
+    meths = list(METHODS)
+    stds = []  # the band excludes AttnLRP, whose per-image SD comes from a separate run
     for mod, _ in MODELS:
         for k, _, _ in meths:
-            s = get(mod, k, "faithfulness_correlation_std")
+            s = get(mod, k, "faithfulness_correlation_std") if k != "attnlrp" else None
             if s is not None:
                 stds.append(s)
     band = float(np.median(stds))
@@ -260,7 +260,7 @@ def fig_fc_noise(get):
     ax.tick_params(axis="x", labelsize=8.5)
     ax.set_xlabel("Faithfulness Correlation (mean per backbone)", fontsize=9.5)
     ax.text(band + 0.008, len(meths) + 0.45,
-            f"$\\pm${band:.2f}: median\nper-image SD", fontsize=8,
+            f"$\\pm${band:.3f}: median\nper-image SD", fontsize=8,
             color="#777", ha="left", va="center")
     for s in ("top", "right", "left"):
         ax.spines[s].set_visible(False)

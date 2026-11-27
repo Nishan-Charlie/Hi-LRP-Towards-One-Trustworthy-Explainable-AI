@@ -86,3 +86,10 @@ images/
 !figures/**/*.pdf
 !figures/**/*.tex
 !figures/**/*.xml
+# ── Local run-queue state (machine-specific; regenerated on each run) ───
+scripts/revision_neucom/*.pid
+scripts/revision_neucom/*.err
+scripts/revision_neucom/DONE*
+scripts/revision_neucom/STOP
+scripts/revision_neucom/run_after_wildfire.ps1
+scripts/revision_neucom/run_extend_1000.ps1
