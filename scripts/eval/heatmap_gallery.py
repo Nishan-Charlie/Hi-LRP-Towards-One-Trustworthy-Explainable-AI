@@ -8,10 +8,10 @@ baselines blob; gradient baselines scatter.
 Run in THREE processes (HiLRP's class-level patches would perturb the baselines'
 gradients if run in-process):
 
-  <base-python> scripts/bench/heatmap_gallery.py baselines   # vanilla model
-  <mri-python>  scripts/bench/heatmap_gallery.py hilrp        # patched model
-  <base-python> scripts/bench/heatmap_gallery.py contact      # contact sheet (curation)
-  <base-python> scripts/bench/heatmap_gallery.py assemble a,b,c,d,e   # final figure, chosen images
+  <base-python> scripts/eval/heatmap_gallery.py baselines   # vanilla model
+  <mri-python>  scripts/eval/heatmap_gallery.py hilrp        # patched model
+  <base-python> scripts/eval/heatmap_gallery.py contact      # contact sheet (curation)
+  <base-python> scripts/eval/heatmap_gallery.py assemble a,b,c,d,e   # final figure, chosen images
 
 Model is PVT-v2-b2 (strongest localization); override with QUAL_MODEL.
 """
@@ -157,7 +157,7 @@ def assemble(chosen):
             for c, t in enumerate(titles):
                 ax[0, c].set_title(t, fontsize=17, fontweight="bold")
     fig.subplots_adjust(wspace=0.03, hspace=0.03)
-    out = "figures/bench/qualitative_gallery.png"
+    out = "figures/eval/qualitative_gallery.png"
     fig.savefig(out, dpi=170, bbox_inches="tight")
     print("wrote", out)
 

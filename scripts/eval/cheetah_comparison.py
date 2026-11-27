@@ -4,9 +4,9 @@ images/ photo (default images/cheetah.jpg) instead of the ImageNet-S yurt.
 HiLRP's class-level LRP patches would perturb the baselines' gradients if run in
 the same process, so baselines and HiLRP are generated in SEPARATE runs:
 
-  python scripts/bench/cheetah_comparison.py baselines   # vanilla models
-  python scripts/bench/cheetah_comparison.py hilrp        # patched models
-  python scripts/bench/cheetah_comparison.py assemble     # build the PNG/PDF
+  python scripts/eval/cheetah_comparison.py baselines   # vanilla models
+  python scripts/eval/cheetah_comparison.py hilrp        # patched models
+  python scripts/eval/cheetah_comparison.py assemble     # build the PNG/PDF
 
 Grid: rows = Swin-B, PVT-v2-b2, EfficientViT-B2, MobileViT-v2; columns = Input,
 HiLRP, Grad-CAM, Grad-CAM++, Integrated Grad, SmoothGrad. Same image every row,
@@ -26,7 +26,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 IMG = os.environ.get("QUAL_IMG", "images/cheetah.jpg")
 TMP = os.path.join("results", "cheetah_tmp")
-OUT_DIR = os.path.join("figures", "bench")
+OUT_DIR = os.path.join("figures", "eval")
 os.makedirs(TMP, exist_ok=True)
 os.makedirs(OUT_DIR, exist_ok=True)
 

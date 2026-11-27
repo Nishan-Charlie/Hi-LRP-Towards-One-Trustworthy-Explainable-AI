@@ -6,9 +6,9 @@ paired McNemar test, instead of n=100 with no error bars.
 
 HiLRP (class-patched) and Grad-CAM (vanilla) must run in SEPARATE processes:
 
-  python scripts/bench/scaled_eval.py gradcam efficientvit_b2 1000
-  python scripts/bench/scaled_eval.py hilrp   efficientvit_b2 1000
-  python scripts/bench/scaled_eval.py stats   efficientvit_b2
+  python scripts/eval/scaled_eval.py gradcam efficientvit_b2 1000
+  python scripts/eval/scaled_eval.py hilrp   efficientvit_b2 1000
+  python scripts/eval/scaled_eval.py stats   efficientvit_b2
 
 Per-image pointing hits are cached to results/scaled/<model>_<method>.npy so
 stats can combine them (paired: both methods on the same images).

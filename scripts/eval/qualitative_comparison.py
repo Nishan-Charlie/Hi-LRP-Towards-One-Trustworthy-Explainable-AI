@@ -1,11 +1,11 @@
-"""Build figures/bench/qualitative_comparison.png: HiLRP vs baselines across models.
+"""Build figures/eval/qualitative_comparison.png: HiLRP vs baselines across models.
 
 Run in THREE separate processes (HiLRP's class-level patches would alter the
 baselines' gradients if run in-process):
 
-  python scripts/bench/qualitative_comparison.py baselines   # vanilla models
-  python scripts/bench/qualitative_comparison.py hilrp        # patched models
-  python scripts/bench/qualitative_comparison.py assemble     # build the PNG
+  python scripts/eval/qualitative_comparison.py baselines   # vanilla models
+  python scripts/eval/qualitative_comparison.py hilrp        # patched models
+  python scripts/eval/qualitative_comparison.py assemble     # build the PNG
 
 Grid: rows = Swin-B, PVT-v2, EfficientViT-B2, MobileViT-v2; columns = input,
 HiLRP, Grad-CAM, Grad-CAM++, Integrated Grad, SmoothGrad. The same image is used
@@ -108,7 +108,7 @@ def assemble():
                 ax[r, c].set_title(titles[c], fontsize=9)
     fig.suptitle("HiLRP vs baseline attributions across architectures (same input)", fontsize=11)
     fig.tight_layout()
-    out = "figures/bench/qualitative_comparison.png"
+    out = "figures/eval/qualitative_comparison.png"
     fig.savefig(out, dpi=160, bbox_inches="tight")
     print("wrote", out)
 

@@ -15,7 +15,7 @@ No model is run: this reads the cached .npy maps only. The input is recovered
 from the ImageNet-S cache (index 0, label 915 "yurt"); the 100- and 1000-image
 caches share a deterministic stream order, so index 0 is the same image.
 
-  python scripts/bench/paper_comparison_figures.py
+  python scripts/eval/paper_comparison_figures.py
 
 Assumes CWD = repo root.
 """
@@ -27,7 +27,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 TMP = os.path.join("results", "qual_tmp")
-OUT_DIR = os.path.join("figures", "bench")
+OUT_DIR = os.path.join("figures", "eval")
 SIZE = 224
 
 MODELS = [

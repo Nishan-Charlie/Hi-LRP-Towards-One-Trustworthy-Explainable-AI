@@ -47,7 +47,7 @@ from timm.layers import norm as _norm_mod
 # GroupNorm1 (num_groups==1) takes the mean over the whole (C,H,W) tensor, so
 # keeping it live routes every output pixel's gradient through the global mean and
 # was suspected of smearing object relevance across the background. A/B TESTED
-# (scripts/diagnose_vit_mobilevit.py, n=50): detaching the mean actually LOWERS
+# (scripts/hilrp/diagnose_vit_mobilevit.py, n=50): detaching the mean actually LOWERS
 # Pointing (0.88 -> 0.82) with no conservation gain, so mean-live is kept. The
 # smear affects the map's appearance, not the peak; MobileViT's honest limitation
 # is robustness (max-sensitivity), inherent to the deep separable-conv gradient.

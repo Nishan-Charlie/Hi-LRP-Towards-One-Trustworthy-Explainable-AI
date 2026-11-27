@@ -58,13 +58,13 @@ it.
 
 | Result | n, dataset | Produced by | In the manuscript |
 |---|---|---|---|
-| Main result, HiLRP vs Grad-CAM | 1000, ImageNet-S and VOC 2007 | `scripts/bench/scaled_eval.py` | yes |
+| Main result, HiLRP vs Grad-CAM | 1000, ImageNet-S and VOC 2007 | `scripts/eval/scaled_eval.py` | yes |
 | Conservation is the discriminator | 100, ImageNet-S | `scripts/hilrp/lineage_comparison.py`, `lineage_naive_legs.py` | yes |
 | Agreement with Shapley values | 50, ImageNet-S | `scripts/hilrp/shapley_pilot.py` | yes |
 | Cross-architecture baseline transfer | 100, ImageNet-S | `xai_bench.runner`, baseline configs | 11 of 13 rows: see below |
 | HiLRP Pointing per backbone | 50, ImageNet-S | `xai_bench.runner`, `configs/hilrp_grid*.yaml` | a different run: see below |
 | Verified numerics, reference rules | toy model | `hilrp/tests/` | as a claim, not as this table |
-| Grad-CAM target-layer check | 1000, ImageNet-S and VOC 2007 | `scripts/bench/gradcam_target_layers.py` | not in the manuscript |
+| Grad-CAM target-layer check | 1000, ImageNet-S and VOC 2007 | `scripts/eval/gradcam_target_layers.py` | not in the manuscript |
 | Conservation per port (input, head, pixels) | 20, ImageNet-S | `scripts/hilrp/conservation_grid.py` | not in the manuscript |
 | Verified numerics, production ports | random weights | `hilrp/tests_backend/` | not in the manuscript |
 
@@ -148,7 +148,7 @@ therefore not an artifact of the target layer.
 
 What this does not establish is why. Both EfficientViTs use linear attention and both have
 the non-linear head, so this benchmark cannot attribute the failure to either one. Reproduce
-with `python scripts/bench/gradcam_target_layers.py efficientvit_b2 1000 [voc]`; the
+with `python scripts/eval/gradcam_target_layers.py efficientvit_b2 1000 [voc]`; the
 protocol-layer hits it writes match the cached run behind the main table image for image.
 
 ### Conservation is the actual discriminator
@@ -366,13 +366,16 @@ python -m xai_bench.runner --config configs/full_benchmark_100.yaml
 python -m xai_bench.runner --config configs/hilrp_grid.yaml
 ```
 
-**4. Regenerate tables and figures.**
+**4. Regenerate figures.**
 
 ```bash
-python scripts/bench/benchmark_tables.py       # -> paper/results_tables_generated.tex
-python scripts/bench/benchmark_figures.py      # -> figures/bench/*.pdf, *.png
-python scripts/make_readme_assets.py           # -> docs/assets/*
+python scripts/hilrp/hilrp_paper_figures.py   # -> figures/hilrp/hilrp_fc_null.*, hilrp_assumption_matrix.*
+python scripts/make_readme_assets.py          # -> docs/assets/*
 ```
+
+The baseline result tables and figures of the companion benchmark paper, *Does
+Explainability Transfer?*, are generated in its own repository,
+[VIT_XAI_Bench](https://github.com/Nishan-Charlie/VIT_XAI_Bench).
 
 **Individual results.** All scripts assume the repository root as the working directory.
 
@@ -380,8 +383,8 @@ python scripts/make_readme_assets.py           # -> docs/assets/*
 |---|---|
 | Gate 1 and 2 conservation, stage maps | `scripts/hilrp/gate2_real_swin.py` |
 | Pointing game, four architectures | `scripts/hilrp/gate3_pointing.py` |
-| n = 1000 scaled eval, bootstrap CI, McNemar | `scripts/bench/scaled_eval.py` |
-| Grad-CAM target-layer check | `scripts/bench/gradcam_target_layers.py` |
+| n = 1000 scaled eval, bootstrap CI, McNemar | `scripts/eval/scaled_eval.py` |
+| Grad-CAM target-layer check | `scripts/eval/gradcam_target_layers.py` |
 | Conservation per port (input, head, pixels), one backbone per process | `scripts/hilrp/conservation_grid.py` |
 | Shapley agreement (SLIC and SAM segments) | `scripts/hilrp/shapley_pilot.py`, `gate4_shapley_sam.py` |
 | Lineage: naive AttnLRP vs HiLRP | `scripts/hilrp/lineage_naive_legs.py` |
