@@ -23,9 +23,9 @@ binary mask alongside the boxes, and the cache rebuilt.
 
 Run one method per process, as with scaled_eval.py (HiLRP is class-patched):
 
-  python scripts/bench/localization_metrics.py gradcam efficientvit_b2 1000
-  python scripts/bench/localization_metrics.py hilrp   efficientvit_b2 1000
-  python scripts/bench/localization_metrics.py report  efficientvit_b2
+  python scripts/eval/localization_metrics.py gradcam efficientvit_b2 1000
+  python scripts/eval/localization_metrics.py hilrp   efficientvit_b2 1000
+  python scripts/eval/localization_metrics.py report  efficientvit_b2
 
 Per-image values are cached to results/scaled/<model>[_<dataset>]_<method>_loc.npz
 so report() can pair them across methods.
@@ -40,7 +40,7 @@ import torch
 warnings.filterwarnings("ignore")
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from scripts.bench.scaled_eval import OUT, DEVICE, load_cache  # noqa: E402
+from scripts.eval.scaled_eval import OUT, DEVICE, load_cache  # noqa: E402
 
 METRICS = ("energy", "energy_excess", "ap", "iou_best", "area")
 

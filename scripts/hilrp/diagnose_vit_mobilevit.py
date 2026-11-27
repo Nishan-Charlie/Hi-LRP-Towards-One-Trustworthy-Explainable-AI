@@ -8,7 +8,7 @@ MobileViT:  GroupNorm1's live global mean smears relevance across the background
 Both toggles are read at call time, so we A/B on the SAME images in one process.
 Reports mean Pointing and mean |pixel conservation - 1| for each variant.
 
-Usage:  <mri-python> scripts/diagnose_vit_mobilevit.py [N]
+Usage:  <mri-python> scripts/hilrp/diagnose_vit_mobilevit.py [N]
 """
 import os
 import sys

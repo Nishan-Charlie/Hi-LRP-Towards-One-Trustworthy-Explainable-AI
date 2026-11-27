@@ -9,17 +9,51 @@ paper's figure forms. Two replacements:
 Same Okabe-Ito palette as the benchmark scripts (validated CVD-safe). Marks are
 never color-only: holds/degraded/fails use distinct glyph shapes.
 """
+import csv
 import os
-import sys
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# benchmark_diagrams lives under scripts/bench/ after the 2026-07-15 split
-sys.path.insert(0, os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "bench"))
-from benchmark_diagrams import load  # noqa: E402  (CSV + GradientSHAP override)
+# Baseline grid results (one row per model x method); the single source of truth.
+RESULTS_CSV = os.path.join("benchmark_results", "all_results_sofar.csv")
+
+# GradientSHAP rerun (2026-07-14): the CSV still holds the old partial run, so these
+# values override it wholesale.
+GRADIENTSHAP = {
+    "pointing_game_mean": {
+        "resnet50": .92, "vit_base_patch16_224": .70,
+        "swin_base_patch4_window7_224": .73, "pvt_v2_b2": .70,
+        "maxvit_small_tf_224": .65, "mobilevitv2_100": .88,
+        "efficientvit_b1": .86, "efficientvit_b2": .84},
+    "faithfulness_correlation_mean": {
+        "resnet50": -.014, "vit_base_patch16_224": .018,
+        "swin_base_patch4_window7_224": .005, "pvt_v2_b2": .050,
+        "maxvit_small_tf_224": .030, "mobilevitv2_100": -.010,
+        "efficientvit_b1": -.020, "efficientvit_b2": .015},
+}
+
+
+def load():
+    rows = [r for r in csv.DictReader(open(RESULTS_CSV)) if r["model"] and r["method"]]
+    d = {}
+    for r in rows:
+        prev = d.get(r["model"], {}).get(r["method"])
+        if prev is not None and "rerun" in prev["source_run"] and "rerun" not in r["source_run"]:
+            continue
+        d.setdefault(r["model"], {})[r["method"]] = r
+
+    def get(model, method, col):
+        if method == "gradient_shap" and col in GRADIENTSHAP:
+            return GRADIENTSHAP[col].get(model)
+        r = d.get(model, {}).get(method)
+        if not r:
+            return None
+        v = r.get(col, "")
+        return float(v) if v not in ("", "nan", None) else None
+    return get
+
 
 os.makedirs("figures", exist_ok=True)
 

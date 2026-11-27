@@ -142,8 +142,8 @@ def main():
                  fontsize=11, y=0.99)
     fig.tight_layout(rect=[0, 0, 1, 0.96])
     for ext in ("pdf", "png"):
-        fig.savefig(f"figures/bench/cam_upsampling_artifact.{ext}", dpi=160, bbox_inches="tight")
-    print("saved figures/bench/cam_upsampling_artifact.{pdf,png}")
+        fig.savefig(f"figures/eval/cam_upsampling_artifact.{ext}", dpi=160, bbox_inches="tight")
+    print("saved figures/eval/cam_upsampling_artifact.{pdf,png}")
 
 
 if __name__ == "__main__":

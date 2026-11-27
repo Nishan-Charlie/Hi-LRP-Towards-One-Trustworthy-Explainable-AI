@@ -24,7 +24,7 @@ claim on ViTs, on our own backbones.
 Two-pass protocol: all vanilla methods run before HiLRP installs its global
 class patches.
 
-Run:  <mri-diffuser python> scripts/bench/ad_ai_insertion.py [n_images]
+Run:  <mri-diffuser python> scripts/eval/ad_ai_insertion.py [n_images]
 Out:  results/ad_ai/{per_image.csv, summary.csv}
 """
 import os

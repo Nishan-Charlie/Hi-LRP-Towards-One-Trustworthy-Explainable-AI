@@ -303,9 +303,9 @@ python scripts/data/cache_imagenets.py --num 1000 --split validation
 python scripts/data/cache_voc.py --num 1000
 
 # 2. Headline comparison (one method per process)
-python scripts/bench/scaled_eval.py gradcam efficientvit_b2 1000
-python scripts/bench/scaled_eval.py hilrp   efficientvit_b2 1000
-python scripts/bench/scaled_eval.py stats   efficientvit_b2
+python scripts/eval/scaled_eval.py gradcam efficientvit_b2 1000
+python scripts/eval/scaled_eval.py hilrp   efficientvit_b2 1000
+python scripts/eval/scaled_eval.py stats   efficientvit_b2
 
 # 3. Benchmark grid: baselines and HiLRP in separate runs
 python -m xai_bench.runner --config configs/full_benchmark_100.yaml
@@ -324,12 +324,21 @@ hilrp/            the method, as an installable package
 ├── hierarchical.py, attention_primitives.py, rules.py     the rules
 ├── viz.py          display normalization
 └── tests/, tests_backend/
-xai_bench/        the benchmark harness (not in the pip package; run it from a clone)
-configs/          benchmark run configs
-scripts/          experiments, tables and figures for the paper
+xai_bench/        evaluation harness for the baseline comparisons (not in the pip package)
+configs/          run configs for xai_bench.runner (HiLRP grids, baseline grid)
+scripts/
+├── hilrp/          HiLRP experiments: conservation, lineage, Shapley, RQ2, CLIP, figures
+├── eval/           HiLRP vs baselines: n = 1000 scaled eval, localization, galleries
+└── data/           dataset cache builders (ImageNet-S, VOC 2007)
+benchmark_results/ baseline grid results (all_results_sofar.csv)
+figures/          paper figures (hilrp/, eval/)
+notebooks/        visualization notebooks
 examples/         quickstart.py, the script behind the tutorial
-docs/             METHOD.md, RESULTS.md, figures used on this page
+docs/             METHOD.md, RESULTS.md, project page and its assets
 ```
+
+The companion benchmark paper, *Does Explainability Transfer?*, has its own repository:
+[VIT_XAI_Bench](https://github.com/Nishan-Charlie/VIT_XAI_Bench).
 
 ## Tests
 

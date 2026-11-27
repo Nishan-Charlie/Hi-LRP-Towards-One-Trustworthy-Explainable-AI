@@ -22,11 +22,11 @@ OUT_DIR = os.path.join("docs", "assets")
 # (source path relative to figures/, output basename). Heatmap panels are
 # photographic and go to JPEG; line-art diagrams stay PNG so text stays crisp.
 ASSETS = [
-    ("bench/arch_method_comparison.png", "hero_architecture_comparison.jpg"),
+    ("eval/arch_method_comparison.png", "hero_architecture_comparison.jpg"),
     ("hilrp/hilrp_pipeline.png", "method_pipeline.png"),
     ("hilrp/stage_localization.png", "stage_localization.jpg"),
-    ("bench/qualitative_gallery.png", "qualitative_gallery.jpg"),
-    ("bench/cam_upsampling_artifact.png", "cam_upsampling_artifact.jpg"),
+    ("eval/qualitative_gallery.png", "qualitative_gallery.jpg"),
+    ("eval/cam_upsampling_artifact.png", "cam_upsampling_artifact.jpg"),
     ("hilrp/sanity_check.png", "sanity_check.jpg"),
     ("hilrp/rq2_maps.png", "rq2_pretraining_objectives.jpg"),
     ("hilrp/clip_multimodal.png", "clip_multimodal.jpg"),

@@ -5,11 +5,11 @@ Run in FOUR separate compute processes (class-level patches from hilrp/attnlrp
 would alter the baselines' gradients in-process; the flat-ViT AttnLRP path and
 the naive hierarchical path must also not share a process), then assemble:
 
-  python scripts/bench/qualitative_grid_cat.py baselines
-  python scripts/bench/qualitative_grid_cat.py hilrp
-  python scripts/bench/qualitative_grid_cat.py attnlrp_hier
-  python scripts/bench/qualitative_grid_cat.py attnlrp_vit
-  python scripts/bench/qualitative_grid_cat.py assemble
+  python scripts/eval/qualitative_grid_cat.py baselines
+  python scripts/eval/qualitative_grid_cat.py hilrp
+  python scripts/eval/qualitative_grid_cat.py attnlrp_hier
+  python scripts/eval/qualitative_grid_cat.py attnlrp_vit
+  python scripts/eval/qualitative_grid_cat.py assemble
 
 Every process explains the SAME class per model: the wrapper's top-1 on the cat
 image, recorded by the baselines pass in targets.json.
@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 IMAGE = os.path.join("images", "cat.jpg")
 TMP = os.path.join("results", "qual_grid_cat")
-OUT = os.path.join("figures", "bench", "qualitative_grid_cat.png")
+OUT = os.path.join("figures", "eval", "qualitative_grid_cat.png")
 os.makedirs(TMP, exist_ok=True)
 
 MODELS = ["resnet50", "vit_base_patch16_224", "swin_base_patch4_window7_224",

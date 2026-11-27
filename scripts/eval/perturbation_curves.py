@@ -18,9 +18,9 @@ Protocol choices that matter:
   * the curve tracks softmax probability of the ORIGINALLY PREDICTED class, so
     a misclassified image still measures the explanation of the model.
 
-  python scripts/bench/perturbation_curves.py gradcam efficientvit_b2 100
-  python scripts/bench/perturbation_curves.py hilrp   efficientvit_b2 100
-  python scripts/bench/perturbation_curves.py report  efficientvit_b2
+  python scripts/eval/perturbation_curves.py gradcam efficientvit_b2 100
+  python scripts/eval/perturbation_curves.py hilrp   efficientvit_b2 100
+  python scripts/eval/perturbation_curves.py report  efficientvit_b2
 """
 import os
 import sys
@@ -33,7 +33,7 @@ import torch.nn.functional as F
 warnings.filterwarnings("ignore")
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from scripts.bench.scaled_eval import OUT, DEVICE, load_cache  # noqa: E402
+from scripts.eval.scaled_eval import OUT, DEVICE, load_cache  # noqa: E402
 
 PATCH = 16
 N_STEPS = 25

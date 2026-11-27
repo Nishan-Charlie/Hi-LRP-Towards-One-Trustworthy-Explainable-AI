@@ -1,6 +1,7 @@
-"""xai_bench — a controlled benchmark of attribution methods on ViT foundation models.
+"""xai_bench — the evaluation harness used to compare HiLRP against baseline attribution
+methods (the companion benchmark study lives in Nishan-Charlie/VIT_XAI_Bench).
 
-See docs/RESEARCH_PLAN.md for the study design. The package is organized as four
+The package is organized as four
 registries — models, methods, datasets, metrics — plus a runner that sweeps the
 (model x method x dataset x metric) matrix and writes tidy result rows.
 

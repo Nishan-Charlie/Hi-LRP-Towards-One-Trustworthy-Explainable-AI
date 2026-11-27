@@ -10,8 +10,8 @@ family. This script re-runs the same Grad-CAM at every candidate spatial layer
 so the README can report the protocol number and the best-layer number side by
 side instead of attributing the gap to the architecture.
 
-  python scripts/bench/gradcam_target_layers.py efficientvit_b2 1000
-  python scripts/bench/gradcam_target_layers.py efficientvit_b2 1000 voc
+  python scripts/eval/gradcam_target_layers.py efficientvit_b2 1000
+  python scripts/eval/gradcam_target_layers.py efficientvit_b2 1000 voc
 
 VANILLA PROCESS ONLY: nothing here may import the HiLRP ports (class-level
 patches would alter these gradients). Per-image hits are written to
@@ -29,7 +29,7 @@ import torch.nn.functional as F
 warnings.filterwarnings("ignore")
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from scripts.bench.scaled_eval import DEVICE, load_cache, npy_name, pointing  # noqa: E402
+from scripts.eval.scaled_eval import DEVICE, load_cache, npy_name, pointing  # noqa: E402
 
 
 def candidate_layers(model):
